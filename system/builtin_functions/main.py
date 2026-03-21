@@ -1,4 +1,7 @@
-from utils.constants import TRUE, FALSE, OR, AND, INTEGER, REAL, STRING, BOOLEAN, FLOAT,REALISTIC
+import math as _math
+from utils.constants import TRUE, FALSE, OR, AND, INTEGER, REAL, STRING, BOOLEAN, FLOAT, REALISTIC
+
+_builtin_input = input
 
 _delta_for_floats = 1 / 1e8
 
@@ -7,6 +10,93 @@ class BuiltinFunctions:
     @staticmethod
     def print(*items):
         print(*items)
+
+    @staticmethod
+    def len(s):
+        return len(str(s))
+
+    @staticmethod
+    def upper(s):
+        return str(s).upper()
+
+    @staticmethod
+    def lower(s):
+        return str(s).lower()
+
+    @staticmethod
+    def trim(s):
+        return str(s).strip()
+
+    @staticmethod
+    def str(v):
+        return str(v)
+
+    @staticmethod
+    def int(v):
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            raise ValueError(f"Cannot convert '{v}' to integer")
+
+    @staticmethod
+    def float(v):
+        try:
+            return float(v)
+        except (ValueError, TypeError):
+            raise ValueError(f"Cannot convert '{v}' to float")
+
+    @staticmethod
+    def abs(n):
+        return abs(n)
+
+    @staticmethod
+    def max(a, b):
+        return max(a, b)
+
+    @staticmethod
+    def min(a, b):
+        return min(a, b)
+
+    @staticmethod
+    def sqrt(n):
+        return _math.sqrt(n)
+
+    @staticmethod
+    def pow(base, exp):
+        return base ** exp
+
+    @staticmethod
+    def mod(a, b):
+        return a % b
+
+    @staticmethod
+    def type_of(v):
+        if isinstance(v, bool):
+            return "boolean"
+        if isinstance(v, int):
+            return "integer"
+        if isinstance(v, float):
+            return "float"
+        if isinstance(v, str):
+            if v in ("TRUE", "FALSE", "REALISTIC"):
+                return "boolean"
+            return "string"
+        return "unknown"
+
+    @staticmethod
+    def is_integer(v):
+        try:
+            return TRUE if isinstance(v, int) and not isinstance(v, bool) else FALSE
+        except Exception:
+            return FALSE
+
+    @staticmethod
+    def is_string(v):
+        return TRUE if isinstance(v, str) and v not in ("TRUE", "FALSE", "REALISTIC") else FALSE
+
+    @staticmethod
+    def input(prompt=""):
+        return _builtin_input(str(prompt))
 
 
 _builtin_functions = BuiltinFunctions()
@@ -25,23 +115,12 @@ def call_system_function(name, *args, **kwargs):
 
 
 def evaluate_bool_expression(left, op, right):
-    if left not in (TRUE, FALSE):
-        raise ValueError('left not in true,false')
-
-    if right not in (TRUE, FALSE):
-        raise ValueError('right not in true,false')
-
     if op not in (OR, AND):
         raise ValueError('op not in or, and')
-
     if op is OR:
-        if left is TRUE or right is TRUE:
-            return TRUE
-        return FALSE
+        return realistic_or(left, right)
     else:
-        if left is TRUE and right is TRUE:
-            return TRUE
-        return FALSE
+        return realistic_and(left, right)
 
 
 def not_bool(bool_val):
@@ -54,33 +133,32 @@ def not_bool(bool_val):
 
 
 def is_val_of_type(val, base_type):
-    if base_type not in (INTEGER, FLOAT, STRING, BOOLEAN):
-        raise ValueError('base_type must be int,str,bool or real type')
+    if base_type not in (INTEGER, FLOAT, REAL, STRING, BOOLEAN):
+        raise ValueError('base_type must be int, float, real, str, or bool type')
 
     if val is None:
         return True
 
-    if base_type in (INTEGER, FLOAT):
-        if base_type == INTEGER:
-            try:
-                return isinstance(int(val), int) and str(val).count('.') == 0
-            except Exception as e:
-                return False
-        else:
-            try:
-                return isinstance(float(val), float)
-            except Exception as e:
-                return False
-    elif base_type is STRING:
+    if base_type == INTEGER:
+        try:
+            return isinstance(int(val), int) and str(val).count('.') == 0
+        except Exception:
+            return False
+    elif base_type in (FLOAT, REAL):
+        try:
+            return isinstance(float(val), float)
+        except Exception:
+            return False
+    elif base_type == STRING:
         return isinstance(val, str)
-    elif base_type is BOOLEAN:
+    elif base_type == BOOLEAN:
         try:
             if isinstance(val, str):
-                val_upper = val.upper()
-                return val_upper in ["TRUE", "FALSE", "REALISTIC"]
-            return val in ["TRUE", "FALSE", "REALISTIC"]
-        except Exception as e:
+                return val.upper() in ("TRUE", "FALSE", "REALISTIC")
+            return val in (TRUE, FALSE, REALISTIC)
+        except Exception:
             return False
+    return False
 
 
 def not_equal(left, right):

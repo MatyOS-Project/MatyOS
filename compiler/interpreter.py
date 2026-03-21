@@ -51,10 +51,15 @@ class Interpreter(BeforeNodeVisitor, NestedScopeable):
         return result
     
     def visit_WhileLoop(self, node):
+        self.call_stack.append(WHILE)
         while self.visit(node.condition) == TRUE:
             self.define_new_scope()
             self.visit(node.body)
             self.destroy_current_scope()
+            if self.terminated_call_stack and self.terminated_call_stack[-1] == BREAK:
+                self.terminated_call_stack.pop()
+                break
+        self.call_stack.pop()
             
     def visit_DoWhileLoop(self, node):
         self.define_new_scope()
@@ -86,10 +91,12 @@ class Interpreter(BeforeNodeVisitor, NestedScopeable):
         left = self.visit(node.left)
         right = self.visit(node.right)
 
-        if type(left) is not str or type(right) is not str:
-            self.error("can only concatenate string and string")
+        # Auto-convert to string when one side is already a string
+        if isinstance(left, str) or isinstance(right, str):
+            return str(left) + str(right)
 
-        return left + right
+        self.error("can only concatenate string (or string + value)")
+        return None
 
     def visit_Compound(self, node: Compound):
         for sub_node in node.get_children():
@@ -103,19 +110,6 @@ class Interpreter(BeforeNodeVisitor, NestedScopeable):
         self.error(
             "can't assign {} to var {} as type of {} is {}".format(value, var_name, var_name, base_type))
 
-    def visit_Assign(self, node: Assign):
-        var_name = node.left.value
-        value = self.visit(node.right)
-
-        if self.symbol_table.is_defined(var_name):
-            # type checking
-            symbol: Symbol = self.symbol_table.lookup(var_name)
-            base_type = symbol.type
-            if not self.can_assign(base_type, value):
-                self.can_not_assign_error(var_name, value, symbol.type)
-            return self.symbol_table.assign(var_name, Symbol(var_name, value, base_type))
-        else:
-            raise ValueError(f"value {var_name} is not defined")
 
     def visit_Var(self, node: Var):
         var_name = node.value
@@ -503,41 +497,6 @@ class Interpreter(BeforeNodeVisitor, NestedScopeable):
         
         return node
         
-    def visit_ProofDeclaration(self, node: ProofDeclaration):
-        """Execute proof declaration - register and validate proof"""
-        theorem_name = node.get_theorem_name()
-        
-        # Check if theorem exists
-        if theorem_name not in self.theorems:
-            ProofConsole.error(f"Cannot create proof for unknown theorem: {theorem_name}")
-            self.error(f"Cannot create proof for unknown theorem: {theorem_name}")
-        
-        # Register proof
-        self.proofs[theorem_name] = node
-        
-        # Use colored console output for proof start
-        ProofConsole.proof_start(theorem_name, len(node.get_proof_steps()))
-        
-        # Execute proof steps (for now, just display them)
-        for i, step in enumerate(node.get_proof_steps(), 1):
-            ProofConsole.proof_step(i, step.get_statement())
-        
-        # Check if proof is complete
-        if node.is_proof_complete():
-            ProofConsole.proof_complete(theorem_name)
-            
-            # Link proof to theorem
-            theorem = self.theorems[theorem_name]
-            theorem.set_proof(node)
-            
-            # For now, assume complete proofs are valid
-            node.mark_valid()
-            theorem.mark_proven()
-        else:
-            ProofConsole.proof_incomplete(theorem_name)
-        
-        return node
-    
     def visit_ProofStep(self, node: ProofStep):
         """Execute individual proof step"""
         # For now, just evaluate the statement
@@ -567,41 +526,6 @@ class Interpreter(BeforeNodeVisitor, NestedScopeable):
         
         return node
     
-    def visit_ProofDeclaration(self, node: ProofDeclaration):
-        """Enhanced proof execution with hypothesis support"""
-        theorem_name = node.get_theorem_name()
-        
-        if theorem_name not in self.theorems:
-            self.error(f"Cannot create proof for unknown theorem: {theorem_name}")
-        
-        self.proofs[theorem_name] = node
-        
-        from utils.colors import ProofConsole, Colors
-        ProofConsole.proof_start(theorem_name, len(node.get_proof_steps()))
-        
-        # Execute proof steps with hypothesis support
-        for i, step in enumerate(node.get_proof_steps(), 1):
-            if step.is_hypothesis_step():
-                # Display hypothesis step
-                print(f"   {Colors.BRIGHT_CYAN}{i}. [HYPOTHESIS]{Colors.RESET} "
-                      f"{Colors.BRIGHT_WHITE}{step.get_hypothesis_name()}{Colors.RESET}: "
-                      f"{Colors.CYAN}{step.get_statement()}{Colors.RESET}")
-            else:
-                # Regular proof step
-                ProofConsole.proof_step(i, step.get_statement())
-        
-        if node.is_proof_complete():
-            ProofConsole.proof_complete(theorem_name)
-            
-            theorem = self.theorems[theorem_name]
-            theorem.set_proof(node)
-            node.mark_valid()
-            theorem.mark_proven()
-        else:
-            from utils.colors import ProofConsole
-            ProofConsole.proof_incomplete(theorem_name)
-        
-        return node
     def visit_TestStatement(self, node: TestStatement):
         """Execute test statement - test hypothesis against condition"""
         test_name = node.get_test_name()
