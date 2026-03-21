@@ -7,11 +7,11 @@
 class El < Formula
   desc "El — proof-assistant programming language by Ahmed Hafdi"
   homepage "https://github.com/polyfdor/matyos_repo"
-  version "1.0.9"
+  version "1.1.0"
   license "MIT"
 
   # Update this URL to point to the actual release tarball on GitHub
-  url "https://github.com/polyfdor/matyos_repo/archive/refs/tags/v1.0.9.tar.gz"
+  url "https://github.com/polyfdor/matyos_repo/archive/refs/tags/v1.1.0.tar.gz"
   # sha256 "UPDATE_WITH_ACTUAL_SHA256_OF_TARBALL"
 
   depends_on "python@3.11"
