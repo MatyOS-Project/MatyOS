@@ -52,7 +52,7 @@ except ImportError:
         def __init__(self, value):
             self.value = value
 
-__version__ = "1.0.9"
+__version__ = "1.1.0"
 
 class PackageDownloader:
     """Package download manager for .bring files"""
