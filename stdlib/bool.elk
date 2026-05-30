@@ -1,0 +1,22 @@
+-- Booleans and the basic boolean operations, defined by recursion.
+
+inductive Bool : Type :=
+  | true  : Bool
+  | false : Bool
+
+-- Bool.rec P e_true e_false b  :  chooses e_true / e_false by the value of b.
+def not (b : Bool) : Bool :=
+  Bool.rec (fun (_ : Bool) => Bool) false true b
+
+def and (a : Bool) (b : Bool) : Bool :=
+  Bool.rec (fun (_ : Bool) => Bool) b false a
+
+def or (a : Bool) (b : Bool) : Bool :=
+  Bool.rec (fun (_ : Bool) => Bool) true b a
+
+eval not true            -- false
+eval not false           -- true
+eval and true false      -- false
+eval and true true       -- true
+eval or false true       -- true
+eval not (or false false) -- true

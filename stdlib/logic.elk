@@ -1,0 +1,15 @@
+-- Propositional logic in the impredicative `Prop` universe.
+-- `False` is the empty proposition; from it, anything follows.
+
+def False : Prop := forall (P : Prop), P
+
+def Not (A : Prop) : Prop := A -> False
+
+-- ex falso quodlibet: from False, any proposition holds.
+def absurd (P : Prop) (h : False) : P := h P
+
+-- the identity implication, at the level of propositions
+example : forall (P : Prop), P -> P := fun (P : Prop) (p : P) => p
+
+-- explosion is well-typed
+example : forall (P : Prop), False -> P := absurd

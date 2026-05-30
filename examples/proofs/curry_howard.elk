@@ -1,0 +1,21 @@
+-- Curry-Howard: propositions are types, proofs are programs.
+-- These four "logical" theorems are exactly the standard combinators.
+
+-- A implies A
+def id (A : Type) (x : A) : A := x
+
+-- A implies (B implies A)
+def const (A : Type) (B : Type) (a : A) (b : B) : A := a
+
+-- modus ponens: (A -> B) -> A -> B
+def modus_ponens (A : Type) (B : Type) (f : A -> B) (a : A) : B := f a
+
+-- composition: (B -> C) -> (A -> B) -> A -> C
+def compose (A : Type) (B : Type) (C : Type)
+            (g : B -> C) (f : A -> B) (x : A) : C := g (f x)
+
+example : forall (A : Type), A -> A := id
+example : forall (A : Type), forall (B : Type), A -> B -> A := const
+
+check id
+check compose

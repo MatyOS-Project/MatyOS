@@ -124,6 +124,13 @@ def register_reducer(name, fn):
     _REDUCERS[name] = fn
 
 
+def reset_environment():
+    """Clear all global declarations. Used by the test suite to isolate runs."""
+    _GLOBALS.clear()
+    _RECURSORS.clear()
+    _REDUCERS.clear()
+
+
 def declare_const(name, type_, value=None):
     _GLOBALS[name] = {"type": type_, "value": value}
 

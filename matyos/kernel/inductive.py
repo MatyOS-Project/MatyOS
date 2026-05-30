@@ -22,7 +22,7 @@ Indexed families (e.g. propositional equality `Eq`) and universe polymorphism
 are the next milestones (C1b, C2).
 """
 
-from kernel.core import (
+from matyos.kernel.core import (
     N, to_debruijn, infer, normalize, pretty,
     declare_const, register_recursor, Univ, TypeError_, PositivityError,
     Term, Const, App as CApp, Pi as CPi, Lam as CLam, PropSort,
@@ -150,7 +150,7 @@ def declare_inductive(name, params, univ, constructors, motive_univ=0,
     if check:
         # Sanity: every generated type must itself type-check to a sort.
         for nm in [name] + ctor_names + [rec_name]:
-            from kernel.core import const_type
+            from matyos.kernel.core import const_type
             s = normalize(infer([], const_type(nm)))
             if not isinstance(s, (Univ, PropSort)):
                 raise TypeError_(
