@@ -75,10 +75,12 @@ The step from "logic puzzles" to mathematics.
       `kernel/demo_definitions.py` (`double 3 = 6`; the `n+0=n` theorem stored
       as a checked definition; bogus defs rejected).
 
-### Phase C2b — Impredicative `Prop`  ← **next**
-- [ ] Add a `Prop` sort and the impredicative product rule (a `Pi` whose
-      codomain is in `Prop` is itself in `Prop`), done soundly.
-- [ ] (optional) proof irrelevance for `Prop`.
+### Phase C2b — Impredicative `Prop` ✅ (done)
+- [x] `Prop` sort (`Prop : Type0`) with the impredicative product rule (imax):
+      a `Pi` into `Prop` stays in `Prop`; otherwise predicative `max`.
+      → `kernel/core.py`, `kernel/demo_prop.py` (`False := ∀P:Prop,P : Prop`;
+      `not`, `absurd`/ex-falso type-check; predicative `Type` contrast shown).
+- [ ] (optional, later) proof irrelevance for `Prop`.
 
 ### Phase C2c — Universe polymorphism
 - [ ] Level variables + constraints so definitions/inductives work at any

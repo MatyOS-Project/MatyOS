@@ -79,6 +79,25 @@ class Const(Term):
     name: str
 
 
+@dataclass(frozen=True)
+class PropSort(Term):
+    """The sort `Prop` of propositions. Like Lean's `Sort 0`: it is
+    *impredicative* -- a Pi whose codomain is in Prop is itself in Prop,
+    regardless of the domain's universe. `Prop : Type0`."""
+
+
+PROP = PropSort()
+
+
+def _is_sort(term):
+    return isinstance(term, (Univ, PropSort))
+
+
+def _sort_level(term):
+    # Prop counts as level 0 for the predicative max rule.
+    return 0 if isinstance(term, PropSort) else term.level
+
+
 class TypeError_(Exception):
     """Raised by the kernel when a term fails to type-check."""
 
@@ -155,7 +174,7 @@ def shift(term: Term, d: int, cutoff: int = 0) -> Term:
     """Add `d` to every free variable with index >= cutoff."""
     if isinstance(term, Var):
         return Var(term.index + d) if term.index >= cutoff else term
-    if isinstance(term, (Univ, Const)):
+    if isinstance(term, (Univ, Const, PropSort)):
         return term
     if isinstance(term, Pi):
         return Pi(shift(term.domain, d, cutoff),
@@ -172,7 +191,7 @@ def subst(term: Term, j: int, s: Term) -> Term:
     """Substitute `s` for the free variable with index `j`."""
     if isinstance(term, Var):
         return s if term.index == j else term
-    if isinstance(term, (Univ, Const)):
+    if isinstance(term, (Univ, Const, PropSort)):
         return term
     if isinstance(term, Pi):
         return Pi(subst(term.domain, j, s),
@@ -195,7 +214,7 @@ def _beta(body: Term, arg: Term) -> Term:
 # The theory is strongly normalizing, so full beta-normal form is well defined.
 # --------------------------------------------------------------------------
 def normalize(term: Term) -> Term:
-    if isinstance(term, (Var, Univ)):
+    if isinstance(term, (Var, Univ, PropSort)):
         return term
     if isinstance(term, Const):
         # delta-reduction: unfold a definition (constructors/recursors/
@@ -290,6 +309,9 @@ def infer(ctx: List[Term], term: Term) -> Term:
     if isinstance(term, Univ):
         return Univ(term.level + 1)
 
+    if isinstance(term, PropSort):
+        return Univ(0)  # Prop : Type0
+
     if isinstance(term, Const):
         return const_type(term.name)  # closed: valid in any context
 
@@ -300,17 +322,20 @@ def infer(ctx: List[Term], term: Term) -> Term:
 
     if isinstance(term, Pi):
         s_dom = normalize(infer(ctx, term.domain))
-        if not isinstance(s_dom, Univ):
+        if not _is_sort(s_dom):
             raise TypeError_(f"Pi domain is not a type: {term.domain}")
         s_cod = normalize(infer([term.domain] + ctx, term.codomain))
-        if not isinstance(s_cod, Univ):
+        if not _is_sort(s_cod):
             raise TypeError_(f"Pi codomain is not a type: {term.codomain}")
-        # predicative rule: the product lives in the larger universe
-        return Univ(max(s_dom.level, s_cod.level))
+        # imax rule: a product into Prop is impredicative (stays in Prop);
+        # otherwise it lives in the larger Type universe.
+        if isinstance(s_cod, PropSort):
+            return PROP
+        return Univ(max(_sort_level(s_dom), s_cod.level))
 
     if isinstance(term, Lam):
         s_dom = normalize(infer(ctx, term.domain))
-        if not isinstance(s_dom, Univ):
+        if not _is_sort(s_dom):
             raise TypeError_(f"lambda domain is not a type: {term.domain}")
         body_ty = infer([term.domain] + ctx, term.body)
         return Pi(term.domain, body_ty)
@@ -347,7 +372,7 @@ def define(name: str, type_term: Term, value_term: Term):
     is checked against it -- so a definition can never introduce an ill-typed
     or mis-annotated term into the environment."""
     sort = normalize(infer([], type_term))
-    if not isinstance(sort, Univ):
+    if not _is_sort(sort):
         raise TypeError_(f"definition '{name}': annotation is not a type")
     body_ty = infer([], value_term)
     if not def_equal(body_ty, type_term):
@@ -369,6 +394,8 @@ def pretty(term: Term, names: List[str] = None) -> str:
 
     if isinstance(term, Univ):
         return f"Type{term.level}"
+    if isinstance(term, PropSort):
+        return "Prop"
     if isinstance(term, Const):
         return term.name
     if isinstance(term, Var):
@@ -396,7 +423,7 @@ def pretty(term: Term, names: List[str] = None) -> str:
 def _occurs(term: Term, idx: int) -> bool:
     if isinstance(term, Var):
         return term.index == idx
-    if isinstance(term, (Univ, Const)):
+    if isinstance(term, (Univ, Const, PropSort)):
         return False
     if isinstance(term, Pi):
         return _occurs(term.domain, idx) or _occurs(term.codomain, idx + 1)
@@ -447,11 +474,17 @@ class N:
     class Const:
         name: str
 
+    @dataclass(frozen=True)
+    class Prop:
+        pass
+
 
 def to_debruijn(term, scope: List[str] = None) -> Term:
     scope = scope or []
     if isinstance(term, Term):
         return term  # already a kernel term (allows embedding)
+    if isinstance(term, N.Prop):
+        return PROP
     if isinstance(term, N.Const):
         return Const(term.name)
     if isinstance(term, N.U):
