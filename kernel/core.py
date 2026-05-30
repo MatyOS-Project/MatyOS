@@ -195,7 +195,14 @@ def _beta(body: Term, arg: Term) -> Term:
 # The theory is strongly normalizing, so full beta-normal form is well defined.
 # --------------------------------------------------------------------------
 def normalize(term: Term) -> Term:
-    if isinstance(term, (Var, Univ, Const)):
+    if isinstance(term, (Var, Univ)):
+        return term
+    if isinstance(term, Const):
+        # delta-reduction: unfold a definition (constructors/recursors/
+        # inductives carry no value and stay folded).
+        entry = _GLOBALS.get(term.name)
+        if entry is not None and entry.get("value") is not None:
+            return normalize(entry["value"])
         return term
     if isinstance(term, Pi):
         return Pi(normalize(term.domain), normalize(term.codomain))
@@ -330,6 +337,25 @@ def type_check(term: Term, expected: Term, ctx: List[Term] = None) -> bool:
     ctx = ctx or []
     actual = infer(ctx, term)
     return def_equal(actual, expected)
+
+
+def define(name: str, type_term: Term, value_term: Term):
+    """Register a checked global definition: verify `value : type`, then store
+    it so that `Const(name)` delta-reduces to `value`.
+
+    The declared type is itself verified to be a well-formed type, and the body
+    is checked against it -- so a definition can never introduce an ill-typed
+    or mis-annotated term into the environment."""
+    sort = normalize(infer([], type_term))
+    if not isinstance(sort, Univ):
+        raise TypeError_(f"definition '{name}': annotation is not a type")
+    body_ty = infer([], value_term)
+    if not def_equal(body_ty, type_term):
+        raise TypeError_(
+            f"definition '{name}': body has type {pretty(body_ty)}, "
+            f"but was annotated {pretty(type_term)}")
+    declare_const(name, type_term, value_term)
+    return Const(name)
 
 
 # --------------------------------------------------------------------------

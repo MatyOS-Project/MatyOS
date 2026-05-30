@@ -69,10 +69,21 @@ The step from "logic puzzles" to mathematics.
 - [ ] (follow-up) a structural-recursion checker once surface-level `def`
       with general recursion exists (C3+).
 
-### Phase C2 — Definitions, environment, reduction
-- [ ] A global environment of named definitions/axioms.
-- [ ] δ-reduction (unfolding definitions) and `let`.
-- [ ] Universe polymorphism; an impredicative `Prop` (à la Lean), done soundly.
+### Phase C2a — Definitions & δ-reduction ✅ (done)
+- [x] `define(name, type, body)` — type-checks the body against the annotation,
+      then `Const(name)` δ-reduces to the body. → `kernel/core.define`,
+      `kernel/demo_definitions.py` (`double 3 = 6`; the `n+0=n` theorem stored
+      as a checked definition; bogus defs rejected).
+
+### Phase C2b — Impredicative `Prop`  ← **next**
+- [ ] Add a `Prop` sort and the impredicative product rule (a `Pi` whose
+      codomain is in `Prop` is itself in `Prop`), done soundly.
+- [ ] (optional) proof irrelevance for `Prop`.
+
+### Phase C2c — Universe polymorphism
+- [ ] Level variables + constraints so definitions/inductives work at any
+      universe (removes the current fixed `Type0` motive limit). Intricate;
+      to be done carefully (unsoundness risk if rushed).
 - **Milestone:** a small `Prelude` (logic connectives as inductives, `Eq` lemmas).
 
 ### Phase C3 — Surface syntax & a real parser for the proof language
