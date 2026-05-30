@@ -83,6 +83,11 @@ class TypeError_(Exception):
     """Raised by the kernel when a term fails to type-check."""
 
 
+class PositivityError(TypeError_):
+    """Raised when an inductive declaration is not strictly positive (which
+    would make the logic unsound / non-terminating)."""
+
+
 # --------------------------------------------------------------------------
 # Global environment.  Inductive types, constructors, recursors and
 # definitions are registered here by `kernel/inductive.py`. The kernel trusts

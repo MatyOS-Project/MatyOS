@@ -24,12 +24,49 @@ are the next milestones (C1b, C2).
 
 from kernel.core import (
     N, to_debruijn, infer, normalize, pretty,
-    declare_const, register_recursor, Univ, TypeError_,
+    declare_const, register_recursor, Univ, TypeError_, PositivityError,
+    Term, Const, App as CApp, Pi as CPi, Lam as CLam,
 )
 
 # Sentinel marking a recursive constructor argument (type = the inductive
 # applied to its parameters).
 REC = object()
+
+
+def _mentions(node, name):
+    """Does `node` (surface or core term) reference the constant `name`?"""
+    if isinstance(node, N.Const) or isinstance(node, Const):
+        return node.name == name
+    if isinstance(node, (N.Var, N.U)):
+        return False
+    if isinstance(node, (N.Pi, N.Arrow, CPi)):
+        return _mentions(node.domain, name) or _mentions(node.codomain, name)
+    if isinstance(node, (N.Lam, CLam)):
+        return _mentions(node.domain, name) or _mentions(node.body, name)
+    if isinstance(node, (N.App, CApp)):
+        return _mentions(node.func, name) or _mentions(node.arg, name)
+    return False
+
+
+def _check_positivity(name, constructors):
+    """Conservative strict-positivity guard.
+
+    The supported fragment only models *bare* recursion (a constructor
+    argument that is exactly the inductive applied to its parameters, flagged
+    `REC`). Any other occurrence of the inductive inside a constructor argument
+    -- in particular a negative one like `(D -> D)` -- is rejected, because it
+    is either unsound or beyond what the generated recursor can handle.
+    """
+    for cname, args in constructors:
+        for aname, aty in args:
+            if aty is REC:
+                continue
+            if _mentions(aty, name):
+                raise PositivityError(
+                    f"constructor '{cname}': argument '{aname}' mentions the "
+                    f"inductive '{name}' in a non-strictly-positive (or "
+                    f"higher-order) position. Use REC for direct recursion; "
+                    f"other occurrences are not admitted.")
 
 
 def _pi(telescope, body):
@@ -55,6 +92,9 @@ def declare_inductive(name, params, univ, constructors, motive_univ=0,
     constructors  : [(ctor_name, [(arg_name, surface_type | REC), ...]), ...]
     motive_univ   : universe the recursor's motive eliminates into
     """
+    # Reject non-strictly-positive declarations before registering anything.
+    _check_positivity(name, constructors)
+
     param_names = [p for p, _ in params]
     # The inductive applied to its parameters: `D p1 ... pm`.
     applied = _app_chain(N.Const(name), [N.Var(p) for p in param_names])
