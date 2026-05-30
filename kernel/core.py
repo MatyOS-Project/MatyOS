@@ -72,8 +72,68 @@ class App(Term):
     arg: Term
 
 
+@dataclass(frozen=True)
+class Const(Term):
+    """Reference to a global declaration (an inductive type, a constructor, a
+    recursor, or a definition) held in the environment. Closed (no free vars)."""
+    name: str
+
+
 class TypeError_(Exception):
     """Raised by the kernel when a term fails to type-check."""
+
+
+# --------------------------------------------------------------------------
+# Global environment.  Inductive types, constructors, recursors and
+# definitions are registered here by `kernel/inductive.py`. The kernel trusts
+# the *types* recorded here and the recursor reduction rules (the standard
+# iota rules); everything else still reduces to terms `infer` checks.
+# --------------------------------------------------------------------------
+_GLOBALS = {}      # name -> {"type": Term, "value": Term|None}
+_RECURSORS = {}    # recursor name -> reduction metadata (see register_recursor)
+
+
+def declare_const(name, type_, value=None):
+    _GLOBALS[name] = {"type": type_, "value": value}
+
+
+def register_recursor(name, inductive, num_params, ctor_names, ctor_rec_flags):
+    """Record how a recursor computes.
+
+    inductive       : name of the inductive type it eliminates
+    num_params       : number of leading parameters
+    ctor_names       : constructor names, in declaration order
+    ctor_rec_flags   : per constructor, a list of booleans flagging which of
+                       that constructor's value-arguments are recursive.
+    """
+    _RECURSORS[name] = {
+        "inductive": inductive,
+        "num_params": num_params,
+        "ctor_names": list(ctor_names),
+        "ctor_rec_flags": [list(f) for f in ctor_rec_flags],
+    }
+
+
+def const_type(name):
+    if name not in _GLOBALS:
+        raise TypeError_(f"unknown global constant: {name}")
+    return _GLOBALS[name]["type"]
+
+
+def _spine(term):
+    """Unwind an application: f a b c -> (f, [a, b, c])."""
+    args = []
+    while isinstance(term, App):
+        args.append(term.arg)
+        term = term.func
+    args.reverse()
+    return term, args
+
+
+def _mk_app(head, args):
+    for a in args:
+        head = App(head, a)
+    return head
 
 
 # --------------------------------------------------------------------------
@@ -83,7 +143,7 @@ def shift(term: Term, d: int, cutoff: int = 0) -> Term:
     """Add `d` to every free variable with index >= cutoff."""
     if isinstance(term, Var):
         return Var(term.index + d) if term.index >= cutoff else term
-    if isinstance(term, Univ):
+    if isinstance(term, (Univ, Const)):
         return term
     if isinstance(term, Pi):
         return Pi(shift(term.domain, d, cutoff),
@@ -100,7 +160,7 @@ def subst(term: Term, j: int, s: Term) -> Term:
     """Substitute `s` for the free variable with index `j`."""
     if isinstance(term, Var):
         return s if term.index == j else term
-    if isinstance(term, Univ):
+    if isinstance(term, (Univ, Const)):
         return term
     if isinstance(term, Pi):
         return Pi(subst(term.domain, j, s),
@@ -123,7 +183,7 @@ def _beta(body: Term, arg: Term) -> Term:
 # The theory is strongly normalizing, so full beta-normal form is well defined.
 # --------------------------------------------------------------------------
 def normalize(term: Term) -> Term:
-    if isinstance(term, (Var, Univ)):
+    if isinstance(term, (Var, Univ, Const)):
         return term
     if isinstance(term, Pi):
         return Pi(normalize(term.domain), normalize(term.codomain))
@@ -134,8 +194,55 @@ def normalize(term: Term) -> Term:
         a = normalize(term.arg)
         if isinstance(f, Lam):
             return normalize(_beta(f.body, a))
+        reduced = _try_iota(App(f, a))
+        if reduced is not None:
+            return normalize(reduced)
         return App(f, a)
     raise TypeError_(f"normalize: unknown term {term}")
+
+
+def _try_iota(term: Term):
+    """Fire a recursor (iota) reduction if `term` is a recursor applied to a
+    constructor in scrutinee position. Returns the contractum, or None.
+
+        D.rec params P minors... (c_i cargs...)
+            ==>  minor_i  cargs... interleaved with recursive calls
+
+    For each recursive argument a of the constructor, the induction hypothesis
+    `D.rec params P minors... a` is passed right after a.
+    """
+    head, args = _spine(term)
+    if not isinstance(head, Const) or head.name not in _RECURSORS:
+        return None
+    info = _RECURSORS[head.name]
+    p = info["num_params"]
+    n = len(info["ctor_names"])
+    expected = p + 1 + n + 1  # params, motive, minors, scrutinee
+    if len(args) < expected:
+        return None
+
+    scrutinee = args[p + 1 + n]
+    c_head, c_args = _spine(scrutinee)
+    if not isinstance(c_head, Const) or c_head.name not in info["ctor_names"]:
+        return None
+
+    i = info["ctor_names"].index(c_head.name)
+    minor = args[p + 1 + i]
+    fixed = args[: p + 1 + n]            # params + motive + minors (for the IH)
+    ctor_value_args = c_args[p:]         # drop the constructor's parameter args
+    rec_flags = info["ctor_rec_flags"][i]
+
+    result = minor
+    for arg, is_rec in zip(ctor_value_args, rec_flags):
+        result = App(result, arg)
+        if is_rec:
+            ih = _mk_app(head, fixed + [arg])
+            result = App(result, ih)
+
+    # carry along any arguments applied beyond the scrutinee
+    for extra in args[expected:]:
+        result = App(result, extra)
+    return result
 
 
 def def_equal(a: Term, b: Term) -> bool:
@@ -152,6 +259,9 @@ def def_equal(a: Term, b: Term) -> bool:
 def infer(ctx: List[Term], term: Term) -> Term:
     if isinstance(term, Univ):
         return Univ(term.level + 1)
+
+    if isinstance(term, Const):
+        return const_type(term.name)  # closed: valid in any context
 
     if isinstance(term, Var):
         if term.index < 0 or term.index >= len(ctx):
@@ -210,6 +320,8 @@ def pretty(term: Term, names: List[str] = None) -> str:
 
     if isinstance(term, Univ):
         return f"Type{term.level}"
+    if isinstance(term, Const):
+        return term.name
     if isinstance(term, Var):
         if term.index < len(names):
             return names[term.index]
@@ -235,7 +347,7 @@ def pretty(term: Term, names: List[str] = None) -> str:
 def _occurs(term: Term, idx: int) -> bool:
     if isinstance(term, Var):
         return term.index == idx
-    if isinstance(term, Univ):
+    if isinstance(term, (Univ, Const)):
         return False
     if isinstance(term, Pi):
         return _occurs(term.domain, idx) or _occurs(term.codomain, idx + 1)
@@ -282,9 +394,17 @@ class N:
         func: "object"
         arg: "object"
 
+    @dataclass(frozen=True)
+    class Const:
+        name: str
+
 
 def to_debruijn(term, scope: List[str] = None) -> Term:
     scope = scope or []
+    if isinstance(term, Term):
+        return term  # already a kernel term (allows embedding)
+    if isinstance(term, N.Const):
+        return Const(term.name)
     if isinstance(term, N.U):
         return Univ(term.level)
     if isinstance(term, N.Var):
