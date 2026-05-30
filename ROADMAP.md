@@ -51,11 +51,14 @@ The step from "logic puzzles" to mathematics.
       → `kernel/inductive.py`, `kernel/demo_inductive.py` computes
       `add 2 3 = 5`, `mul 3 4 = 12`, `not (not true) = true`.
 
-### Phase C1b — Indexed families & propositional equality  ← **next**
-- [ ] Indexed inductive families (constructor results may fix indices).
-- [ ] Propositional equality `Eq : A -> A -> Type` with `refl`, and its
-      eliminator (the J rule) + its ι-rule.
-- [ ] **Milestone:** prove `∀ n, n + 0 = n` by induction, kernel-checked.
+### Phase C1b — Propositional equality & the J rule ✅ (done)
+- [x] Propositional equality `Eq : A -> A -> Type` with `refl`, and its
+      eliminator (the based J rule) + its ι-rule `J A a P d a (refl) ==> d`.
+      → `kernel/equality.py` (also derives `cong`).
+- [x] **Milestone:** `∀ n, n + 0 = n` proved by induction, kernel-checked.
+      → `kernel/demo_equality.py`.
+- [ ] (follow-up) a general indexed-inductive engine that *derives* Eq/J rather
+      than declaring them as primitives.
 
 ### Phase C1c — Well-formedness guards (before trusting at scale)
 - [ ] **Strict positivity** check (reject non-well-founded inductives).
