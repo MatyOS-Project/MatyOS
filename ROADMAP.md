@@ -41,14 +41,27 @@ Two parallel tracks run throughout:
 - [x] (Auxiliary) sound propositional checker — a teaching artifact, not the
       path to Lean. → `compiler/proof_checker.py`.
 
-### Phase C1 — Inductive types & recursors  ← **next**
+### Phase C1a — Non-indexed inductive types & recursors ✅ (done)
 The step from "logic puzzles" to mathematics.
-- [ ] Inductive type declarations (`Nat`, `Bool`, `List`, `Eq`/`Id`).
-- [ ] Auto-generated recursors/eliminators (induction principles).
-- [ ] **Strict positivity** check (rejects non-well-founded definitions).
-- [ ] **Termination / structural-recursion** check.
-- [ ] ι-reduction (recursor computation) added to normalization.
-- **Milestone:** prove `∀ n, n + 0 = n` by induction, kernel-checked.
+- [x] Global environment + `Const` terms in the kernel.
+- [x] Inductive declarations with parameters (`Nat`, `Bool`, `List`).
+- [x] Auto-generated recursors/eliminators (induction principles) with
+      dependent motives.
+- [x] ι-reduction (recursor computation) wired into normalization.
+      → `kernel/inductive.py`, `kernel/demo_inductive.py` computes
+      `add 2 3 = 5`, `mul 3 4 = 12`, `not (not true) = true`.
+
+### Phase C1b — Indexed families & propositional equality  ← **next**
+- [ ] Indexed inductive families (constructor results may fix indices).
+- [ ] Propositional equality `Eq : A -> A -> Type` with `refl`, and its
+      eliminator (the J rule) + its ι-rule.
+- [ ] **Milestone:** prove `∀ n, n + 0 = n` by induction, kernel-checked.
+
+### Phase C1c — Well-formedness guards (before trusting at scale)
+- [ ] **Strict positivity** check (reject non-well-founded inductives).
+- [ ] **Termination / structural-recursion** check for recursor-free `def`s.
+      (Until then, only recursor-based definitions are admitted, which are
+      terminating by construction.)
 
 ### Phase C2 — Definitions, environment, reduction
 - [ ] A global environment of named definitions/axioms.
