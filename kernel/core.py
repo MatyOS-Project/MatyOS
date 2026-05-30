@@ -91,6 +91,13 @@ class TypeError_(Exception):
 # --------------------------------------------------------------------------
 _GLOBALS = {}      # name -> {"type": Term, "value": Term|None}
 _RECURSORS = {}    # recursor name -> reduction metadata (see register_recursor)
+_REDUCERS = {}     # const name -> fn(spine_args) -> contractum | None (custom iota)
+
+
+def register_reducer(name, fn):
+    """Register a custom reduction rule for a primitive eliminator (e.g. the J
+    rule for equality), which does not fit the generic recursor scheme."""
+    _REDUCERS[name] = fn
 
 
 def declare_const(name, type_, value=None):
@@ -197,8 +204,19 @@ def normalize(term: Term) -> Term:
         reduced = _try_iota(App(f, a))
         if reduced is not None:
             return normalize(reduced)
+        reduced = _try_reducer(App(f, a))
+        if reduced is not None:
+            return normalize(reduced)
         return App(f, a)
     raise TypeError_(f"normalize: unknown term {term}")
+
+
+def _try_reducer(term: Term):
+    """Fire a custom-registered eliminator reduction (e.g. the J rule)."""
+    head, args = _spine(term)
+    if isinstance(head, Const) and head.name in _REDUCERS:
+        return _REDUCERS[head.name](args)
+    return None
 
 
 def _try_iota(term: Term):
