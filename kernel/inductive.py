@@ -25,7 +25,7 @@ are the next milestones (C1b, C2).
 from kernel.core import (
     N, to_debruijn, infer, normalize, pretty,
     declare_const, register_recursor, Univ, TypeError_, PositivityError,
-    Term, Const, App as CApp, Pi as CPi, Lam as CLam,
+    Term, Const, App as CApp, Pi as CPi, Lam as CLam, PropSort,
 )
 
 # Sentinel marking a recursive constructor argument (type = the inductive
@@ -152,7 +152,7 @@ def declare_inductive(name, params, univ, constructors, motive_univ=0,
         for nm in [name] + ctor_names + [rec_name]:
             from kernel.core import const_type
             s = normalize(infer([], const_type(nm)))
-            if not isinstance(s, Univ):
+            if not isinstance(s, (Univ, PropSort)):
                 raise TypeError_(
                     f"generated type of '{nm}' is not a sort: {pretty(const_type(nm))}")
 
