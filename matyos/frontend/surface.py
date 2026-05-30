@@ -27,12 +27,12 @@ Comments start with `--`. Identifiers may contain dots (so `Nat.rec`, `Eq.J`).
 """
 
 import sys
-from kernel.core import (
+from matyos.kernel.core import (
     N, to_debruijn, infer, normalize, def_equal, pretty, define,
     declare_const, const_type, Const, TypeError_,
 )
-from kernel.inductive import declare_inductive, REC
-from kernel.equality import setup_equality
+from matyos.kernel.inductive import declare_inductive, REC
+from matyos.kernel.equality import setup_equality
 
 KEYWORDS = {"fun", "forall", "Type", "Prop",
             "def", "axiom", "inductive", "check", "eval", "example"}
@@ -359,6 +359,6 @@ def run_file(path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("usage: python -m kernel.surface <file.elk>")
+        print("usage: python -m matyos check <file.elk>")
         sys.exit(1)
     run_file(sys.argv[1])

@@ -33,11 +33,51 @@ layer above the kernel (see ROADMAP.md, "Realistic track"), never a third
 value smuggled into the trusted core.
 """
 
+from dataclasses import dataclass
 from itertools import product
-from utils.constants import TRUE, FALSE, REALISTIC
-from utils.data_classes import (
-    PropAtom, PropConst, PropNot, PropAnd, PropOr, PropImplies, PropIff,
-)
+
+# Truth-value constants (kept as strings for readable output).
+TRUE, FALSE, REALISTIC = "TRUE", "FALSE", "REALISTIC"
+
+
+# Self-contained propositional AST (decoupled from the legacy El compiler).
+@dataclass(frozen=True)
+class PropAtom:
+    name: str
+
+
+@dataclass(frozen=True)
+class PropConst:
+    value: str  # TRUE / FALSE / REALISTIC
+
+
+@dataclass(frozen=True)
+class PropNot:
+    operand: object
+
+
+@dataclass(frozen=True)
+class PropAnd:
+    left: object
+    right: object
+
+
+@dataclass(frozen=True)
+class PropOr:
+    left: object
+    right: object
+
+
+@dataclass(frozen=True)
+class PropImplies:
+    left: object
+    right: object
+
+
+@dataclass(frozen=True)
+class PropIff:
+    left: object
+    right: object
 
 # Truth values as an order F < U < T (so AND=min, OR=max).
 F, U, T = 0, 1, 2

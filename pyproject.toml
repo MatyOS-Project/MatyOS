@@ -59,6 +59,7 @@ test = [
 
 [project.scripts]
 el = "el_cli:main"
+matyos = "matyos.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/el-language"
@@ -68,7 +69,10 @@ Repository = "https://github.com/yourusername/el-language"
 Changelog = "https://github.com/yourusername/el-language/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
-packages = ["compiler", "utils", "system"]
+packages = [
+    "matyos", "matyos.kernel", "matyos.frontend", "matyos.logic",
+    "compiler", "utils", "system",
+]
 include-package-data = true
 
 [tool.setuptools.package-data]
@@ -117,13 +121,11 @@ show_error_codes = true
 minversion = "6.0"
 addopts = [
     "--strict-markers",
-    "--strict-config",
+    "--cov=matyos",
     "--cov=compiler",
     "--cov=utils",
     "--cov=system",
     "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
 ]
 testpaths = ["tests"]
 markers = [
@@ -134,7 +136,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["compiler", "utils", "system"]
+source = ["matyos", "compiler", "utils", "system"]
 omit = [
     "*/tests/*",
     "*/test_*",

@@ -25,7 +25,7 @@ register J's reduction. A fully general indexed-inductive engine that *derives*
 these is a later milestone; the rules here are the textbook ones and sound.
 """
 
-from kernel.core import (
+from matyos.kernel.core import (
     N, to_debruijn, Const, App, _spine, normalize,
     declare_const, register_reducer,
 )
