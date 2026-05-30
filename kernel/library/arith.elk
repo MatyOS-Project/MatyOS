@@ -1,0 +1,28 @@
+-- Arithmetic from scratch, in El's proof language.
+-- Eq / refl / Eq.J are provided by the prelude (kernel.equality).
+
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+-- addition by recursion on the first argument
+def add (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+
+eval add (succ (succ zero)) (succ (succ (succ zero)))    -- 2 + 3 = 5
+
+-- congruence: equals map to equals under any function
+def cong (A : Type) (B : Type) (f : A -> B) (a : A) (b : A) (e : Eq A a b)
+    : Eq B (f a) (f b) :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq B (f a) (f x)) (refl B (f a)) b e
+
+-- the theorem: for all n, n + 0 = n, by induction on n
+def add_zero_right (n : Nat) : Eq Nat (add n zero) n :=
+  Nat.rec (fun (m : Nat) => Eq Nat (add m zero) m)
+          (refl Nat zero)
+          (fun (k : Nat) (ih : Eq Nat (add k zero) k) =>
+              cong Nat Nat succ (add k zero) k ih)
+          n
+
+-- confirm the theorem inhabits the claimed proposition
+example : forall (n : Nat), Eq Nat (add n zero) n := add_zero_right

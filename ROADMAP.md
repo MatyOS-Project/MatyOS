@@ -88,10 +88,18 @@ The step from "logic puzzles" to mathematics.
       to be done carefully (unsoundness risk if rushed).
 - **Milestone:** a small `Prelude` (logic connectives as inductives, `Eq` lemmas).
 
-### Phase C3 — Surface syntax & a real parser for the proof language
-- [ ] Concrete syntax for `def/theorem/inductive`, notation, sections.
-- [ ] Replace the legacy `El` proof grammar; keep imperative El separate.
-- [ ] A pretty-printer that round-trips with the parser.
+### Phase C3 — Surface syntax & a real parser ✅ (done)
+- [x] Tokenizer + parser for the proof language → kernel terms.
+      Terms: `fun`, `forall`, dependent `(x:A) -> B`, arrows, application,
+      `Type[u]`, `Prop`. Commands: `def`, `axiom`, `inductive`, `example`,
+      `check`, `eval`. → `kernel/surface.py`.
+- [x] Proofs now live in text files: `kernel/library/arith.elk` declares `Nat`,
+      defines `add` (`eval` shows 2+3=5), and proves `∀ n, n+0=n` (`example`
+      reports QED) — no Python AST.
+- [ ] (follow-up) named/round-trippable pretty-printer (kernel printer still
+      shows de Bruijn-derived names like `x0`); notation/sections; indexed
+      `inductive` syntax (so `Eq` can be declared in-language rather than as a
+      prelude primitive).
 
 ### Phase C4 — Elaboration
 The largest core layer.
