@@ -73,7 +73,7 @@ class ProofConsole:
     @staticmethod
     def proof_complete(theorem_name):
         """Print proof completion message"""
-        print(f"   {Colors.SUCCESS}{Colors.BOLD}[✓] Proof complete (QED found){Colors.RESET}")
+        print(f"   {Colors.SUCCESS}{Colors.BOLD}[OK] Proof complete (QED found){Colors.RESET}")
         print(f"   {Colors.SUCCESS}{Colors.BOLD}[SUCCESS]{Colors.RESET} "
               f"Theorem '{Colors.BRIGHT_WHITE}{theorem_name}{Colors.RESET}' is now "
               f"{Colors.SUCCESS}{Colors.BOLD}PROVEN{Colors.RESET}!")
@@ -81,7 +81,7 @@ class ProofConsole:
     @staticmethod
     def proof_incomplete(theorem_name):
         """Print proof incomplete message"""
-        print(f"   {Colors.ERROR}{Colors.BOLD}[✗] Proof incomplete (missing QED){Colors.RESET}")
+        print(f"   {Colors.ERROR}{Colors.BOLD}[X] Proof incomplete (missing QED){Colors.RESET}")
     
     @staticmethod
     def error(message):
