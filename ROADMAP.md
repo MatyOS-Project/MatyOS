@@ -60,11 +60,14 @@ The step from "logic puzzles" to mathematics.
 - [ ] (follow-up) a general indexed-inductive engine that *derives* Eq/J rather
       than declaring them as primitives.
 
-### Phase C1c — Well-formedness guards (before trusting at scale)
-- [ ] **Strict positivity** check (reject non-well-founded inductives).
-- [ ] **Termination / structural-recursion** check for recursor-free `def`s.
-      (Until then, only recursor-based definitions are admitted, which are
-      terminating by construction.)
+### Phase C1c — Well-formedness guards ✅ (done)
+- [x] **Strict positivity** check (rejects non-well-founded inductives such as
+      `Bad = mk (Bad -> Bad)`). → `kernel/inductive._check_positivity`,
+      `kernel/demo_positivity.py`.
+- [x] **Termination** holds by construction: the only recursion is via
+      datatype recursors (structurally terminating); there is no general `fix`.
+- [ ] (follow-up) a structural-recursion checker once surface-level `def`
+      with general recursion exists (C3+).
 
 ### Phase C2 — Definitions, environment, reduction
 - [ ] A global environment of named definitions/axioms.
