@@ -774,6 +774,73 @@ class DefinitionDeclaration(AST):
         params = f"({', '.join(self.parameters)})" if self.parameters else ""
         return f'Definition({self.definition_name}{params}, {self.definition_body})'
 
+class PropAtom(AST):
+    """A propositional variable, e.g. P or Q (an uninterpreted atom)."""
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+
+class PropConst(AST):
+    """A propositional constant: true, false, or realistic."""
+    def __init__(self, value):
+        self.value = value  # one of TRUE / FALSE / REALISTIC
+
+    def __str__(self):
+        return str(self.value).lower()
+
+
+class PropNot(AST):
+    """Negation: ~P (also written !P)."""
+    def __init__(self, operand):
+        self.operand = operand
+
+    def __str__(self):
+        return f"~{self.operand}"
+
+
+class PropAnd(AST):
+    """Conjunction: P /\\ Q (also written P and Q)."""
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def __str__(self):
+        return f"({self.left} /\\ {self.right})"
+
+
+class PropOr(AST):
+    """Disjunction: P \\/ Q (also written P or Q)."""
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def __str__(self):
+        return f"({self.left} \\/ {self.right})"
+
+
+class PropImplies(AST):
+    """Implication: P -> Q."""
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def __str__(self):
+        return f"({self.left} -> {self.right})"
+
+
+class PropIff(AST):
+    """Biconditional: P <-> Q (=== is accepted as a synonym)."""
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    def __str__(self):
+        return f"({self.left} <-> {self.right})"
+
+
 class BringStatement(AST):
     """Represents a bring statement for importing packages"""
     def __init__(self, package_name: str, source_hub: str = None, alias: str = None, 

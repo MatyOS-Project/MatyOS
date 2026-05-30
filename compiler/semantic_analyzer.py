@@ -72,6 +72,32 @@ class SemanticAnalyzer(NodeVisitor):
     def visit_NoOp(self, node):
         pass
 
+    # --- proposition nodes (proof layer): nothing to check statically yet ---
+    def visit_PropAtom(self, node):
+        pass
+
+    def visit_PropConst(self, node):
+        pass
+
+    def visit_PropNot(self, node):
+        self.visit(node.operand)
+
+    def visit_PropAnd(self, node):
+        self.visit(node.left)
+        self.visit(node.right)
+
+    def visit_PropOr(self, node):
+        self.visit(node.left)
+        self.visit(node.right)
+
+    def visit_PropImplies(self, node):
+        self.visit(node.left)
+        self.visit(node.right)
+
+    def visit_PropIff(self, node):
+        self.visit(node.left)
+        self.visit(node.right)
+
     def visit_Program(self, node: Program):
         nested_symbol_table = SymbolTable(enclosed_parent=None)
         self.symbol_table = nested_symbol_table
@@ -352,22 +378,15 @@ class SemanticAnalyzer(NodeVisitor):
         for step in node.get_proof_steps():
             self.visit(step)
         
-        # Register the proof
+        # Register the proof. NOTE: we deliberately do NOT decide validity
+        # here. Logical verification (truth-table entailment) happens in the
+        # interpreter, which has the axiom/hypothesis context available.
         self.proofs[theorem_name] = node
-        
-        # Link proof to theorem
         theorem = self.theorems[theorem_name]
         theorem.set_proof(node)
-        
-        # Basic proof validation (for now, just check if it's complete)
-        if node.is_proof_complete():
-            print(f"{Colors.SUCCESS}{Colors.BOLD}[✓] Complete proof for theorem:{Colors.RESET} "
-                  f"{Colors.BRIGHT_WHITE}{theorem_name}{Colors.RESET}")
-            # For now, mark as valid if complete (later add real proof checking)
-            node.mark_valid()
-            theorem.mark_proven()
-        else:
-            print(f"{Colors.WARNING}{Colors.BOLD}[!] Incomplete proof for theorem:{Colors.RESET} "
+
+        if not node.is_proof_complete():
+            print(f"{Colors.WARNING}{Colors.BOLD}[!] Proof is missing QED:{Colors.RESET} "
                   f"{Colors.BRIGHT_WHITE}{theorem_name}{Colors.RESET}")
     
     def visit_ProofStep(self, node: ProofStep):

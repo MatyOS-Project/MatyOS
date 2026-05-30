@@ -89,12 +89,12 @@ class Parser:
         self.match(ID)
         
         self.match(COLON)
-        
-        # Parse the axiom statement
-        statement = self.base_expr()
-        
+
+        # Parse the axiom statement (a proposition)
+        statement = self.proposition()
+
         self.match(SEMI)
-        
+
         return AxiomDeclaration(axiom_name, statement)
 
     def is_declaration(self):
@@ -450,6 +450,68 @@ class Parser:
         #print(self.lexer.get_current_token())
         self.error("can't decide current expression type")
 
+    # ----- proposition sublanguage (proof layer) -----
+    # Used inside theorem / axiom / hypothesis / definition / proof-step
+    # positions. Unlike base_expr, propositions are NOT evaluated to a truth
+    # value -- they are kept as symbolic objects for the proof checker.
+    #
+    # Precedence (low -> high):
+    #   <-> (=== )  <  ->  <  \/ (or)  <  /\ (and)  <  ~ (!)  <  atom
+    def proposition(self):
+        return self.prop_iff()
+
+    def prop_iff(self):
+        node = self.prop_implies()
+        while self.lexer.get_current_token().type in (IFF, IS_EQUAL):
+            self.lexer.go_forward()
+            node = PropIff(node, self.prop_implies())
+        return node
+
+    def prop_implies(self):
+        node = self.prop_or()
+        if self.lexer.get_current_token().type is IMPLIES:
+            self.lexer.go_forward()
+            # right associative
+            node = PropImplies(node, self.prop_implies())
+        return node
+
+    def prop_or(self):
+        node = self.prop_and()
+        while self.lexer.get_current_token().type is OR:
+            self.lexer.go_forward()
+            node = PropOr(node, self.prop_and())
+        return node
+
+    def prop_and(self):
+        node = self.prop_not()
+        while self.lexer.get_current_token().type is AND:
+            self.lexer.go_forward()
+            node = PropAnd(node, self.prop_not())
+        return node
+
+    def prop_not(self):
+        token = self.lexer.get_current_token()
+        if token.type is NOT:
+            self.lexer.go_forward()
+            return PropNot(self.prop_not())
+        return self.prop_atom()
+
+    def prop_atom(self):
+        token = self.lexer.get_current_token()
+        if token.type is LPARENT:
+            self.match(LPARENT)
+            node = self.proposition()
+            self.match(RPARENT)
+            return node
+        if token.type is BOOLEAN:
+            # true / false / realistic
+            self.match(BOOLEAN)
+            return PropConst(token.value)
+        if token.type is ID:
+            self.match(ID)
+            return PropAtom(token.value)
+        self.error("expected a proposition, got {}".format(token))
+
     @staticmethod
     def is_boolean_token_type(token_type):
         return token_type in (
@@ -692,12 +754,12 @@ class Parser:
         self.match(ID)
         
         self.match(COLON)
-        
-        # Parse the hypothesis statement
-        statement = self.base_expr()
-        
+
+        # Parse the hypothesis statement (a proposition)
+        statement = self.proposition()
+
         self.match(SEMI)
-        
+
         return HypothesisStatement(hypothesis_name, statement)
     def is_switch_statement(self):
         """Check if next tokens form a switch statement"""
@@ -834,12 +896,11 @@ class Parser:
         
         self.match(COLON)
         
-        # For now, we'll parse the statement as a base expression
-        # Later we can make this more sophisticated for mathematical expressions
-        statement = self.base_expr()
-        
+        # The theorem statement is a proposition to be proved.
+        statement = self.proposition()
+
         self.match(SEMI)
-        
+
         return TheoremDeclaration(theorem_name, statement)
     def is_test_statement(self):
         """Check if next tokens form a test statement"""
@@ -873,12 +934,12 @@ class Parser:
         self.match(ID)
         
         self.match(COLON)
-        
-        # Parse the test condition
-        test_condition = self.base_expr()
-        
+
+        # Parse the test condition (a proposition)
+        test_condition = self.proposition()
+
         self.match(SEMI)
-        
+
         return TestStatement(test_name, hypothesis_name, test_condition)
 
     def is_proof_declaration(self):
@@ -919,8 +980,9 @@ class Parser:
                 proof_steps.append(step)
                 
             else:
-                # Regular proof step (could reference axioms)
-                step_statement = self.base_expr()
+                # Regular proof step: a proposition that should follow
+                # from the premises established so far.
+                step_statement = self.proposition()
                 self.match(SEMI)
                 proof_step = ProofStep("statement", step_statement, "direct")
                 proof_steps.append(proof_step)
@@ -971,12 +1033,12 @@ class Parser:
             self.match(RPARENT)
         
         self.match(COLON)
-        
-        # Parse the definition body
-        definition_body = self.base_expr()
-        
+
+        # Parse the definition body (a proposition)
+        definition_body = self.proposition()
+
         self.match(SEMI)
-        
+
         return DefinitionDeclaration(definition_name, definition_body, parameters)
     
     def definition_parameter_list(self):

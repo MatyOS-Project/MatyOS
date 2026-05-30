@@ -221,6 +221,31 @@ class Lexer(object):
             # one line comment
             self.skip_one_line_comment()
             return self.get_next_token()
+        elif self.next_characters_are("<->"):
+            # biconditional (must precede "<=" / "<")
+            self.advance(3)
+            self.current_token = Token(IFF, IFF)
+            return self.current_token
+        elif self.next_characters_are("->"):
+            # implication (must precede "-" / MINUS)
+            self.advance(2)
+            self.current_token = Token(IMPLIES, IMPLIES)
+            return self.current_token
+        elif self.next_characters_are("/\\"):
+            # conjunction (must precede "/" / FLOAT_DIV)
+            self.advance(2)
+            self.current_token = Token(AND, AND)
+            return self.current_token
+        elif self.next_characters_are("\\/"):
+            # disjunction
+            self.advance(2)
+            self.current_token = Token(OR, OR)
+            return self.current_token
+        elif cur_char == "~":
+            # negation (synonym for "!")
+            self.advance()
+            self.current_token = Token(NOT, NOT)
+            return self.current_token
         elif self.next_characters_are("or"):
             self.advance(2)
             self.current_token = Token(OR, OR)

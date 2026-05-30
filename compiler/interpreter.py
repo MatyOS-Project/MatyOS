@@ -127,6 +127,28 @@ class Interpreter(BeforeNodeVisitor, NestedScopeable):
     def visit_NoOp(self, node):
         pass
 
+    # --- proposition nodes are symbolic; they are not "run" ---
+    def visit_PropAtom(self, node):
+        return node
+
+    def visit_PropConst(self, node):
+        return node
+
+    def visit_PropNot(self, node):
+        return node
+
+    def visit_PropAnd(self, node):
+        return node
+
+    def visit_PropOr(self, node):
+        return node
+
+    def visit_PropImplies(self, node):
+        return node
+
+    def visit_PropIff(self, node):
+        return node
+
     def visit_Program(self, node: Program):
         nested_symbol_table = SymbolTable(enclosed_parent=None)
         self.symbol_table = nested_symbol_table
@@ -575,44 +597,84 @@ class Interpreter(BeforeNodeVisitor, NestedScopeable):
             return "FAIL"
     
     def visit_ProofDeclaration(self, node: ProofDeclaration):
-        """Enhanced proof execution with test support"""
+        """Verify a proof by deciding propositional entailment (truth tables).
+
+        Premises = every declared axiom + the hypotheses assumed in this proof.
+        Each non-hypothesis step must follow from the premises established so
+        far; the theorem is PROVEN only if its goal is entailed AND QED is
+        present. This is a sound (if not yet complete) propositional checker.
+        """
+        from compiler.proof_checker import (
+            check_entailment, prop_to_str, format_counterexample,
+            PROVEN, DISPROVEN, UNCERTAIN,
+        )
+        from utils.colors import Colors
+
         theorem_name = node.get_theorem_name()
-        
         if theorem_name not in self.theorems:
             self.error(f"Cannot create proof for unknown theorem: {theorem_name}")
-        
+
         self.proofs[theorem_name] = node
-        
-        from utils.colors import ProofConsole, Colors
-        ProofConsole.proof_start(theorem_name, len(node.get_proof_steps()))
-        
-        # Execute proof steps with hypothesis and test support
-        for i, step in enumerate(node.get_proof_steps(), 1):
+        theorem = self.theorems[theorem_name]
+        goal = theorem.get_statement()
+
+        # Build the premise set: global axioms first, then in-proof hypotheses.
+        premises = [ax.get_statement() for ax in self.axioms.values()]
+
+        print(f"\n{Colors.BRIGHT_MAGENTA}{Colors.BOLD}[PROOF]{Colors.RESET} "
+              f"{Colors.BRIGHT_WHITE}{theorem_name}{Colors.RESET}: "
+              f"{Colors.CYAN}{prop_to_str(goal)}{Colors.RESET}")
+        if premises:
+            print(f"   axioms: " + "; ".join(prop_to_str(p) for p in premises))
+
+        step_no = 0
+        for step in node.get_proof_steps():
             if step.is_hypothesis_step():
-                # Display hypothesis step
-                print(f"   {Colors.BRIGHT_CYAN}{i}. [HYPOTHESIS]{Colors.RESET} "
-                      f"{Colors.BRIGHT_WHITE}{step.get_hypothesis_name()}{Colors.RESET}: "
-                      f"{Colors.CYAN}{step.get_statement()}{Colors.RESET}")
-                      
-            elif step.is_test_step():
-                # Display test step
-                print(f"   {Colors.BRIGHT_YELLOW}{i}. [TEST]{Colors.RESET} "
-                      f"{Colors.BRIGHT_WHITE}{step.get_test_name()}{Colors.RESET}: "
-                      f"{Colors.YELLOW}{step.get_statement()}{Colors.RESET}")
+                step_no += 1
+                premises.append(step.get_statement())
+                print(f"   {step_no}. {Colors.BRIGHT_CYAN}assume{Colors.RESET} "
+                      f"{step.get_hypothesis_name()}: {prop_to_str(step.get_statement())}")
+                continue
+            if step.is_test_step():
+                continue
+            # a regular statement step: it must follow from current premises
+            step_no += 1
+            stmt = step.get_statement()
+            verdict, ctx = check_entailment(premises, stmt)
+            if verdict == PROVEN:
+                premises.append(stmt)  # now available as a lemma
+                print(f"   {step_no}. {prop_to_str(stmt)}   "
+                      f"{Colors.SUCCESS}[follows]{Colors.RESET}")
+            elif verdict == UNCERTAIN:
+                print(f"   {step_no}. {prop_to_str(stmt)}   "
+                      f"{Colors.WARNING}[uncertain: contains realistic]{Colors.RESET}")
             else:
-                # Regular proof step
-                ProofConsole.proof_step(i, step.get_statement())
-        
-        if node.is_proof_complete():
-            ProofConsole.proof_complete(theorem_name)
-            
-            theorem = self.theorems[theorem_name]
-            theorem.set_proof(node)
+                print(f"   {step_no}. {prop_to_str(stmt)}   "
+                      f"{Colors.ERROR}[does NOT follow]{Colors.RESET} "
+                      f"(counterexample: {format_counterexample(ctx)})")
+
+        # Final verdict on the goal.
+        verdict, ctx = check_entailment(premises, goal)
+
+        if not node.is_proof_complete():
+            print(f"   {Colors.ERROR}{Colors.BOLD}[INCOMPLETE]{Colors.RESET} "
+                  f"proof of '{theorem_name}' is missing QED")
+            return node
+
+        if verdict == PROVEN:
             node.mark_valid()
             theorem.mark_proven()
+            print(f"   {Colors.SUCCESS}{Colors.BOLD}[QED]{Colors.RESET} "
+                  f"'{theorem_name}' is {Colors.SUCCESS}{Colors.BOLD}PROVEN{Colors.RESET}")
+        elif verdict == UNCERTAIN:
+            print(f"   {Colors.WARNING}{Colors.BOLD}[UNCERTAIN]{Colors.RESET} "
+                  f"goal of '{theorem_name}' involves a realistic value; "
+                  f"not provable in classical logic")
         else:
-            ProofConsole.proof_incomplete(theorem_name)
-        
+            print(f"   {Colors.ERROR}{Colors.BOLD}[FAILED]{Colors.RESET} "
+                  f"goal of '{theorem_name}' does not follow from the premises")
+            print(f"   counterexample: {format_counterexample(ctx)}")
+
         return node
     def visit_AxiomDeclaration(self, node: AxiomDeclaration):
             """Execute axiom declaration - register fundamental truth"""

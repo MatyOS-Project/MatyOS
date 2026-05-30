@@ -64,5 +64,9 @@ BRING = 'BRING'
 FROM = 'FROM'  # For "bring X from Y" syntax
 AS = 'AS'
 
+# Propositional-logic connectives (proof layer)
+IMPLIES = "IMPLIES"  # ->
+IFF = "IFF"          # <->  (=== is also accepted as biconditional)
+
 
 
