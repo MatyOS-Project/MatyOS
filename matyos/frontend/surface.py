@@ -33,13 +33,15 @@ from matyos.kernel.core import (
 )
 from matyos.kernel.inductive import declare_inductive, REC
 from matyos.kernel.equality import setup_equality
+from matyos.frontend.tactics import run_tactics, TacticError
 
+_TACTIC_KW = {"by", "intro", "exact", "assumption", "refl", "qed"}
 KEYWORDS = {"fun", "forall", "Type", "Prop",
             "def", "axiom", "inductive", "check", "eval", "example",
-            "theorem", "proof", "hypothesis", "conjecture", "test"}
+            "theorem", "proof", "hypothesis", "conjecture", "test"} | _TACTIC_KW
 ATOM_STOP = {"fun", "forall", "def", "axiom", "inductive",
              "check", "eval", "example",
-             "theorem", "proof", "hypothesis", "conjecture", "test"}
+             "theorem", "proof", "hypothesis", "conjecture", "test"} | _TACTIC_KW
 SYMS = [":=", "->", "=>", "(", ")", ":", "=", ",", "|"]  # ':=' / '=>' before '='
 
 
@@ -249,7 +251,7 @@ class Parser:
             self.eat_sym(":")
             ty = self.parse_term([])
             self.eat_sym(":=")
-            body = self.parse_term([])
+            body = self.parse_by() if self.at_kw("by") else self.parse_term([])
             return ("example", ty, body)
         if self.at_kw("check"):
             self.advance()
@@ -286,7 +288,7 @@ class Parser:
             self.advance()
             name = self._ident()
             self.eat_sym(":=")
-            body = self.parse_term([])
+            body = self.parse_by() if self.at_kw("by") else self.parse_term([])
             return ("proof", name, body)
         if self.at_kw("hypothesis") or self.at_kw("conjecture"):
             kw = self.advance()[1]
@@ -305,6 +307,40 @@ class Parser:
                 rhs = self.parse_term([])
             return ("test", name, lhs, rhs)
         raise ParseError(f"expected a command, got {self.peek()}")
+
+    def parse_by(self):
+        """Parse a tactic block:  by <tactic>* qed
+        Returns ('by', [tactics]). Hypothesis names introduced by `intro` are
+        threaded into scope so `exact` terms can reference them as variables."""
+        self.advance()  # 'by'
+        tactics = []
+        tac_scope = []
+        while not self.at_kw("qed") and self.peek()[0] != "eof":
+            if self.at_kw("intro"):
+                self.advance()
+                names = []
+                while self.peek()[0] == "id" and self.peek()[1] not in KEYWORDS:
+                    nm = self.advance()[1]
+                    names.append(nm)
+                    tac_scope.append(nm)
+                if not names:
+                    raise ParseError("intro: expected at least one name")
+                tactics.append(("intro", names))
+            elif self.at_kw("exact"):
+                self.advance()
+                tactics.append(("exact", self.parse_term(list(tac_scope))))
+            elif self.at_kw("assumption"):
+                self.advance()
+                tactics.append(("assumption",))
+            elif self.at_kw("refl"):
+                self.advance()
+                tactics.append(("refl",))
+            else:
+                raise ParseError(f"expected a tactic, got {self.peek()}")
+        if not self.at_kw("qed"):
+            raise ParseError("tactic block must end with 'qed'")
+        self.advance()  # 'qed'
+        return ("by", tactics)
 
 
 def _fold(ctor, binders, body):
@@ -350,6 +386,7 @@ class Checker:
         setup_equality()  # Eq / refl / Eq.J available everywhere
         self.failures = 0
         self.obligations = {}     # theorem name -> statement term (pending)
+        self.obligation_surface = {}  # theorem name -> surface statement (for tactics)
         self.proven = set()       # theorem names discharged by a proof
         self.assumptions = {}     # hypothesis/conjecture name -> term (realistic)
         self.cond_deps = {}       # const name -> set of assumptions it depends on
@@ -369,6 +406,13 @@ class Checker:
                 deps.add(n)
             deps |= self.cond_deps.get(n, set())
         return deps
+
+    def _term_of(self, body, goal_surface):
+        """Turn a proof body into a de Bruijn term. A body is either a surface
+        term, or a tactic block ('by', tactics) run against the goal."""
+        if isinstance(body, tuple) and body and body[0] == "by":
+            return to_debruijn(run_tactics(goal_surface, body[1]))
+        return to_debruijn(body)
 
     def run_text(self, text, echo=True):
         for cmd in Parser(tokenize(text)).parse_program():
@@ -419,7 +463,9 @@ class Checker:
 
         elif kind == "theorem":
             _, name, params, ty = cmd
-            stmt = to_debruijn(_fold(N.Pi, params, ty))
+            stmt_surface = _fold(N.Pi, params, ty)
+            self.obligation_surface[name] = stmt_surface
+            stmt = to_debruijn(stmt_surface)
             self.obligations[name] = stmt
             self._log("theorem", name, "stated", pretty(stmt))
             if echo:
@@ -432,30 +478,37 @@ class Checker:
                 self._log("proof", name, "FAILED", "no such theorem")
                 if echo:
                     print(f"proof {name}   [FAIL: no theorem '{name}' declared]")
-            else:
-                stmt = self.obligations[name]
-                bt = to_debruijn(body)
-                got = infer([], bt)
-                if def_equal(got, stmt):
-                    declare_const(name, stmt, bt)   # certify + reusable
-                    self.proven.add(name)
-                    deps = self._deps(bt)
-                    self.cond_deps[name] = deps
-                    if deps:
-                        note = " conditional on: " + ", ".join(sorted(deps))
-                        self._log("proof", name, "CONDITIONAL", note.strip(), deps)
-                        if echo:
-                            print(f"proof {name}   [QED] PROVEN -{note}")
-                    else:
-                        self._log("proof", name, "PROVEN", "certified")
-                        if echo:
-                            print(f"proof {name}   [QED] PROVEN - certified")
-                else:
-                    self.failures += 1
-                    self._log("proof", name, "FAILED",
-                              f"proof has type {pretty(got)}")
+                return
+            stmt = self.obligations[name]
+            try:
+                bt = self._term_of(body, self.obligation_surface.get(name))
+            except TacticError as e:
+                self.failures += 1
+                self._log("proof", name, "FAILED", f"tactic: {e}")
+                if echo:
+                    print(f"proof {name}   [FAIL: tactic error: {e}]")
+                return
+            got = infer([], bt)
+            if def_equal(got, stmt):
+                declare_const(name, stmt, bt)   # certify + reusable
+                self.proven.add(name)
+                deps = self._deps(bt)
+                self.cond_deps[name] = deps
+                if deps:
+                    note = " conditional on: " + ", ".join(sorted(deps))
+                    self._log("proof", name, "CONDITIONAL", note.strip(), deps)
                     if echo:
-                        print(f"proof {name}   [FAIL: proof has type {pretty(got)}]")
+                        print(f"proof {name}   [QED] PROVEN -{note}")
+                else:
+                    self._log("proof", name, "PROVEN", "certified")
+                    if echo:
+                        print(f"proof {name}   [QED] PROVEN - certified")
+            else:
+                self.failures += 1
+                self._log("proof", name, "FAILED",
+                          f"proof has type {pretty(got)}")
+                if echo:
+                    print(f"proof {name}   [FAIL: proof has type {pretty(got)}]")
 
         elif kind == "test":
             _, name, lhs, rhs = cmd
@@ -479,7 +532,14 @@ class Checker:
 
         elif kind == "example":
             _, ty, body = cmd
-            tt, bt = to_debruijn(ty), to_debruijn(body)
+            tt = to_debruijn(ty)
+            try:
+                bt = self._term_of(body, ty)
+            except TacticError as e:
+                self.failures += 1
+                self._log("example", "", "FAILED", f"tactic: {e}")
+                print(f"example : {pretty(tt)}   [FAIL: tactic error: {e}]")
+                return
             got = infer([], bt)
             if def_equal(got, tt):
                 self._log("example", "", "PROVEN", pretty(tt))

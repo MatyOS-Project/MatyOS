@@ -122,3 +122,32 @@ Without an RHS it simply reports the normal form (`[RAN]`).
 - Universe levels are explicit and monomorphic (no universe polymorphism yet).
 - Indexed inductives (like `Eq`) are provided as kernel primitives rather than
   declared in surface syntax.
+
+## Tactics — proofs as scripts (`by … qed`)
+
+Instead of writing a raw proof term, a `proof` or `example` body may be a tactic
+script that manipulates the goal. The tactic engine is **untrusted**: it only
+*builds* a term, which the kernel re-checks against the statement — so a buggy
+script can fail, never certify a falsehood.
+
+```
+theorem mp : forall (A : Type), forall (B : Type), (A -> B) -> A -> B
+proof mp := by
+  intro A B f a      -- peel the binders into hypotheses A, B, f, a
+  exact f a          -- close the goal with an explicit term
+qed
+```
+
+Tactics available so far:
+
+| Tactic | Effect |
+|--------|--------|
+| `intro x [y …]` | peel function-type binders into named hypotheses |
+| `exact <term>`  | close the goal with a term (may use the hypotheses) |
+| `assumption`    | close the goal using a hypothesis whose type matches it |
+| `refl`          | close a reflexive equality goal `Eq A a a` |
+
+A block runs `by` … `qed`; it must end by closing the goal (`exact` /
+`assumption` / `refl`), otherwise the proof fails with “unsolved goal”.
+`apply` with sub-goals needs unification (elaboration, roadmap Phase C4) and is
+the next tactic to land. See [`examples/proofs/tactics.elk`](../examples/proofs/tactics.elk).
