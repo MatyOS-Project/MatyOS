@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-224%20passing-brightgreen" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-233%20passing-brightgreen" alt="tests"/>
   <img src="https://img.shields.io/badge/python-3.8%2B-blue" alt="python"/>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="license"/>
   <img src="https://img.shields.io/badge/status-early%20%C2%B7%20sound%20kernel-orange" alt="status"/>
@@ -27,7 +27,7 @@ with first-class support for *uncertainty* (the `realistic` truth value).
 > competitor in capability. What works today: a trusted dependent-type kernel,
 > inductive types with recursors, propositional equality, proof by induction,
 > strict-positivity checking, definitions, an impredicative `Prop`, a text
-> front-end, and a three-valued "realistic" logic — all covered by 224 tests.
+> front-end, and a three-valued "realistic" logic — all covered by 233 tests.
 > The road to Lean-class mathematics (elaboration, tactics, and above all a
 > mathematics library) is mapped honestly in [ROADMAP.md](ROADMAP.md).
 
@@ -45,14 +45,31 @@ from day one around two bets:
    epistemic layer *above* the kernel, so conjecture and certainty never get
    confused. See [the `realistic` idea](#the-realistic-idea).
 
-## Quickstart
+## Install & run
+
+**Build the standalone `matyos` binary** (then nothing else is required to run it):
 
 ```bash
-# no dependencies required to run the kernel
-python -m matyos check stdlib/arith.elk      # type-check a proof file
-python -m matyos version
-python -m pytest -q                           # run the test suite (224 tests)
+pip install pyinstaller     # one-time, build dependency only
+python build_matyos.py      # produces dist/matyos  (matyos.exe on Windows)
 ```
+
+**Or install the `matyos` command via pip** (needs Python on the user's machine):
+
+```bash
+pip install -e .            # puts `matyos` on your PATH
+```
+
+Either way you then use the language through its own command:
+
+```bash
+matyos check stdlib/arith.elk      # type-check a proof file (exit 0 = all proofs hold)
+matyos check stdlib/bool.elk
+matyos version
+matyos help
+```
+
+`matyos check` exits non-zero if any proof fails, so it drops straight into CI.
 
 ## A first proof
 
@@ -84,7 +101,7 @@ example : forall (n : Nat), Eq Nat (add n zero) n := add_zero_right
 ```
 
 ```text
-$ python -m matyos check stdlib/arith.elk
+$ matyos check stdlib/arith.elk
 inductive Nat : Type0  (2 constructors)
 def add : (Nat -> (Nat -> Nat))
 eval ... = (succ (succ (succ (succ (succ zero)))))        -- 2 + 3 = 5
@@ -140,11 +157,12 @@ matyos/                 # the proof assistant (Python package)
 │   └── surface.py      #   tokenizer + parser for the .elk proof language
 ├── logic/
 │   └── realistic.py    #   three-valued (Kleene / Lukasiewicz) "realistic" logic
-└── __main__.py         #   CLI:  python -m matyos check <file.elk>
+├── cli.py              #   the `matyos` command (check / eval / version)
+└── __main__.py         #   enables `python -m matyos` too
 
 stdlib/                 # standard library, written in the proof language (.elk)
 examples/proofs/        # example proofs (.elk)
-tests/                  # pytest suite (224 tests)
+tests/                  # pytest suite (233 tests)
 docs/                   # design + language documentation
 ROADMAP.md              # the honest, phased plan toward a Lean-class system
 
@@ -156,10 +174,10 @@ compiler/ utils/ system/ examples/*.el   # legacy imperative "El" language
 standard library, the `realistic` layer, and any future tactics or LLM output
 all ultimately produce terms that the kernel re-checks.
 
-## Testing
+## Development & testing
 
 ```bash
-python -m pytest -q          # 224 tests
+python -m pytest -q          # 233 tests
 python -m pytest tests/test_kernel_core.py tests/test_inductive.py -q
 ```
 
