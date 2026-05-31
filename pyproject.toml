@@ -59,7 +59,7 @@ test = [
 
 [project.scripts]
 el = "el_cli:main"
-matyos = "matyos.__main__:main"
+matyos = "matyos.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/el-language"

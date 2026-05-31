@@ -307,7 +307,10 @@ def _ctor_args(ctype, indname):
 # Executor
 # --------------------------------------------------------------------------
 def run_source(text, echo=True):
+    """Execute a program. Returns the number of failed `example` checks (0 on
+    success), so callers (the CLI) can exit non-zero when a proof fails."""
     setup_equality()  # make Eq / refl / Eq.J available to every file
+    failures = 0
     cmds = Parser(tokenize(text)).parse_program()
     for cmd in cmds:
         kind = cmd[0]
@@ -341,6 +344,7 @@ def run_source(text, echo=True):
             if def_equal(got, tt):
                 print(f"example : {pretty(tt)}   [QED]")
             else:
+                failures += 1
                 print(f"example : {pretty(tt)}   [FAIL: proof has type {pretty(got)}]")
         elif kind == "check":
             _, term = cmd
@@ -350,11 +354,12 @@ def run_source(text, echo=True):
             _, term = cmd
             t = to_debruijn(term)
             print(f"eval {pretty(t)} = {pretty(normalize(t))}")
+    return failures
 
 
 def run_file(path):
     with open(path, "r", encoding="utf-8") as f:
-        run_source(f.read())
+        return run_source(f.read())
 
 
 if __name__ == "__main__":
