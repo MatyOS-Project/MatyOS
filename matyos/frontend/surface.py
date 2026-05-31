@@ -50,10 +50,12 @@ class ParseError(Exception):
 # --------------------------------------------------------------------------
 def tokenize(text):
     toks = []
+    if text.startswith("﻿"):  # tolerate a UTF-8 byte-order mark
+        text = text[1:]
     i, n = 0, len(text)
     while i < n:
         c = text[i]
-        if c in " \t\r\n":
+        if c in " \t\r\n﻿":
             i += 1
             continue
         if c == "-" and i + 1 < n and text[i + 1] == "-":  # line comment
@@ -358,7 +360,8 @@ def run_source(text, echo=True):
 
 
 def run_file(path):
-    with open(path, "r", encoding="utf-8") as f:
+    # utf-8-sig transparently strips a leading BOM (common on Windows editors)
+    with open(path, "r", encoding="utf-8-sig") as f:
         return run_source(f.read())
 
 
