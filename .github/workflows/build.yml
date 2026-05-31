@@ -1,11 +1,8 @@
 name: Build El Programming Language
 
+# Legacy "El" imperative-language build. Releases are handled by matyos.yml;
+# this workflow no longer runs on version tags so it does not publish releases.
 on:
-  push:
-    branches: [ main, dev, matyos_dev,matyos ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
