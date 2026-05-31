@@ -20,7 +20,9 @@ USAGE = """matyos <command> [args]
 Commands:
   check <path>          check a .elk file, a project dir, or a .matyos archive
   new <name>            scaffold a new MatyOS project
-  pack <dir> [out]      pack a project directory into a .matyos archive
+  build <dir> [out]     seal a COMPLETED project into a compressed .matyos
+  info <file.matyos>    show a sealed archive's manifest (no re-checking)
+  pack <dir> [out]      pack a project directory into a .matyos (no checking)
   unpack <file> [dir]   extract a .matyos archive
   version               print the MatyOS version
   help                  show this help
@@ -102,6 +104,50 @@ def main(argv=None):
             print(f"matyos: {e}", file=sys.stderr)
             return 1
         print(f"Created project '{rest[0]}'.  Try:  matyos check {rest[0]}")
+        return 0
+    if cmd == "build":
+        if not rest:
+            print("matyos: 'build' needs a project directory", file=sys.stderr)
+            return 2
+        from datetime import datetime, timezone
+        from matyos.project.engine import build_project
+        force = "--force" in rest
+        rest = [a for a in rest if a != "--force"]
+        out = rest[1] if len(rest) > 1 else None
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        res = build_project(rest[0], out=out, force=force, timestamp=ts)
+        print(res["report"])
+        if res["out"]:
+            s = res["manifest"]["summary"]
+            seal = "sealed" if res["completed"] else "packed (forced, INCOMPLETE)"
+            print(f"\n{seal} -> {res['out']}  "
+                  f"({s['certified']} certified, {s['conditional']} conditional, "
+                  f"{s['open']} open)")
+            return 0 if res["completed"] else 1
+        print("\nmatyos: project is NOT complete (open theorems or failed checks); "
+              "not sealed. Use 'matyos build <dir> --force' to archive anyway.",
+              file=sys.stderr)
+        return 1
+    if cmd == "info":
+        if not rest:
+            print("matyos: 'info' needs a .matyos file", file=sys.stderr)
+            return 2
+        from matyos.project.engine import read_manifest
+        m = read_manifest(rest[0])
+        if not m:
+            print("matyos: no manifest in archive (build it with 'matyos build')",
+                  file=sys.stderr)
+            return 1
+        s = m["summary"]
+        print(f"{m['name']}  (MatyOS {m.get('matyos_version','?')}, "
+              f"built {m.get('generated','?')})")
+        print(f"  completed : {m['completed']}")
+        print(f"  theorems  : {s['theorems_proven']} proven "
+              f"({s['certified']} certified, {s['conditional']} conditional), "
+              f"{s['open']} open")
+        print(f"  conjectures: {s['conjectures']} (realistic)")
+        print(f"  tests     : {s['tests_passed']} passed, {s['tests_failed']} failed")
+        print(f"  theories  : {', '.join(m['theories'].keys())}")
         return 0
     if cmd == "pack":
         if not rest:

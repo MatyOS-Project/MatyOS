@@ -164,3 +164,53 @@ theorem will report `[PROVEN] ... (conditional on: add_comm)` instead of
 - [docs/language.md](language.md) — the `theorem` / `proof` / `hypothesis` /
   `conjecture` / `test` commands and the full `.elk` term syntax.
 - [README.md](../README.md) — the `realistic` idea and the trust boundary.
+
+## Sealing a completed theory into a `.matyos` archive
+
+When a project is **complete** — every theorem proven and no test failing (open
+*conjectures* are allowed; they are deliberately realistic) — seal it into a
+single compressed `.matyos` archive with `matyos build`:
+
+```console
+$ matyos build my_theory
+sealed -> my_theory.matyos  (1 certified, 0 conditional, 0 open)
+```
+
+`matyos build` refuses to seal an incomplete project (open theorems or failed
+checks) and exits non-zero; pass `--force` to archive anyway (the manifest then
+records `completed: false`).
+
+A `.matyos` is a compressed (zip/DEFLATE) bundle — a *sigma of files* — of every
+source file **plus**:
+
+- `MANIFEST.json` — a machine-readable table of contents and status (theories,
+  each theorem's certified/conditional/open status and its conjecture
+  dependencies, tests, and a summary). This makes the archive self-describing.
+- `REPORT.txt` — the human-readable status report.
+
+Inspect a sealed archive without re-running the kernel:
+
+```console
+$ matyos info my_theory.matyos
+my_theory  (MatyOS 0.5.0, built 2026-05-31T01:04:30Z)
+  completed : True
+  theorems  : 1 proven (1 certified, 0 conditional), 0 open
+  conjectures: 1 (realistic)
+```
+
+`matyos check my_theory.matyos` re-verifies the archive from source (it never
+trusts the embedded manifest) — `info` is the quick read, `check` is the proof.
+
+## File types & icons
+
+Each MatyOS file type has a black-and-white icon (see
+[`assets/icons`](../assets/icons)):
+
+| Icon | Extension | Role |
+|------|-----------|------|
+| `Σ` | `.matyos` | sealed project archive (a *sigma of files*) |
+| `∀` | `.thm`  | theorem statement |
+| `∎` | `.prf`  | proof (kernel-checked) |
+| `∃` | `.hyp`  | hypothesis / conjecture (realistic) |
+| `✓` | `.test` | test / experiment |
+| `λ` | `.elk`  | definitions & datatypes |

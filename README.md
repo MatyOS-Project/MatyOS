@@ -151,9 +151,25 @@ theory: theories/arithmetic
 The report draws a hard line between **certified** theorems (depend on nothing
 unproven) and **conditional / realistic** ones (rest on an open conjecture) — and
 that dependency is tracked transitively, so an assumption buried deep in a chain
-of lemmas can never launder itself into a certified result. Projects pack into a
-single distributable `.matyos` archive (`matyos pack` / `unpack`). Full details:
-[docs/projects.md](docs/projects.md).
+of lemmas can never launder itself into a certified result.
+
+When a theory is **complete** (no open theorems, no failed checks), seal it into a
+single compressed, self-describing `.matyos` archive — a *sigma of files* bundling
+every theory, theorem, proof and test, plus a machine-readable `MANIFEST.json`:
+
+```console
+$ matyos build my_theory          # refuses to seal an incomplete project
+sealed -> my_theory.matyos  (1 certified, 0 conditional, 0 open)
+$ matyos info my_theory.matyos    # read the manifest without re-checking
+```
+
+Each file type has its own black-and-white icon:
+
+![MatyOS file icons](assets/icons/contact_sheet.png)
+
+`.matyos` archive (`Σ`) · `.thm` theorem (`∀`) · `.prf` proof (`∎`) · `.hyp`
+hypothesis (`∃`) · `.test` test (`✓`) · `.elk` definitions (`λ`).
+Full details: [docs/projects.md](docs/projects.md).
 
 ### Logic is just types (Curry–Howard)
 
