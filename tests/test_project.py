@@ -158,7 +158,7 @@ class TestCheckProjectDir:
         proj = os.path.join(str(tmp_path), "demo")
         engine.scaffold(proj)
         report, _failures = engine.check_project(proj)
-        for needle in ("PROVEN", "certified", "add_comm", "conjectures", "OK"):
+        for needle in ("PROVEN", "certified", "add_comm", "conjectures", "COMPLETE"):
             assert needle in report, f"missing {needle!r} in report:\n{report}"
 
     def test_report_summarises_counts(self, tmp_path):
@@ -196,7 +196,7 @@ class TestArchive:
         assert arch_failures == 0
         assert dir_failures == 0
         # Same content surfaced; only the leading "project: <name>" differs.
-        for needle in ("PROVEN", "certified", "add_comm", "conjectures", "OK"):
+        for needle in ("PROVEN", "certified", "add_comm", "conjectures", "COMPLETE"):
             assert needle in arch_report
         assert "1 proven (1 certified, 0 conditional), 0 open" in arch_report
         # The body (everything past the title banner) should be identical.
@@ -223,7 +223,7 @@ class TestArchive:
         # And the unpacked tree still checks clean.
         report, failures = engine.check_project(dest)
         assert failures == 0
-        assert "OK" in report
+        assert "COMPLETE" in report
 
 
 # ===========================================================================
@@ -352,3 +352,52 @@ test normal_form : add (succ zero) (succ zero)
         assert c.failures == 0
         statuses = [e["status"] for e in c.events if e["kind"] == "test"]
         assert statuses == ["ran"]
+
+
+# ---------------------------------------------------------------------------
+# Sealing a completed project into a compressed .matyos archive (build/info)
+# ---------------------------------------------------------------------------
+class TestBuildSeal:
+    def test_build_seals_completed_project(self, tmp_path):
+        proj = tmp_path / "thy"
+        engine.scaffold(str(proj))
+        out = tmp_path / "thy.matyos"
+        res = engine.build_project(str(proj), out=str(out), timestamp="T")
+        assert res["completed"] is True
+        assert res["out"] == str(out)
+        assert out.exists()
+        import zipfile
+        names = zipfile.ZipFile(str(out)).namelist()
+        assert "MANIFEST.json" in names and "REPORT.txt" in names
+
+    def test_manifest_round_trips(self, tmp_path):
+        proj = tmp_path / "thy"
+        engine.scaffold(str(proj))
+        out = tmp_path / "thy.matyos"
+        engine.build_project(str(proj), out=str(out), timestamp="T")
+        m = engine.read_manifest(str(out))
+        assert m["completed"] is True
+        assert m["summary"]["open"] == 0
+        assert m["summary"]["certified"] >= 1
+        assert m["summary"]["conjectures"] >= 1
+
+    def test_incomplete_project_not_sealed(self, tmp_path):
+        proj = tmp_path / "thy"
+        engine.scaffold(str(proj))
+        # add an unproved theorem -> open obligation -> not completed
+        (proj / "theories" / "arithmetic" / "open.thm").write_text(
+            "theorem unproved : forall (A : Type), A -> A\n", encoding="utf-8")
+        res = engine.build_project(str(proj), out=str(tmp_path / "x.matyos"))
+        assert res["completed"] is False
+        assert res["out"] is None
+        assert not (tmp_path / "x.matyos").exists()
+
+    def test_force_seals_incomplete(self, tmp_path):
+        proj = tmp_path / "thy"
+        engine.scaffold(str(proj))
+        (proj / "theories" / "arithmetic" / "open.thm").write_text(
+            "theorem unproved : forall (A : Type), A -> A\n", encoding="utf-8")
+        out = tmp_path / "x.matyos"
+        res = engine.build_project(str(proj), out=str(out), force=True)
+        assert res["out"] == str(out) and out.exists()
+        assert res["manifest"]["completed"] is False

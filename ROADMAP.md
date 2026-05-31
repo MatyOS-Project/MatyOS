@@ -101,6 +101,23 @@ The step from "logic puzzles" to mathematics.
       `inductive` syntax (so `Eq` can be declared in-language rather than as a
       prelude primitive).
 
+### Phase P — Project system & the scientific method ✅ (done)
+The packaging/UX layer that makes MatyOS usable for real bodies of work.
+- [x] Scientific-method commands: `theorem` / `proof` / `hypothesis` /
+      `conjecture` / `test` (`matyos/frontend/surface.py`).
+- [x] **Transitive assumption tracking** — a result is *certified* only if it
+      depends on no open conjecture, else *conditional / realistic*; tracked
+      through chains of lemmas (`core.const_names`).
+- [x] File types `.thm` / `.prf` / `.hyp` / `.test` / `.elk`; a *theory* =
+      a sub-directory; projects run in scientific-method order with a status
+      report (`matyos/project/engine.py`).
+- [x] **Compression / sealing**: `matyos build` seals a *completed* project
+      into a compressed `.matyos` archive (zip) embedding `MANIFEST.json` +
+      `REPORT.txt`; `matyos info` reads the manifest; `check` re-verifies.
+- [x] Black-and-white icon set for every file type (`assets/icons`, `Σ ∀ ∎ ∃ ✓ λ`).
+- [ ] (follow-up) a package registry so theories can `import` other sealed
+      `.matyos` theories; colour icon pass.
+
 ### Phase C4 — Elaboration
 The largest core layer.
 - [ ] Metavariables + higher-order pattern unification.

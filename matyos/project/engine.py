@@ -24,6 +24,7 @@ kernel session, then reports each theorem's status:
 """
 
 import os
+import json
 import zipfile
 import tempfile
 import shutil
@@ -57,43 +58,53 @@ def _discover(root):
     return found
 
 
-def check_project(path):
-    """Check a project directory or a .matyos archive.
-    Returns (report_text, failure_count)."""
+def _run(root, name):
+    """Run every file in a project root through one shared Checker, in
+    scientific-method order. Returns (checker, per_file)."""
+    core.reset_environment()
+    checker = Checker()
+    per_file = []  # (theory, rel, kind, events_slice)
+    for theory, rel, kind, abspath in _discover(root):
+        start = len(checker.events)
+        with open(abspath, "r", encoding="utf-8-sig") as f:
+            text = f.read()
+        try:
+            checker.run_text(text, echo=False)
+        except (ParseError, core.TypeError_, Exception) as e:
+            checker.failures += 1
+            checker.events.append({"kind": "error", "name": rel,
+                                   "status": "ERROR", "detail": str(e),
+                                   "deps": []})
+        per_file.append((theory, rel, kind, checker.events[start:]))
+    return checker, per_file
+
+
+def analyze_project(path):
+    """Check a project directory or .matyos archive.
+    Returns (report_text, failure_count, manifest_dict)."""
     tmp = None
     try:
         if os.path.isfile(path) and path.endswith(".matyos"):
             tmp = tempfile.mkdtemp(prefix="matyos_")
             with zipfile.ZipFile(path) as z:
                 z.extractall(tmp)
-            root = tmp
-            name = os.path.splitext(os.path.basename(path))[0]
+            root, name = tmp, os.path.splitext(os.path.basename(path))[0]
         else:
             root = path
             name = os.path.basename(os.path.normpath(path)) or "project"
-
-        core.reset_environment()
-        checker = Checker()
-        files = _discover(root)
-        per_file = []  # (theory, rel, kind, events_slice)
-        for theory, rel, kind, abspath in files:
-            start = len(checker.events)
-            with open(abspath, "r", encoding="utf-8-sig") as f:
-                text = f.read()
-            try:
-                checker.run_text(text, echo=False)
-            except (ParseError, core.TypeError_, Exception) as e:
-                checker.failures += 1
-                checker.events.append({"kind": "error", "name": rel,
-                                       "status": "ERROR", "detail": str(e),
-                                       "deps": []})
-            per_file.append((theory, rel, kind, checker.events[start:]))
-
+        checker, per_file = _run(root, name)
         report = _format(name, per_file, checker)
-        return report, checker.failures
+        manifest = _manifest(name, per_file, checker)
+        return report, checker.failures, manifest
     finally:
         if tmp:
             shutil.rmtree(tmp, ignore_errors=True)
+
+
+def check_project(path):
+    """Check a project; returns (report_text, failure_count)."""
+    report, failures, _ = analyze_project(path)
+    return report, failures
 
 
 def _theorem_status(checker, name):
@@ -103,6 +114,101 @@ def _theorem_status(checker, name):
             return "PROVEN", "conditional on: " + ", ".join(sorted(deps))
         return "PROVEN", "certified"
     return "OPEN", "no proof yet"
+
+
+def _group(per_file):
+    theories = {}
+    for theory, rel, kind, evs in per_file:
+        theories.setdefault(theory, []).extend(evs)
+    return theories
+
+
+def _manifest(name, per_file, checker, timestamp=None):
+    """Structured table of contents + status for a project, embedded in the
+    .matyos archive so the sealed project is self-describing."""
+    from matyos import __version__
+    theories = {}
+    open_count = 0
+    for theory, evs in _group(per_file).items():
+        thms = []
+        for e in (x for x in evs if x["kind"] == "theorem"):
+            status, note = _theorem_status(checker, e["name"])
+            if status == "OPEN":
+                open_count += 1
+            thms.append({"name": e["name"], "status": status, "note": note,
+                         "depends_on": sorted(checker.cond_deps.get(e["name"]) or [])})
+        theories[theory] = {
+            "definitions": [e["name"] for e in evs
+                            if e["kind"] in ("def", "inductive", "axiom")],
+            "conjectures": [{"name": e["name"], "kind": e["kind"],
+                             "statement": e["detail"]}
+                            for e in evs if e["kind"] in ("hypothesis", "conjecture")],
+            "theorems": thms,
+            "tests": [{"name": e["name"], "status": e["status"]}
+                      for e in evs if e["kind"] == "test"],
+        }
+    proven = list(checker.proven)
+    certified = [n for n in proven if not (checker.cond_deps.get(n) or set())]
+    tests_all = [e for evs in _group(per_file).values()
+                 for e in evs if e["kind"] == "test"]
+    completed = checker.failures == 0 and open_count == 0
+    return {
+        "format": "matyos-project/1",
+        "name": name,
+        "matyos_version": __version__,
+        "generated": timestamp,
+        "completed": completed,
+        "summary": {
+            "theorems_proven": len(proven),
+            "certified": len(certified),
+            "conditional": len(proven) - len(certified),
+            "open": open_count,
+            "conjectures": len(checker.assumptions),
+            "tests_passed": sum(1 for e in tests_all if e["status"] == "passed"),
+            "tests_failed": sum(1 for e in tests_all if e["status"] == "failed"),
+            "tests_ran": sum(1 for e in tests_all if e["status"] == "ran"),
+            "failures": checker.failures,
+        },
+        "theories": theories,
+    }
+
+
+def build_project(path, out=None, force=False, timestamp=None):
+    """Seal a COMPLETED project into a compressed .matyos archive.
+
+    A project is "completed" when no check failed and no theorem is left open
+    (open conjectures are allowed — they are deliberately realistic). The
+    archive embeds every source file plus MANIFEST.json (machine-readable
+    status) and REPORT.txt (the human report), so a .matyos is fully
+    self-describing. Returns a dict with keys: out, completed, failures,
+    manifest, report. If not completed and not force, `out` is None.
+    """
+    report, failures, manifest = analyze_project(path)
+    manifest["generated"] = timestamp
+    if not manifest["completed"] and not force:
+        return {"out": None, "completed": False, "failures": failures,
+                "manifest": manifest, "report": report}
+
+    directory = os.path.normpath(path)
+    if out is None:
+        out = os.path.basename(directory) + ".matyos"
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        for dirpath, _, filenames in os.walk(directory):
+            for fn in filenames:
+                ap = os.path.join(dirpath, fn)
+                z.write(ap, os.path.relpath(ap, directory))
+        z.writestr("MANIFEST.json", json.dumps(manifest, indent=2))
+        z.writestr("REPORT.txt", report)
+    return {"out": out, "completed": manifest["completed"], "failures": failures,
+            "manifest": manifest, "report": report}
+
+
+def read_manifest(archive):
+    """Return the embedded MANIFEST.json of a .matyos archive, or None."""
+    with zipfile.ZipFile(archive) as z:
+        if "MANIFEST.json" in z.namelist():
+            return json.loads(z.read("MANIFEST.json").decode("utf-8"))
+    return None
 
 
 def _format(name, per_file, checker):
@@ -162,9 +268,14 @@ def _format(name, per_file, checker):
                  f"{len(open_thms)} open")
     lines.append(f"   conjectures: {len(checker.assumptions)} (realistic)")
     lines.append(f"   tests      : {tpass} passed, {tfail} failed, {tran} ran")
-    ok = checker.failures == 0
-    lines.append(f"   status     : {'OK' if ok else 'FAILURES'}  "
-                 f"(exit {0 if ok else 1})")
+    if checker.failures:
+        status = "FAILURES"
+    elif open_thms:
+        status = f"INCOMPLETE ({len(open_thms)} open)"
+    else:
+        status = "COMPLETE"
+    lines.append(f"   status     : {status}  "
+                 f"(exit {0 if checker.failures == 0 else 1})")
     lines.append(DASH)
     return "\n".join(lines)
 
