@@ -427,6 +427,21 @@ def pretty(term: Term, names: List[str] = None) -> str:
     return str(term)
 
 
+def const_names(term: Term, acc=None):
+    """Collect the names of all global constants referenced in `term`."""
+    if acc is None:
+        acc = set()
+    if isinstance(term, Const):
+        acc.add(term.name)
+    elif isinstance(term, (Pi, Lam)):
+        const_names(term.domain, acc)
+        const_names(term.codomain if isinstance(term, Pi) else term.body, acc)
+    elif isinstance(term, App):
+        const_names(term.func, acc)
+        const_names(term.arg, acc)
+    return acc
+
+
 def _occurs(term: Term, idx: int) -> bool:
     if isinstance(term, Var):
         return term.index == idx

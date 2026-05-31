@@ -113,6 +113,48 @@ def add_zero_right : (Pi (x0 : Nat), (((Eq Nat) ((add x0) zero)) x0))
 example : (Pi (x0 : Nat), (((Eq Nat) ((add x0) zero)) x0))   [QED]
 ```
 
+## Projects & the scientific method
+
+Real work is bigger than one proof. A **MatyOS project** is a directory that
+mirrors the scientific method — *assume* (hypothesis/conjecture) → *state*
+(theorem) → *experiment* (test) → *certify* (proof) — and `matyos check` runs the
+whole thing and reports the honest status of every claim. Scaffold one and check
+it:
+
+```console
+$ matyos new my_theory
+Created project 'my_theory'.  Try:  matyos check my_theory
+
+$ matyos check my_theory
+==========================================================
+ MatyOS project: my_theory
+==========================================================
+
+theory: theories/arithmetic
+  definitions: Nat, add, cong
+  hypotheses / conjectures (realistic):
+    [CONJ] add_comm : ...commutativity of addition...
+  theorems:
+    [PROVEN] add_zero_right   (certified)
+  tests:
+    [PASS] add_2_3
+    [PASS] add_0_4
+----------------------------------------------------------
+ Summary
+   theorems   : 1 proven (1 certified, 0 conditional), 0 open
+   conjectures: 1 (realistic)
+   tests      : 2 passed, 0 failed, 0 ran
+   status     : OK  (exit 0)
+----------------------------------------------------------
+```
+
+The report draws a hard line between **certified** theorems (depend on nothing
+unproven) and **conditional / realistic** ones (rest on an open conjecture) — and
+that dependency is tracked transitively, so an assumption buried deep in a chain
+of lemmas can never launder itself into a certified result. Projects pack into a
+single distributable `.matyos` archive (`matyos pack` / `unpack`). Full details:
+[docs/projects.md](docs/projects.md).
+
 ### Logic is just types (Curry–Howard)
 
 Propositions are types; proofs are programs ([`examples/proofs/curry_howard.elk`](examples/proofs/curry_howard.elk)):
@@ -176,6 +218,7 @@ a term that type-checks against a proposition *is* a proof of it.
 - [ROADMAP.md](ROADMAP.md) — phased plan and current status (honest about scale)
 - [docs/architecture.md](docs/architecture.md) — design and trust model
 - [docs/language.md](docs/language.md) — the `.elk` language reference
+- [docs/projects.md](docs/projects.md) — projects, the scientific-method workflow, and the `.matyos` archive
 - [CONTRIBUTING.md](CONTRIBUTING.md) — building from source, running tests
 - [docs/legacy-el-language.md](docs/legacy-el-language.md) — the project's original imperative language
 

@@ -29,16 +29,18 @@ Comments start with `--`. Identifiers may contain dots (so `Nat.rec`, `Eq.J`).
 import sys
 from matyos.kernel.core import (
     N, to_debruijn, infer, normalize, def_equal, pretty, define,
-    declare_const, const_type, Const, TypeError_,
+    declare_const, const_type, const_names, Const, TypeError_,
 )
 from matyos.kernel.inductive import declare_inductive, REC
 from matyos.kernel.equality import setup_equality
 
 KEYWORDS = {"fun", "forall", "Type", "Prop",
-            "def", "axiom", "inductive", "check", "eval", "example"}
+            "def", "axiom", "inductive", "check", "eval", "example",
+            "theorem", "proof", "hypothesis", "conjecture", "test"}
 ATOM_STOP = {"fun", "forall", "def", "axiom", "inductive",
-             "check", "eval", "example"}
-SYMS = [":=", "->", "=>", "(", ")", ":", ",", "|"]
+             "check", "eval", "example",
+             "theorem", "proof", "hypothesis", "conjecture", "test"}
+SYMS = [":=", "->", "=>", "(", ")", ":", "=", ",", "|"]  # ':=' / '=>' before '='
 
 
 class ParseError(Exception):
@@ -271,6 +273,37 @@ class Parser:
                 ctype = self.parse_term(pnames)
                 ctors.append((cname, ctype))
             return ("inductive", name, params, sort, ctors)
+        # ----- scientific-method commands -----
+        if self.at_kw("theorem"):
+            self.advance()
+            name = self._ident()
+            params = self.parse_binders([], required=False)
+            pnames = [nm for nm, _ in params]
+            self.eat_sym(":")
+            ty = self.parse_term(pnames)
+            return ("theorem", name, params, ty)
+        if self.at_kw("proof"):
+            self.advance()
+            name = self._ident()
+            self.eat_sym(":=")
+            body = self.parse_term([])
+            return ("proof", name, body)
+        if self.at_kw("hypothesis") or self.at_kw("conjecture"):
+            kw = self.advance()[1]
+            name = self._ident()
+            self.eat_sym(":")
+            ty = self.parse_term([])
+            return (kw, name, ty)
+        if self.at_kw("test"):
+            self.advance()
+            name = self._ident()
+            self.eat_sym(":")
+            lhs = self.parse_term([])
+            rhs = None
+            if self.at_sym("="):
+                self.eat_sym("=")
+                rhs = self.parse_term([])
+            return ("test", name, lhs, rhs)
         raise ParseError(f"expected a command, got {self.peek()}")
 
 
@@ -306,57 +339,171 @@ def _ctor_args(ctype, indname):
 
 
 # --------------------------------------------------------------------------
-# Executor
+# Executor — a stateful Checker shared by single-file checking and projects.
+#
+# It tracks the scientific-method status of every declaration so a project can
+# report:  hypotheses (assumed/realistic) -> theorems (stated) -> tests
+# (passed/failed) -> proofs (PROVEN/FAILED) -> theory (verified body).
 # --------------------------------------------------------------------------
-def run_source(text, echo=True):
-    """Execute a program. Returns the number of failed `example` checks (0 on
-    success), so callers (the CLI) can exit non-zero when a proof fails."""
-    setup_equality()  # make Eq / refl / Eq.J available to every file
-    failures = 0
-    cmds = Parser(tokenize(text)).parse_program()
-    for cmd in cmds:
+class Checker:
+    def __init__(self):
+        setup_equality()  # Eq / refl / Eq.J available everywhere
+        self.failures = 0
+        self.obligations = {}     # theorem name -> statement term (pending)
+        self.proven = set()       # theorem names discharged by a proof
+        self.assumptions = {}     # hypothesis/conjecture name -> term (realistic)
+        self.cond_deps = {}       # const name -> set of assumptions it depends on
+        self.events = []          # ordered structured log (for project reports)
+
+    # -- helpers --
+    def _log(self, kind, name, status, detail="", deps=None):
+        self.events.append({"kind": kind, "name": name, "status": status,
+                            "detail": detail, "deps": sorted(deps or [])})
+
+    def _deps(self, term):
+        """Transitive set of assumptions (conjectures/hypotheses) a term relies
+        on — directly or via lemmas that were themselves conditional."""
+        deps = set()
+        for n in const_names(term):
+            if n in self.assumptions:
+                deps.add(n)
+            deps |= self.cond_deps.get(n, set())
+        return deps
+
+    def run_text(self, text, echo=True):
+        for cmd in Parser(tokenize(text)).parse_program():
+            self.exec(cmd, echo)
+        return self.failures
+
+    # -- command dispatch --
+    def exec(self, cmd, echo=True):
         kind = cmd[0]
         if kind == "def":
             _, name, params, ty, body = cmd
-            type_term = to_debruijn(_fold(N.Pi, params, ty))
             body_term = to_debruijn(_fold(N.Lam, params, body))
-            define(name, type_term, body_term)
+            define(name, to_debruijn(_fold(N.Pi, params, ty)), body_term)
+            self.cond_deps[name] = self._deps(body_term)
+            self._log("def", name, "defined", pretty(const_type(name)))
             if echo:
                 print(f"def {name} : {pretty(const_type(name))}")
+
         elif kind == "axiom":
             _, name, ty = cmd
             declare_const(name, to_debruijn(ty))
+            self._log("axiom", name, "axiom", pretty(const_type(name)))
             if echo:
                 print(f"axiom {name} : {pretty(const_type(name))}")
+
         elif kind == "inductive":
             _, name, params, sort, ctors = cmd
             if not isinstance(sort, N.U):
                 raise ParseError(f"inductive '{name}': only 'Type[u]' result "
                                  f"sorts are supported in surface syntax so far")
-            decl_params = [(nm, ty) for nm, ty in params]
             decl_ctors = [(cn, _ctor_args(ct, name)) for cn, ct in ctors]
-            declare_inductive(name, decl_params, sort.level, decl_ctors)
+            declare_inductive(name, list(params), sort.level, decl_ctors)
+            self._log("inductive", name, "defined", pretty(const_type(name)))
             if echo:
                 print(f"inductive {name} : {pretty(const_type(name))}  "
                       f"({len(ctors)} constructors)")
+
+        elif kind in ("hypothesis", "conjecture"):
+            _, name, ty = cmd
+            t = to_debruijn(ty)
+            declare_const(name, t)         # trusted as an assumption
+            self.assumptions[name] = t
+            self.cond_deps[name] = {name}  # depends on itself
+            status = "assumed (realistic)" if kind == "hypothesis" else "conjectured (realistic)"
+            self._log(kind, name, status, pretty(t))
+            if echo:
+                print(f"{kind} {name} : {pretty(t)}   [{status}]")
+
+        elif kind == "theorem":
+            _, name, params, ty = cmd
+            stmt = to_debruijn(_fold(N.Pi, params, ty))
+            self.obligations[name] = stmt
+            self._log("theorem", name, "stated", pretty(stmt))
+            if echo:
+                print(f"theorem {name} : {pretty(stmt)}   [stated]")
+
+        elif kind == "proof":
+            _, name, body = cmd
+            if name not in self.obligations:
+                self.failures += 1
+                self._log("proof", name, "FAILED", "no such theorem")
+                if echo:
+                    print(f"proof {name}   [FAIL: no theorem '{name}' declared]")
+            else:
+                stmt = self.obligations[name]
+                bt = to_debruijn(body)
+                got = infer([], bt)
+                if def_equal(got, stmt):
+                    declare_const(name, stmt, bt)   # certify + reusable
+                    self.proven.add(name)
+                    deps = self._deps(bt)
+                    self.cond_deps[name] = deps
+                    if deps:
+                        note = " conditional on: " + ", ".join(sorted(deps))
+                        self._log("proof", name, "CONDITIONAL", note.strip(), deps)
+                        if echo:
+                            print(f"proof {name}   [QED] PROVEN -{note}")
+                    else:
+                        self._log("proof", name, "PROVEN", "certified")
+                        if echo:
+                            print(f"proof {name}   [QED] PROVEN - certified")
+                else:
+                    self.failures += 1
+                    self._log("proof", name, "FAILED",
+                              f"proof has type {pretty(got)}")
+                    if echo:
+                        print(f"proof {name}   [FAIL: proof has type {pretty(got)}]")
+
+        elif kind == "test":
+            _, name, lhs, rhs = cmd
+            lt = normalize(to_debruijn(lhs))
+            if rhs is None:
+                self._log("test", name, "ran", pretty(lt))
+                if echo:
+                    print(f"test {name} : {pretty(lt)}   [ran]")
+            else:
+                rt = normalize(to_debruijn(rhs))
+                if lt == rt:
+                    self._log("test", name, "passed", pretty(lt))
+                    if echo:
+                        print(f"test {name}   [PASS] {pretty(lt)}")
+                else:
+                    self.failures += 1
+                    self._log("test", name, "failed",
+                              f"{pretty(lt)} != {pretty(rt)}")
+                    if echo:
+                        print(f"test {name}   [FAIL] {pretty(lt)} != {pretty(rt)}")
+
         elif kind == "example":
             _, ty, body = cmd
             tt, bt = to_debruijn(ty), to_debruijn(body)
             got = infer([], bt)
             if def_equal(got, tt):
+                self._log("example", "", "PROVEN", pretty(tt))
                 print(f"example : {pretty(tt)}   [QED]")
             else:
-                failures += 1
+                self.failures += 1
+                self._log("example", "", "FAILED", pretty(tt))
                 print(f"example : {pretty(tt)}   [FAIL: proof has type {pretty(got)}]")
+
         elif kind == "check":
             _, term = cmd
             t = to_debruijn(term)
             print(f"check {pretty(t)} : {pretty(infer([], t))}")
+
         elif kind == "eval":
             _, term = cmd
             t = to_debruijn(term)
             print(f"eval {pretty(t)} = {pretty(normalize(t))}")
-    return failures
+
+
+def run_source(text, echo=True):
+    """Execute a program against a fresh checker. Returns the number of failed
+    checks (0 on success) so the CLI can exit non-zero when a proof fails."""
+    return Checker().run_text(text, echo)
 
 
 def run_file(path):
