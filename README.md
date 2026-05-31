@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/tests-233%20passing-brightgreen" alt="tests"/>
-  <img src="https://img.shields.io/badge/python-3.8%2B-blue" alt="python"/>
+  <img src="https://img.shields.io/badge/platforms-win%20%C2%B7%20linux%20%C2%B7%20macos-blue" alt="platforms"/>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="license"/>
   <img src="https://img.shields.io/badge/status-early%20%C2%B7%20sound%20kernel-orange" alt="status"/>
 </p>
@@ -19,9 +19,9 @@
 
 MatyOS is a proof assistant in the tradition of **Lean, Coq and Agda**: you
 state theorems as types and prove them by writing terms that a small, trusted
-**kernel** type-checks. Its long-term goal is to be a system that **large
-language models can use to do mathematics** — analysis, conjecture, and proof —
-with first-class support for *uncertainty* (the `realistic` truth value).
+**kernel** checks. Its long-term goal is to be a system that **large language
+models can use to do mathematics** — analysis, conjecture, and proof — with
+first-class support for *uncertainty* (the `realistic` truth value).
 
 > **Honest status.** This is an early but *sound* core, not yet a Lean
 > competitor in capability. What works today: a trusted dependent-type kernel,
@@ -37,45 +37,36 @@ Lean/Coq/Agda were designed for humans, decades before LLMs. MatyOS is designed
 from day one around two bets:
 
 1. **Soundness is sacred.** Every proof — however it is produced, including by
-   an LLM — reduces to a term checked by a tiny trusted kernel (`matyos/kernel`).
-   Nothing is ever "assumed proven".
+   an LLM — reduces to a term checked by a tiny trusted kernel. Nothing is ever
+   "assumed proven".
 2. **Uncertainty is first-class.** Real mathematical work (especially an LLM's)
    is full of *plausible-but-unproven* steps. MatyOS treats this rigorously with
    a three-valued logic (`true` / `false` / `realistic`) that lives in an
    epistemic layer *above* the kernel, so conjecture and certainty never get
    confused. See [the `realistic` idea](#the-realistic-idea).
 
-## Install & run
+## Install
 
-**Build the standalone `matyos` binary** (then nothing else is required to run it):
+Download the `matyos` binary for your platform from the
+[**Releases**](https://github.com/MatyOS-Project/MatyOS/releases) page, put it on
+your `PATH`, and you're ready — there is nothing else to install.
 
-```bash
-pip install pyinstaller     # one-time, build dependency only
-python build_matyos.py      # produces dist/matyos  (matyos.exe on Windows)
+```console
+$ matyos check stdlib/arith.elk      # type-check a proof file
+$ matyos version
+$ matyos help
 ```
 
-**Or install the `matyos` command via pip** (needs Python on the user's machine):
+`matyos check` exits `0` when every proof in the file holds and non-zero when
+any proof fails, so it drops straight into CI.
 
-```bash
-pip install -e .            # puts `matyos` on your PATH
-```
-
-Either way you then use the language through its own command:
-
-```bash
-matyos check stdlib/arith.elk      # type-check a proof file (exit 0 = all proofs hold)
-matyos check stdlib/bool.elk
-matyos version
-matyos help
-```
-
-`matyos check` exits non-zero if any proof fails, so it drops straight into CI.
+> Want to build from source or contribute? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## A first proof
 
-Proofs are written in a small, readable language and checked by the kernel.
-Here is arithmetic *from scratch* — declaring the natural numbers, defining
-addition, and proving `n + 0 = n` by induction
+Proofs are written in a small, readable language (`.elk`) and checked by the
+kernel. Here is arithmetic *from scratch* — declaring the natural numbers,
+defining addition, and proving `n + 0 = n` by induction
 ([`stdlib/arith.elk`](stdlib/arith.elk)):
 
 ```
@@ -100,7 +91,7 @@ def add_zero_right (n : Nat) : Eq Nat (add n zero) n :=
 example : forall (n : Nat), Eq Nat (add n zero) n := add_zero_right
 ```
 
-```text
+```console
 $ matyos check stdlib/arith.elk
 inductive Nat : Type0  (2 constructors)
 def add : (Nat -> (Nat -> Nat))
@@ -130,13 +121,13 @@ The kernel *rejects* non-proofs: an ill-typed term like `fun (A:Type)(x:A) => x 
 Classical logic forces every proposition to be `true` or `false`. Real
 reasoning — and LLM reasoning especially — also needs **"not (yet) known"**.
 MatyOS gives this a precise, textbook semantics (Kleene **K3** and Łukasiewicz
-**Ł3** three-valued logics) in [`matyos/logic/realistic.py`](matyos/logic/realistic.py):
+**Ł3** three-valued logics):
 
-```text
-$ python -m matyos.logic.realistic
-   excluded middle  P \/ ~P     : not valid   (P=realistic -> realistic)
-   self-implication P -> P      : not valid (Kleene) / VALID (Lukasiewicz)
-```
+| formula | classical | with a `realistic` atom |
+|---|---|---|
+| `P \/ ~P`  (excluded middle) | valid | **not valid** — undetermined when `P` is `realistic` |
+| `~(P /\ ~P)`  (non-contradiction) | valid | **not valid** |
+| `P -> P`  (self-implication) | valid | not valid in Kleene · valid in Łukasiewicz |
 
 The failure of excluded middle for a `realistic` atom is the *point*: an
 uncertain proposition is neither affirmed nor denied. Crucially, `realistic`
@@ -148,50 +139,33 @@ formal verification (see Realistic track R0–R3 in [ROADMAP.md](ROADMAP.md)).
 ## Architecture
 
 ```
-matyos/                 # the proof assistant (Python package)
-├── kernel/             #   the TRUSTED core — keep this small and correct
-│   ├── core.py         #     terms, normalization, definitional equality, infer
-│   ├── inductive.py    #     inductive types, recursors, iota-reduction, positivity
-│   └── equality.py     #     propositional equality (Eq) + the J eliminator
-├── frontend/
-│   └── surface.py      #   tokenizer + parser for the .elk proof language
-├── logic/
-│   └── realistic.py    #   three-valued (Kleene / Lukasiewicz) "realistic" logic
-├── cli.py              #   the `matyos` command (check / eval / version)
-└── __main__.py         #   enables `python -m matyos` too
+matyos/             the proof assistant
+├── kernel/         the TRUSTED core — small and auditable
+│   ├── core        terms, normalization, definitional equality, type inference
+│   ├── inductive   inductive types, recursors, iota-reduction, strict positivity
+│   └── equality    propositional equality (Eq) + the J eliminator
+├── frontend/       tokenizer + parser for the .elk proof language
+├── logic/          three-valued ("realistic") logic
+└── cli             the `matyos` command
 
-stdlib/                 # standard library, written in the proof language (.elk)
-examples/proofs/        # example proofs (.elk)
-tests/                  # pytest suite (233 tests)
-docs/                   # design + language documentation
-ROADMAP.md              # the honest, phased plan toward a Lean-class system
-
-compiler/ utils/ system/ examples/*.el   # legacy imperative "El" language
-                                          # (see docs/legacy-el-language.md)
+stdlib/             standard library, written in MatyOS itself (.elk)
+examples/           example proofs (.elk)
+docs/               design + language reference
+ROADMAP.md          the honest, phased plan toward a Lean-class system
 ```
 
-**Trust boundary:** only `matyos/kernel` must be trusted. The parser, the
+**Trust boundary:** only the **kernel** must be trusted. The parser, the
 standard library, the `realistic` layer, and any future tactics or LLM output
-all ultimately produce terms that the kernel re-checks.
-
-## Development & testing
-
-```bash
-python -m pytest -q          # 233 tests
-python -m pytest tests/test_kernel_core.py tests/test_inductive.py -q
-```
-
-The suite covers the kernel (substitution/normalization/inference, sort rules),
-inductive types and computation, the J rule and the `n+0=n` induction proof,
-strict-positivity rejection, definitions, impredicative `Prop`, the surface
-parser, end-to-end checking of every `.elk` file, and the three-valued logic.
+all ultimately produce terms that the kernel re-checks. If the kernel is sound,
+a term that type-checks against a proposition *is* a proof of it.
 
 ## Documentation
 
 - [ROADMAP.md](ROADMAP.md) — phased plan and current status (honest about scale)
 - [docs/architecture.md](docs/architecture.md) — design and trust model
 - [docs/language.md](docs/language.md) — the `.elk` language reference
-- [docs/legacy-el-language.md](docs/legacy-el-language.md) — the original imperative language
+- [CONTRIBUTING.md](CONTRIBUTING.md) — building from source, running tests
+- [docs/legacy-el-language.md](docs/legacy-el-language.md) — the project's original imperative language
 
 ## License
 
