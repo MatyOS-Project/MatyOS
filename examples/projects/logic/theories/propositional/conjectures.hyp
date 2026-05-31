@@ -1,0 +1,8 @@
+-- An open conjecture: double-negation elimination (~~P => P).
+--
+-- This is exactly the law that separates classical from intuitionistic logic.
+-- It is NOT provable in our constructive kernel, so we do not prove it -- we
+-- assume it as a `realistic` truth. Anything that leans on it is therefore
+-- PROVEN *conditionally*, and the project report tracks that dependency.
+conjecture dne :
+  forall (P : Type), Imp (Not (Not P)) P
