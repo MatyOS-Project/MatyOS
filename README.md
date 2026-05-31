@@ -48,12 +48,24 @@ from day one around two bets:
 ## Install
 
 Download the `matyos` binary for your platform from the
-[**Releases**](https://github.com/MatyOS-Project/MatyOS/releases) page, put it on
-your `PATH`, and you're ready — there is nothing else to install.
+[**Releases**](https://github.com/MatyOS-Project/MatyOS/releases) page.
+
+Then put it on your `PATH` — or let the installer do it for you (it copies the
+binary to a per-user location and updates your `PATH`):
 
 ```console
-$ matyos check stdlib/arith.elk      # type-check a proof file
+:: Windows  (run from the folder containing matyos.exe / this repo)
+> powershell -ExecutionPolicy Bypass -File install.ps1
+
+# Linux / macOS
+$ bash install-matyos.sh
+```
+
+Open a **new terminal**, and the `matyos` command is available everywhere:
+
+```console
 $ matyos version
+$ matyos check demo.elk          # type-check a proof file
 $ matyos help
 ```
 
