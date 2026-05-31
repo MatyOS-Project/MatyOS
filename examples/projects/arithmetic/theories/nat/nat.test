@@ -1,0 +1,4 @@
+-- Computational experiments: addition really computes.
+test add_2_1 : add (succ (succ zero)) (succ zero) = succ (succ (succ zero))
+test add_0_3 : add zero (succ (succ (succ zero))) = succ (succ (succ zero))
+test add_3_0 : add (succ (succ (succ zero))) zero = succ (succ (succ zero))

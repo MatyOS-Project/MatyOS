@@ -183,7 +183,12 @@ preserved no matter how clever (or buggy) a tactic is.
       an SMT/`omega`-style bridge.
 - [ ] Tactics writable *in* the language (reflection / metaprogramming).
 
-### Phase C6 — The library (the moat)
+### Phase C6 — The library (the moat)  ← *now growing*
+- [x] Equality toolkit derived from `J`: `symm`, `trans`, `cong`, `subst`
+      (`stdlib/eq.elk`).
+- [x] First real arithmetic theorems, **certified** by induction:
+      `add_zero_r`, `add_succ_r`, and **`add_comm` (commutativity of +)** —
+      `examples/projects/arithmetic` (a sealed theory).
 - [ ] Foundations: logic, sets, relations, functions, orders.
 - [ ] Numbers: ℕ, ℤ, ℚ, ℝ (Cauchy/Dedekind), basic analysis.
 - [ ] **Bootstrapping strategy** (this is how you avoid the 6-year wall):

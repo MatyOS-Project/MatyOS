@@ -1,0 +1,18 @@
+-- Vocabulary for the arithmetic theory: the naturals, addition, and the
+-- equality toolkit (derived from the J eliminator).
+
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+def add (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+
+def symm (A : Type) (a : A) (b : A) (e : Eq A a b) : Eq A b a :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq A x a) (refl A a) b e
+
+def trans (A : Type) (a : A) (b : A) (c : A) (e1 : Eq A a b) (e2 : Eq A b c) : Eq A a c :=
+  Eq.J A b (fun (x : A) (_ : Eq A b x) => Eq A a x) e1 c e2
+
+def cong (A : Type) (B : Type) (f : A -> B) (a : A) (b : A) (e : Eq A a b) : Eq B (f a) (f b) :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq B (f a) (f x)) (refl B (f a)) b e

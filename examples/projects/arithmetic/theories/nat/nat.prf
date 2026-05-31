@@ -1,0 +1,31 @@
+-- Proofs, all by induction (Nat.rec) and equational reasoning.
+
+-- n + 0 = n
+proof add_zero_r :=
+  fun (n : Nat) =>
+    Nat.rec (fun (m : Nat) => Eq Nat (add m zero) m)
+            (refl Nat zero)
+            (fun (k : Nat) (ih : Eq Nat (add k zero) k) =>
+                cong Nat Nat succ (add k zero) k ih)
+            n
+
+-- m + (succ n) = succ (m + n)
+proof add_succ_r :=
+  fun (m : Nat) (n : Nat) =>
+    Nat.rec (fun (p : Nat) => Eq Nat (add p (succ n)) (succ (add p n)))
+            (refl Nat (succ n))
+            (fun (k : Nat) (ih : Eq Nat (add k (succ n)) (succ (add k n))) =>
+                cong Nat Nat succ (add k (succ n)) (succ (add k n)) ih)
+            m
+
+-- m + n = n + m   (the headline: commutativity, by induction on m,
+-- glued together with cong / symm / trans and the two lemmas above)
+proof add_comm :=
+  fun (m : Nat) (n : Nat) =>
+    Nat.rec (fun (p : Nat) => Eq Nat (add p n) (add n p))
+            (symm Nat (add n zero) n (add_zero_r n))
+            (fun (k : Nat) (ih : Eq Nat (add k n) (add n k)) =>
+                trans Nat (succ (add k n)) (succ (add n k)) (add n (succ k))
+                      (cong Nat Nat succ (add k n) (add n k) ih)
+                      (symm Nat (add n (succ k)) (succ (add n k)) (add_succ_r n k)))
+            m

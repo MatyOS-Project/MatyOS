@@ -1,0 +1,4 @@
+-- The propositions this theory establishes.
+theorem add_zero_r : forall (n : Nat), Eq Nat (add n zero) n
+theorem add_succ_r : forall (m : Nat), forall (n : Nat), Eq Nat (add m (succ n)) (succ (add m n))
+theorem add_comm   : forall (m : Nat), forall (n : Nat), Eq Nat (add m n) (add n m)

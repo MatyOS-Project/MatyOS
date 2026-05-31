@@ -171,6 +171,11 @@ Each file type has its own black-and-white icon:
 hypothesis (`∃`) · `.test` test (`✓`) · `.elk` definitions (`λ`).
 Full details: [docs/projects.md](docs/projects.md).
 
+A worked theory, [`examples/projects/arithmetic`](examples/projects/arithmetic),
+proves **`m + n = n + m`** (commutativity of addition) by induction — a real,
+kernel-certified theorem, built on the equality toolkit in
+[`stdlib/eq.elk`](stdlib/eq.elk) (`symm`, `trans`, `cong`, `subst`).
+
 ### Logic is just types (Curry–Howard)
 
 Propositions are types; proofs are programs ([`examples/proofs/curry_howard.elk`](examples/proofs/curry_howard.elk)):
