@@ -29,6 +29,50 @@ Two parallel tracks run throughout:
   differentiator — kept *above* the trusted core so it never threatens
   soundness.
 
+…both serving one product loop:
+
+---
+
+## The scientific-method workflow (the product north star)
+
+MatyOS is organised around how mathematics is actually *done* — the scientific
+method — and turns each step into first-class syntax, files, and tooling:
+
+```
+   ┌─ hypothesise ──┐
+   │  .hyp           │   assume / conjecture  (epistemically REALISTIC)
+   ▼                 │
+   state  ─ .thm ─────▶  a precise proposition (an open obligation)
+   ▼                 │
+   experiment ─ .test ▶  computational checks the kernel runs
+   ▼                 │
+   prove  ─ .prf ─────▶  a kernel-checked derivation  → CERTIFIED
+   ▼                 │            (or CONDITIONAL if it rests on a conjecture)
+   bundle ─ theory ───▶  a verified body of knowledge
+   ▼                 │
+   seal  ─ .matyos ──▶  a compressed, self-describing archive (a *sigma of files*)
+   └─ distribute / build on ─┘
+```
+
+The hard line MatyOS draws — and tracks **transitively** — is *certified* (rests
+on nothing unproven) vs *conditional / realistic* (rests on an open conjecture).
+This is the bridge to LLM-driven mathematics: a model may hypothesise and
+conjecture freely, while the system always reports, honestly, what is proven
+versus merely believed.
+
+**Status:** the loop exists end-to-end (Phase P, done). Remaining workflow phases:
+
+- **W1 — richer tests & evidence** *(next on this track)*: tests that attach
+  numeric/sample evidence and confidence to a conjecture; a per-conjecture
+  evidence log.
+- **W2 — discharge queue**: surface the highest-leverage open conjectures (those
+  the most certified results depend on) for a human/LLM to attempt next.
+- **W3 — theory registry & `import`**: let a `.matyos` theory depend on and build
+  on other sealed theories; versioned, hash-pinned.
+- **W4 — LLM conjecture↔proof loop**: an LLM proposes conjectures/proofs, the
+  kernel certifies or refutes, and the realistic status updates automatically
+  (joins the Realistic track R2–R3 and the LLM loop C7).
+
 ---
 
 ## Core track
@@ -125,12 +169,18 @@ The largest core layer.
 - [ ] Coercions, unification hints, error localization.
 - **Milestone:** write proofs without spelling out every type argument.
 
-### Phase C5 — Tactics & metaprogramming
-- [ ] A tactic monad over proof state (goals + context + metavariables).
-- [ ] Core tactics: `intro`, `apply`, `exact`, `induction`, `cases`,
-      `rewrite`, `refl`, `assumption`.
-- [ ] Automation: `simp` (rewriting), a decision procedure for linear
-      arithmetic, an SMT/`omega`-style bridge.
+### Phase C5a — A first tactic engine ✅ (done)
+Proofs as scripts (`by … qed`) instead of raw terms. The tactic engine is
+**untrusted** — it only builds a term the kernel re-checks, so soundness is
+preserved no matter how clever (or buggy) a tactic is.
+- [x] `intro`, `exact`, `assumption`, `refl` over a (linear) goal.
+      → `matyos/frontend/tactics.py`, `examples/proofs/tactics.elk`.
+
+### Phase C5b — Tactics with sub-goals (needs C4)
+- [ ] A proper proof state (goal stack + context + metavariables).
+- [ ] `apply` (generates sub-goals), `induction`, `cases`, `rewrite`.
+- [ ] Automation: `simp` (rewriting), linear-arithmetic decision procedure,
+      an SMT/`omega`-style bridge.
 - [ ] Tactics writable *in* the language (reflection / metaprogramming).
 
 ### Phase C6 — The library (the moat)

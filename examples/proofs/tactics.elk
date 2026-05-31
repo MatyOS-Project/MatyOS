@@ -1,0 +1,39 @@
+-- Proofs written as tactic SCRIPTS instead of raw terms.
+-- `by ... qed` builds a proof term that the kernel then re-checks.
+
+-- identity:  intro the binders, close with a hypothesis
+theorem id_thm : forall (A : Type), A -> A
+proof id_thm := by
+  intro A x
+  assumption
+qed
+
+-- modus ponens:  intro, then apply the function to the argument explicitly
+theorem mp_thm : forall (A : Type), forall (B : Type), (A -> B) -> A -> B
+proof mp_thm := by
+  intro A B f a
+  exact f a
+qed
+
+-- composition
+theorem comp_thm :
+  forall (A : Type), forall (B : Type), forall (C : Type),
+  (B -> C) -> (A -> B) -> A -> C
+proof comp_thm := by
+  intro A B C g f x
+  exact g (f x)
+qed
+
+-- a reflexive equality, closed by `refl`
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+theorem zero_eq : Eq Nat zero zero
+proof zero_eq := by refl qed
+
+-- `example` blocks accept tactic scripts too
+example : forall (A : Type), forall (B : Type), A -> B -> A := by
+  intro A B a b
+  exact a
+qed
