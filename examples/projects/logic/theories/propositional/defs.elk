@@ -1,0 +1,21 @@
+-- Shared vocabulary for the propositional-logic theory.
+--
+-- We read a proposition as a *type* and a proof of it as an *inhabitant*
+-- (the propositions-as-types / Curry-Howard reading). Implication is then just
+-- the function arrow, and the logical connectives become type formers.
+
+-- Falsum: the empty proposition, with no proof (zero constructors).
+inductive Empty : Type :=
+
+-- Implication P => Q is the type of functions turning a proof of P into a proof of Q.
+def Imp (P : Type) (Q : Type) : Type := P -> Q
+
+-- Negation: ~P holds exactly when P implies the absurd.
+def Not (P : Type) : Type := P -> Empty
+
+-- The identity proof: P implies P.
+def id_fn (P : Type) : Imp P P := fun (p : P) => p
+
+-- Composition of implications (the cut rule): P=>Q and Q=>R give P=>R.
+def comp (P : Type) (Q : Type) (R : Type) (g : Q -> R) (f : P -> Q) : P -> R :=
+  fun (p : P) => g (f p)

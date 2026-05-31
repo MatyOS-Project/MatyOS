@@ -1,0 +1,25 @@
+-- The propositions we aim to establish.
+--
+-- The first three are constructive tautologies (we will CERTIFY them without
+-- any conjecture). The last two are double-negation facts whose proofs route
+-- through the open `dne` conjecture, so they will be PROVEN *conditionally*.
+
+-- Identity: every proposition implies itself.
+theorem identity : forall (P : Type), Imp P P
+
+-- Modus ponens, packaged as a tautology: from P and (P => Q) we get Q.
+theorem modus_ponens :
+  forall (P : Type), forall (Q : Type), Imp P (Imp (Imp P Q) Q)
+
+-- Triple-negation collapse: ~~~P implies ~P. (Provable constructively.)
+theorem triple_neg :
+  forall (P : Type), Imp (Not (Not (Not P))) (Not P)
+
+-- Double-negation elimination, restated as a lemma we discharge via `dne`.
+theorem dne_direct :
+  forall (P : Type), Imp (Not (Not P)) P
+
+-- A downstream theorem: it uses `dne_direct` (which itself used the conjecture),
+-- so its conditional dependence on `dne` must be tracked TRANSITIVELY.
+theorem dne_detach :
+  forall (P : Type), forall (Q : Type), Imp (Not (Not P)) (Imp (Imp P Q) Q)

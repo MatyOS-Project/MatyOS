@@ -1,0 +1,14 @@
+-- Computational experiments: the kernel normalizes each term and (when an
+-- `=` is given) checks the two sides are definitionally equal.
+
+-- Imp is definitionally the arrow: Imp Empty Empty unfolds to Empty -> Empty.
+test imp_unfolds :
+  Imp Empty Empty = Empty -> Empty
+
+-- Composing the identity with itself is (definitionally) just the identity.
+test comp_id_id :
+  comp Empty Empty Empty (id_fn Empty) (id_fn Empty) = id_fn Empty
+
+-- A bare normalization (no `=`): show the normal form of the identity proof.
+test id_normal :
+  id_fn Empty

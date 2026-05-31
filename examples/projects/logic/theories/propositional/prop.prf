@@ -1,0 +1,28 @@
+-- The proofs. Each term is kernel-checked against its stated theorem type.
+--
+-- Order matters within this file: `dne_detach` reuses the lemma `dne_direct`,
+-- so `dne_direct` must be proven first.
+
+-- CERTIFIED (no conjecture): the identity function inhabits P => P.
+proof identity :=
+  fun (P : Type) (p : P) => p
+
+-- CERTIFIED: given p : P and f : P => Q, apply f to p.
+proof modus_ponens :=
+  fun (P : Type) (Q : Type) (p : P) (f : Imp P Q) => f p
+
+-- CERTIFIED: ~~~P => ~P. Given h : ~~~P and p : P, feed h the proof
+-- (fun k => k p) : ~~P to land in Empty.
+proof triple_neg :=
+  fun (P : Type) (h : Not (Not (Not P))) (p : P) =>
+    h (fun (k : Not P) => k p)
+
+-- CONDITIONAL on `dne`: this is the conjecture applied directly.
+proof dne_direct :=
+  fun (P : Type) (h : Not (Not P)) => dne P h
+
+-- CONDITIONAL on `dne` *transitively*: the term names `dne_direct`, not `dne`,
+-- yet the report must still flag it as resting on the conjecture.
+proof dne_detach :=
+  fun (P : Type) (Q : Type) (h : Not (Not P)) (f : Imp P Q) =>
+    f (dne_direct P h)
