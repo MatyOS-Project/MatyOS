@@ -1,0 +1,85 @@
+name: Build MatyOS
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test deps
+        run: python -m pip install --upgrade pip pytest pytest-cov coverage
+      - name: Run the proof-assistant test suite
+        run: python -m pytest tests/test_kernel_core.py tests/test_inductive.py tests/test_equality.py tests/test_realistic.py tests/test_surface.py tests/test_cli.py -q -o addopts=""
+
+  build:
+    name: Build matyos (${{ matrix.os }})
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: matyos-windows-x64.exe
+            bin: dist/matyos.exe
+          - os: ubuntu-latest
+            asset: matyos-linux-x64
+            bin: dist/matyos
+          - os: macos-latest
+            asset: matyos-macos-arm64
+            bin: dist/matyos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install build deps
+        run: python -m pip install --upgrade pip pyinstaller
+      - name: Build the matyos binary
+        run: python build_matyos.py
+      - name: Smoke-test the binary
+        shell: bash
+        run: |
+          "${{ matrix.bin }}" version
+          "${{ matrix.bin }}" check stdlib/arith.elk
+      - name: Rename for release
+        shell: bash
+        run: cp "${{ matrix.bin }}" "${{ matrix.asset }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Publish binaries to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: matyos-*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
