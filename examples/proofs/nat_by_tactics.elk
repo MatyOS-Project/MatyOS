@@ -1,0 +1,60 @@
+-- The additive laws of the naturals, proved as TACTIC SCRIPTS.
+-- Compare with stdlib/nat.elk, where the same theorems are hand-built Nat.rec
+-- terms: the tactics (induction + rewrite) make the proofs short and readable,
+-- and the kernel still certifies every one.
+
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+def add (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+
+-- n + 0 = n
+theorem add_zero_r : forall (n : Nat), Eq Nat (add n zero) n
+proof add_zero_r := by
+  induction n
+  refl
+  intro k ih
+  rewrite ih
+  refl
+qed
+
+-- m + (succ n) = succ (m + n)
+theorem add_succ_r : forall (m : Nat), forall (n : Nat), Eq Nat (add m (succ n)) (succ (add m n))
+proof add_succ_r := by
+  induction m
+  intro n
+  refl
+  intro k ih
+  intro n
+  rewrite (ih n)
+  refl
+qed
+
+-- (a + b) + c = a + (b + c)   — associativity
+theorem add_assoc : forall (a : Nat), forall (b : Nat), forall (c : Nat),
+  Eq Nat (add (add a b) c) (add a (add b c))
+proof add_assoc := by
+  induction a
+  intro b c
+  refl
+  intro k ih
+  intro b c
+  rewrite (ih b c)
+  refl
+qed
+
+-- m + n = n + m   — commutativity, entirely by induction + rewrite
+theorem add_comm : forall (m : Nat), forall (n : Nat), Eq Nat (add m n) (add n m)
+proof add_comm := by
+  induction m
+  intro n
+  rewrite (add_zero_r n)
+  refl
+  intro k ih
+  intro n
+  rewrite (add_succ_r n k)
+  rewrite (ih n)
+  refl
+qed
