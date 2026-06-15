@@ -36,7 +36,7 @@ from matyos.kernel.equality import setup_equality
 from matyos.frontend.tactics import run_tactics, TacticError
 
 _TACTIC_KW = {"by", "intro", "exact", "assumption", "refl", "rewrite",
-              "induction", "qed"}
+              "induction", "apply", "qed"}
 KEYWORDS = {"fun", "forall", "Type", "Prop",
             "def", "axiom", "inductive", "check", "eval", "example",
             "theorem", "proof", "hypothesis", "conjecture", "test"} | _TACTIC_KW
@@ -339,6 +339,9 @@ class Parser:
             elif self.at_kw("rewrite"):
                 self.advance()
                 tactics.append(("rewrite", self.parse_term(list(tac_scope))))
+            elif self.at_kw("apply"):
+                self.advance()
+                tactics.append(("apply", self.parse_term(list(tac_scope))))
             elif self.at_kw("induction"):
                 self.advance()
                 var = self._ident()       # the variable to induct on (the leading binder)

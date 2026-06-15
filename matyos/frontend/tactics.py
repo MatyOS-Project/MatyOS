@@ -77,6 +77,82 @@ def _transport(A, a, b, P, target_Pa, ht):
     return App(App(App(App(App(App(Const("Eq.J"), A), a), pprime), d), b), ht)
 
 
+# ----- metavariable-aware term ops (Meta is opaque: passes through) -----
+def _shift(t, d, c=0):
+    if isinstance(t, Meta):
+        return t
+    if isinstance(t, Var):
+        return Var(t.index + d) if t.index >= c else t
+    if isinstance(t, (Univ, Const, PropSort)):
+        return t
+    if isinstance(t, Pi):
+        return Pi(_shift(t.domain, d, c), _shift(t.codomain, d, c + 1))
+    if isinstance(t, Lam):
+        return Lam(_shift(t.domain, d, c), _shift(t.body, d, c + 1))
+    if isinstance(t, App):
+        return App(_shift(t.func, d, c), _shift(t.arg, d, c))
+    raise TacticError("apply: cannot shift this term")
+
+
+def _msubst(t, j, s):
+    if isinstance(t, Meta):
+        return t
+    if isinstance(t, Var):
+        return s if t.index == j else t
+    if isinstance(t, (Univ, Const, PropSort)):
+        return t
+    if isinstance(t, Pi):
+        return Pi(_msubst(t.domain, j, s), _msubst(t.codomain, j + 1, _shift(s, 1, 0)))
+    if isinstance(t, Lam):
+        return Lam(_msubst(t.domain, j, s), _msubst(t.body, j + 1, _shift(s, 1, 0)))
+    if isinstance(t, App):
+        return App(_msubst(t.func, j, s), _msubst(t.arg, j, s))
+    raise TacticError("apply: cannot substitute this term")
+
+
+def _mbeta(body, arg):
+    return _shift(_msubst(body, 0, _shift(arg, 1, 0)), -1, 0)
+
+
+def _has_meta(t):
+    if isinstance(t, Meta):
+        return True
+    if isinstance(t, (Pi, Lam)):
+        return _has_meta(t.domain) or _has_meta(t.codomain if isinstance(t, Pi) else t.body)
+    if isinstance(t, App):
+        return _has_meta(t.func) or _has_meta(t.arg)
+    return False
+
+
+def _match(pat, term, subst):
+    """First-order match: `pat` may contain Metas (as leaves), `term` is ground.
+    Binds metas in `subst`; returns True on success."""
+    while isinstance(pat, Meta) and pat.id in subst:
+        pat = subst[pat.id]
+    if isinstance(pat, Meta):
+        subst[pat.id] = term
+        return True
+    if isinstance(pat, App) and isinstance(term, App):
+        return _match(pat.func, term.func, subst) and _match(pat.arg, term.arg, subst)
+    if isinstance(pat, Const) and isinstance(term, Const):
+        return pat.name == term.name
+    if isinstance(pat, Var) and isinstance(term, Var):
+        return pat.index == term.index
+    if isinstance(pat, Univ) and isinstance(term, Univ):
+        return pat.level == term.level
+    if isinstance(pat, PropSort) and isinstance(term, PropSort):
+        return True
+    if isinstance(pat, Pi) and isinstance(term, Pi):
+        return (_match(pat.domain, term.domain, subst)
+                and _match(pat.codomain, term.codomain, subst))
+    if isinstance(pat, Lam) and isinstance(term, Lam):
+        return (_match(pat.domain, term.domain, subst)
+                and _match(pat.body, term.body, subst))
+    if not _has_meta(pat):
+        return def_equal(pat, term)
+    return False
+
+
 def _instantiate(term, metas):
     if isinstance(term, Meta):
         sol = metas[term.id].solution
@@ -187,6 +263,25 @@ def run_tactics(goal, tactics):
             children = [new_goal(g.ctx, g.names, m) for m in minors]
             g.solution = _mk_app(Const(recname), [P] + [Meta(c) for c in children])
             queue[0:1] = children
+
+        elif op == "apply":
+            ft = to_debruijn(tac[1], g.names)
+            rest = normalize(infer(g.ctx, ft))
+            arg_ids = []
+            while isinstance(rest, Pi):
+                child = new_goal(g.ctx, g.names, rest.domain)
+                arg_ids.append(child)
+                rest = _mbeta(rest.codomain, Meta(child))
+            subst = {}
+            if not _match(rest, normalize(g.target), subst):
+                raise TacticError("apply: the lemma's conclusion does not "
+                                  "match the goal")
+            for mid in arg_ids:
+                if mid in subst:
+                    metas[mid].solution = subst[mid]
+            opened = [mid for mid in arg_ids if mid not in subst]
+            g.solution = _mk_app(ft, [Meta(mid) for mid in arg_ids])
+            queue[0:1] = opened
 
         else:
             raise TacticError(f"unknown tactic: {op}")

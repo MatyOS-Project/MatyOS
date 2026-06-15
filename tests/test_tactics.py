@@ -169,3 +169,46 @@ theorem t : forall (n : Nat), Eq Nat (add n zero) n
 proof t := by induction n refl qed
 """)
     assert c.failures == 1 and "t" not in c.proven
+
+
+_EQ = """
+inductive Nat : Type := | zero : Nat | succ : Nat -> Nat
+def cong (A : Type) (B : Type) (f : A -> B) (a : A) (b : A) (e : Eq A a b) : Eq B (f a) (f b) :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq B (f a) (f x)) (refl B (f a)) b e
+def trans (A : Type) (a : A) (b : A) (c : A) (e1 : Eq A a b) (e2 : Eq A b c) : Eq A a c :=
+  Eq.J A b (fun (x : A) (_ : Eq A b x) => Eq A a x) e1 c e2
+"""
+
+
+def test_apply_premise_becomes_subgoal():
+    c = run(_EQ + """
+theorem t : forall (a : Nat), forall (b : Nat), Eq Nat a b -> Eq Nat (succ a) (succ b)
+proof t := by intro a b h apply (cong Nat Nat succ a b) exact h qed
+""")
+    assert c.failures == 0 and "t" in c.proven
+
+
+def test_apply_infers_arguments():
+    # cong's a,b are NOT given; matching the conclusion against the goal infers them
+    c = run(_EQ + """
+theorem t : forall (a : Nat), forall (b : Nat), Eq Nat a b -> Eq Nat (succ a) (succ b)
+proof t := by intro a b h apply (cong Nat Nat succ) exact h qed
+""")
+    assert c.failures == 0 and "t" in c.proven
+
+
+def test_apply_chains_with_two_subgoals():
+    c = run(_EQ + """
+theorem t : forall (a : Nat), forall (b : Nat), forall (c : Nat),
+  Eq Nat a b -> Eq Nat b c -> Eq Nat a c
+proof t := by intro a b c h1 h2 apply (trans Nat a b c) exact h1 exact h2 qed
+""")
+    assert c.failures == 0 and "t" in c.proven
+
+
+def test_apply_mismatch_fails():
+    c = run(_EQ + """
+theorem bad : forall (a : Nat), Eq Nat (succ a) a
+proof bad := by intro a apply (cong Nat Nat succ a a) qed
+""")
+    assert c.failures == 1 and "bad" not in c.proven
