@@ -207,10 +207,13 @@ preserved no matter how clever (or buggy) a tactic is.
       kernel as the gatekeeper. Library growth becomes a *generation* problem,
       not a *typing* problem.
 
-### Phase C7 — Tooling & the LLM loop (the wedge)
+### Phase C7 — Tooling & the LLM loop (the wedge)  ← *started*
+- [x] **Machine-readable output**: `matyos check --json` emits every theorem's
+      status (certified / conditional / open), its conjecture dependencies,
+      tests, and per-command events as JSON — so a tool or LLM consumes exactly
+      what the kernel sees, no text-scraping. (`matyos/cli.py`.)
 - [ ] REPL + LSP (hover types, goals-on-cursor, errors).
-- [ ] **Machine-readable proof state**: serialize goal/context/errors as JSON
-      so an LLM sees exactly what the kernel sees.
+- [ ] Live **proof-state** serialization (open goals + context) for tactic mode.
 - [ ] **Proof-search harness**: LLM proposes term/tactic → kernel verifies →
       feedback → retry (best-first / MCTS over tactic states).
 - [ ] **Corpus + training**: mine (statement, proof, state-transition) data

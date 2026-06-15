@@ -63,3 +63,21 @@ def test_failing_proof_exits_1(tmp_path, capsys):
     assert main(["check", str(bad)]) == 1
     out = capsys.readouterr()
     assert "FAIL" in out.out or "FAILED" in out.err
+
+
+def test_check_json_file(capsys):
+    import json
+    assert main(["check", "--json", "stdlib/arith.elk"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["kind"] == "file" and data["failures"] == 0
+    assert any(e["kind"] == "example" and e["status"] == "PROVEN"
+               for e in data["events"])
+
+
+def test_check_json_project(capsys):
+    import json
+    assert main(["check", "--json", "examples/projects/arithmetic"]) == 0
+    m = json.loads(capsys.readouterr().out)
+    assert m["completed"] is True
+    assert m["summary"]["certified"] >= 3
+    assert "theories/nat" in m["theories"]
