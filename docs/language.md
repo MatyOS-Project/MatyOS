@@ -147,6 +147,7 @@ Tactics available so far:
 | `assumption`    | close the goal using a hypothesis whose type matches it |
 | `refl`          | close a reflexive equality goal `Eq A a a` |
 | `rewrite <h>`   | given `h : Eq A a b`, replace `a` by `b` in the goal (transported along `h` via the `J` eliminator) |
+| `induction x`   | on a goal `forall (x : D), …`, split into one sub-goal per constructor of `D` (base, then step) via `D.rec` |
 
 A block runs `by` … `qed`; it must end by closing the goal (`exact` /
 `assumption` / `refl`). The engine builds a typed proof state (goal + context)

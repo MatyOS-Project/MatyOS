@@ -132,3 +132,40 @@ theorem bad : forall (a : Nat), Eq Nat a a
 proof bad := by intro a rewrite a refl qed
 """)
     assert c.failures == 1 and "bad" not in c.proven
+
+
+def test_induction_proves_add_zero():
+    c = run("""
+inductive Nat : Type := | zero : Nat | succ : Nat -> Nat
+def add (m : Nat) (n : Nat) : Nat := Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+theorem add_zero_r : forall (n : Nat), Eq Nat (add n zero) n
+proof add_zero_r := by
+  induction n
+  refl
+  intro k ih
+  rewrite ih
+  refl
+qed
+""")
+    assert c.failures == 0 and "add_zero_r" in c.proven
+
+
+def test_induction_on_bool():
+    c = run("""
+inductive Bool : Type := | true : Bool | false : Bool
+def neg (b : Bool) : Bool := Bool.rec (fun (_ : Bool) => Bool) false true b
+theorem neg_neg : forall (b : Bool), Eq Bool (neg (neg b)) b
+proof neg_neg := by induction b refl refl qed
+""")
+    assert c.failures == 0 and "neg_neg" in c.proven
+
+
+def test_induction_too_few_cases_fails():
+    # only handling the base case leaves the step goal open -> failure
+    c = run("""
+inductive Nat : Type := | zero : Nat | succ : Nat -> Nat
+def add (m : Nat) (n : Nat) : Nat := Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+theorem t : forall (n : Nat), Eq Nat (add n zero) n
+proof t := by induction n refl qed
+""")
+    assert c.failures == 1 and "t" not in c.proven

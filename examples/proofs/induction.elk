@@ -1,0 +1,19 @@
+-- Induction as a tactic script.  Compare this to the hand-built Nat.rec proof
+-- term in stdlib/nat.elk — same theorem, now five readable lines.
+
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+def add (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+
+-- n + 0 = n,  by induction on n
+theorem add_zero_r : forall (n : Nat), Eq Nat (add n zero) n
+proof add_zero_r := by
+  induction n          -- two goals: base (n = 0) and step
+  refl                 -- base:  add 0 0 = 0
+  intro k ih           -- step:  assume  add k 0 = k
+  rewrite ih           -- goal  succ (add k 0) = succ k  becomes  succ k = succ k
+  refl
+qed

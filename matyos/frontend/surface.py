@@ -35,7 +35,8 @@ from matyos.kernel.inductive import declare_inductive, REC
 from matyos.kernel.equality import setup_equality
 from matyos.frontend.tactics import run_tactics, TacticError
 
-_TACTIC_KW = {"by", "intro", "exact", "assumption", "refl", "rewrite", "qed"}
+_TACTIC_KW = {"by", "intro", "exact", "assumption", "refl", "rewrite",
+              "induction", "qed"}
 KEYWORDS = {"fun", "forall", "Type", "Prop",
             "def", "axiom", "inductive", "check", "eval", "example",
             "theorem", "proof", "hypothesis", "conjecture", "test"} | _TACTIC_KW
@@ -338,6 +339,11 @@ class Parser:
             elif self.at_kw("rewrite"):
                 self.advance()
                 tactics.append(("rewrite", self.parse_term(list(tac_scope))))
+            elif self.at_kw("induction"):
+                self.advance()
+                var = self._ident()       # the variable to induct on (the leading binder)
+                tac_scope.append(var)
+                tactics.append(("induction", var))
             else:
                 raise ParseError(f"expected a tactic, got {self.peek()}")
         if not self.at_kw("qed"):
