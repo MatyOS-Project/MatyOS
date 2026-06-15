@@ -31,7 +31,8 @@ def test_nat_library_proves_ring_laws():
     run_file(os.path.join(ROOT, "stdlib/nat.elk"))
     # commutativity, associativity, distributivity of +/* are all certified
     for name in ("add_comm", "add_assoc", "mul_comm", "mul_distrib_r",
-                 "mul_zero_r", "mul_succ_r", "mul_one_r"):
+                 "mul_zero_r", "mul_succ_r", "mul_one_r",
+                 "leb", "le", "le_zero", "le_refl", "le_succ", "le_add"):
         assert name in core._GLOBALS
 
 

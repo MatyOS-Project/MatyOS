@@ -92,3 +92,44 @@ test distrib_2_1_3 :
   = add (mul (succ (succ zero)) (succ (succ (succ zero)))) (mul (succ zero) (succ (succ (succ zero))))
 
 eval mul (succ (succ (succ zero))) (succ (succ zero))
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Ordering on the naturals.  We avoid indexed inductives (not yet in surface
+-- syntax) by deciding <= with a boolean function `leb` and defining
+--   le m n  :=  (leb m n = true).
+-- ─────────────────────────────────────────────────────────────────────────
+inductive Bool : Type := | true : Bool | false : Bool
+
+-- leb m n = true  iff  m <= n   (recursion on m, then on n)
+def leb (m : Nat) (n : Nat) : Bool :=
+  (Nat.rec (fun (_ : Nat) => Nat -> Bool)
+           (fun (x : Nat) => true)
+           (fun (k : Nat) (ihk : Nat -> Bool) =>
+              fun (x : Nat) =>
+                Nat.rec (fun (_ : Nat) => Bool) false
+                        (fun (j : Nat) (_ : Bool) => ihk j) x)
+           m) n
+
+def le (m : Nat) (n : Nat) : Type := Eq Bool (leb m n) true
+
+-- 0 <= n
+def le_zero (n : Nat) : le zero n := refl Bool true
+
+-- n <= n
+def le_refl (n : Nat) : le n n :=
+  Nat.rec (fun (p : Nat) => Eq Bool (leb p p) true) (refl Bool true)
+          (fun (k : Nat) (ih : Eq Bool (leb k k) true) => ih) n
+
+-- m <= n  ->  (succ m) <= (succ n)
+def le_succ (m : Nat) (n : Nat) (h : le m n) : le (succ m) (succ n) := h
+
+-- n <= n + m
+def le_add (n : Nat) (m : Nat) : le n (add n m) :=
+  Nat.rec (fun (p : Nat) => Eq Bool (leb p (add p m)) true) (refl Bool true)
+          (fun (k : Nat) (ih : Eq Bool (leb k (add k m)) true) => ih) n
+
+-- 2 <= 3 holds by computation
+example : le (succ (succ zero)) (succ (succ (succ zero))) := refl Bool true
+
+test leb_2_5 : leb (succ (succ zero)) (succ (succ (succ (succ (succ zero))))) = true
+test leb_3_1 : leb (succ (succ (succ zero))) (succ zero) = false
