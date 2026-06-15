@@ -175,9 +175,9 @@ A worked theory, [`examples/projects/arithmetic`](examples/projects/arithmetic),
 proves **`m + n = n + m`** (commutativity of addition) by induction — a real,
 kernel-certified theorem, built on the equality toolkit in
 [`stdlib/eq.elk`](stdlib/eq.elk) (`symm`, `trans`, `cong`, `subst`). And
-[`stdlib/nat.elk`](stdlib/nat.elk) carries the natural-number **ring laws** —
-commutativity & associativity of `+`, **commutativity of `×`**, and
-**distributivity** — every one certified by induction.
+[`stdlib/nat.elk`](stdlib/nat.elk) proves that **ℕ is a commutative semiring** —
+associativity & commutativity of `+` and `×`, identities `0`/`1`, distributivity
+— plus ordering (`≤`), every law certified by induction.
 
 ### Logic is just types (Curry–Howard)
 

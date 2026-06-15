@@ -30,9 +30,11 @@ def test_stdlib_files_check(path):
 def test_nat_library_proves_ring_laws():
     run_file(os.path.join(ROOT, "stdlib/nat.elk"))
     # commutativity, associativity, distributivity of +/* are all certified
-    for name in ("add_comm", "add_assoc", "mul_comm", "mul_distrib_r",
-                 "mul_zero_r", "mul_succ_r", "mul_one_r",
-                 "leb", "le", "le_zero", "le_refl", "le_succ", "le_add"):
+    for name in ("add_comm", "add_assoc", "add_zero_l",
+                 "mul_comm", "mul_assoc", "mul_distrib_r",
+                 "mul_zero_r", "mul_zero_l", "mul_succ_r", "mul_one_r", "mul_one_l",
+                 "leb", "le", "le_zero", "le_refl", "le_succ", "le_add",
+                 "le_succ_self"):
         assert name in core._GLOBALS
 
 

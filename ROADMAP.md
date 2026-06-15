@@ -189,10 +189,10 @@ preserved no matter how clever (or buggy) a tactic is.
 - [x] First real arithmetic theorems, **certified** by induction:
       `add_zero_r`, `add_succ_r`, and **`add_comm` (commutativity of +)** —
       `examples/projects/arithmetic` (a sealed theory).
-- [x] **Natural-number ring laws** (`stdlib/nat.elk`): `+` and `×` with
-      `add_comm`, `add_assoc`, `mul_zero_r`, `mul_succ_r`, **`mul_comm`
-      (commutativity of ×)**, **`mul_distrib_r` (distributivity)**, `mul_one_r`
-      — all certified, all by induction.
+- [x] **ℕ is a certified commutative semiring** (`stdlib/nat.elk`): `+` and `×`
+      with associativity & commutativity of both, identities `0`/`1`
+      (`add_zero_l/r`, `mul_one_l/r`), the annihilator (`mul_zero_l/r`), and
+      distributivity (`mul_distrib_r`) — every law proved by induction.
 - [x] **Ordering `≤`** (`stdlib/nat.elk`): `le m n := (leb m n = true)` with
       `le_zero`, `le_refl`, `le_succ`, and **`n ≤ n + m`** — certified.
       (`le_trans`/`le_antisymm` need Bool case-analysis or an indexed `le`;
