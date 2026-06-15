@@ -176,13 +176,17 @@ preserved no matter how clever (or buggy) a tactic is.
 - [x] `intro`, `exact`, `assumption`, `refl` over a (linear) goal.
       → `matyos/frontend/tactics.py`, `examples/proofs/tactics.elk`.
 
-### Phase C5b — Richer tactics  ← *started*
-- [x] A **typed proof state** (goal + de Bruijn context + a term-building
-      continuation), and the **`rewrite`** tactic — rewrite the goal along an
-      equation, transported via the `J` eliminator. → `matyos/frontend/tactics.py`.
-      (Ends hand-writing congruence/equational proof terms.)
-- [ ] `apply` (generates sub-goals) and `induction` — need metavariables +
-      unification (the rest of C4 elaboration).
+### Phase C5b — Richer tactics  ← *in progress*
+- [x] A **metavariable, multi-goal proof state** (queue of goals, each a
+      metavar with its context + target; skeleton instantiated then kernel-
+      checked). → `matyos/frontend/tactics.py`.
+- [x] **`rewrite`** — rewrite the goal along an equation, transported via `J`.
+- [x] **`induction x`** — on `forall (x : D), …`, split into one sub-goal per
+      constructor (base/step) via `D.rec`. Inductive proofs are now short
+      scripts (e.g. `n+0=n` in 5 lines). → `examples/proofs/induction.elk`.
+- [ ] `apply` (unify a lemma's conclusion with the goal → sub-goals) — the last
+      big elaboration piece: higher-order pattern **unification**.
+- [ ] `cases`, parameterised-inductive induction, implicit arguments.
 - [ ] Automation: `simp` (rewriting), linear-arithmetic decision procedure,
       an SMT/`omega`-style bridge.
 - [ ] Tactics writable *in* the language (reflection / metaprogramming).
