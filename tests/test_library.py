@@ -20,10 +20,19 @@ def _isolate():
 
 @pytest.mark.parametrize("path", [
     "stdlib/arith.elk", "stdlib/bool.elk", "stdlib/logic.elk", "stdlib/eq.elk",
+    "stdlib/nat.elk",
     "examples/proofs/curry_howard.elk", "examples/proofs/tactics.elk",
 ])
 def test_stdlib_files_check(path):
     assert run_file(os.path.join(ROOT, path)) == 0
+
+
+def test_nat_library_proves_ring_laws():
+    run_file(os.path.join(ROOT, "stdlib/nat.elk"))
+    # commutativity, associativity, distributivity of +/* are all certified
+    for name in ("add_comm", "add_assoc", "mul_comm", "mul_distrib_r",
+                 "mul_zero_r", "mul_succ_r", "mul_one_r"):
+        assert name in core._GLOBALS
 
 
 def test_eq_toolkit_defines_symm_trans_cong_subst():

@@ -174,7 +174,10 @@ Full details: [docs/projects.md](docs/projects.md).
 A worked theory, [`examples/projects/arithmetic`](examples/projects/arithmetic),
 proves **`m + n = n + m`** (commutativity of addition) by induction — a real,
 kernel-certified theorem, built on the equality toolkit in
-[`stdlib/eq.elk`](stdlib/eq.elk) (`symm`, `trans`, `cong`, `subst`).
+[`stdlib/eq.elk`](stdlib/eq.elk) (`symm`, `trans`, `cong`, `subst`). And
+[`stdlib/nat.elk`](stdlib/nat.elk) carries the natural-number **ring laws** —
+commutativity & associativity of `+`, **commutativity of `×`**, and
+**distributivity** — every one certified by induction.
 
 ### Logic is just types (Curry–Howard)
 

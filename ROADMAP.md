@@ -189,6 +189,12 @@ preserved no matter how clever (or buggy) a tactic is.
 - [x] First real arithmetic theorems, **certified** by induction:
       `add_zero_r`, `add_succ_r`, and **`add_comm` (commutativity of +)** —
       `examples/projects/arithmetic` (a sealed theory).
+- [x] **Natural-number ring laws** (`stdlib/nat.elk`): `+` and `×` with
+      `add_comm`, `add_assoc`, `mul_zero_r`, `mul_succ_r`, **`mul_comm`
+      (commutativity of ×)**, **`mul_distrib_r` (distributivity)**, `mul_one_r`
+      — all certified, all by induction.
+- [ ] Ordering (`≤`), subtraction, `Int`/`Nat`-division — needed before most
+      number-theory statements are even expressible.
 - [ ] Foundations: logic, sets, relations, functions, orders.
 - [ ] Numbers: ℕ, ℤ, ℚ, ℝ (Cauchy/Dedekind), basic analysis.
 - [ ] **Bootstrapping strategy** (this is how you avoid the 6-year wall):

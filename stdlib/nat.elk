@@ -1,0 +1,94 @@
+-- stdlib/nat.elk — the natural numbers with addition and multiplication,
+-- and their algebraic laws, every one CERTIFIED by the kernel.
+-- Everything is derived from the inductive `Nat`, its recursor, and the
+-- equality toolkit (symm / trans / cong, built from the J eliminator).
+
+def symm (A : Type) (a : A) (b : A) (e : Eq A a b) : Eq A b a :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq A x a) (refl A a) b e
+def trans (A : Type) (a : A) (b : A) (c : A) (e1 : Eq A a b) (e2 : Eq A b c) : Eq A a c :=
+  Eq.J A b (fun (x : A) (_ : Eq A b x) => Eq A a x) e1 c e2
+def cong (A : Type) (B : Type) (f : A -> B) (a : A) (b : A) (e : Eq A a b) : Eq B (f a) (f b) :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq B (f a) (f x)) (refl B (f a)) b e
+
+inductive Nat : Type := | zero : Nat | succ : Nat -> Nat
+
+def add (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+def mul (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) zero (fun (k : Nat) (ih : Nat) => add n ih) m
+
+def add_zero_r (n : Nat) : Eq Nat (add n zero) n :=
+  Nat.rec (fun (m : Nat) => Eq Nat (add m zero) m) (refl Nat zero)
+          (fun (k : Nat) (ih : Eq Nat (add k zero) k) => cong Nat Nat succ (add k zero) k ih) n
+def add_succ_r (m : Nat) (n : Nat) : Eq Nat (add m (succ n)) (succ (add m n)) :=
+  Nat.rec (fun (p : Nat) => Eq Nat (add p (succ n)) (succ (add p n))) (refl Nat (succ n))
+          (fun (k : Nat) (ih : Eq Nat (add k (succ n)) (succ (add k n))) =>
+              cong Nat Nat succ (add k (succ n)) (succ (add k n)) ih) m
+def add_comm (m : Nat) (n : Nat) : Eq Nat (add m n) (add n m) :=
+  Nat.rec (fun (p : Nat) => Eq Nat (add p n) (add n p))
+          (symm Nat (add n zero) n (add_zero_r n))
+          (fun (k : Nat) (ih : Eq Nat (add k n) (add n k)) =>
+              trans Nat (succ (add k n)) (succ (add n k)) (add n (succ k))
+                    (cong Nat Nat succ (add k n) (add n k) ih)
+                    (symm Nat (add n (succ k)) (succ (add n k)) (add_succ_r n k))) m
+
+def add_assoc (a : Nat) (b : Nat) (c : Nat) : Eq Nat (add (add a b) c) (add a (add b c)) :=
+  Nat.rec (fun (p : Nat) => Eq Nat (add (add p b) c) (add p (add b c)))
+          (refl Nat (add b c))
+          (fun (k : Nat) (ih : Eq Nat (add (add k b) c) (add k (add b c))) =>
+              cong Nat Nat succ (add (add k b) c) (add k (add b c)) ih) a
+
+-- a + (b + c) = b + (a + c)
+def add_swap (a : Nat) (b : Nat) (c : Nat) : Eq Nat (add a (add b c)) (add b (add a c)) :=
+  trans Nat (add a (add b c)) (add (add b a) c) (add b (add a c))
+        (trans Nat (add a (add b c)) (add (add a b) c) (add (add b a) c)
+               (symm Nat (add (add a b) c) (add a (add b c)) (add_assoc a b c))
+               (cong Nat Nat (fun (z : Nat) => add z c) (add a b) (add b a) (add_comm a b)))
+        (add_assoc b a c)
+
+def mul_zero_r (m : Nat) : Eq Nat (mul m zero) zero :=
+  Nat.rec (fun (p : Nat) => Eq Nat (mul p zero) zero) (refl Nat zero)
+          (fun (k : Nat) (ih : Eq Nat (mul k zero) zero) => ih) m
+
+-- m * (succ n) = m + (m * n)
+def mul_succ_r (m : Nat) (n : Nat) : Eq Nat (mul m (succ n)) (add m (mul m n)) :=
+  Nat.rec (fun (p : Nat) => Eq Nat (mul p (succ n)) (add p (mul p n))) (refl Nat zero)
+          (fun (k : Nat) (ih : Eq Nat (mul k (succ n)) (add k (mul k n))) =>
+              cong Nat Nat succ (add n (mul k (succ n))) (add k (add n (mul k n)))
+                   (trans Nat (add n (mul k (succ n))) (add n (add k (mul k n))) (add k (add n (mul k n)))
+                          (cong Nat Nat (fun (z : Nat) => add n z) (mul k (succ n)) (add k (mul k n)) ih)
+                          (add_swap n k (mul k n)))) m
+
+-- m * n = n * m
+def mul_comm (m : Nat) (n : Nat) : Eq Nat (mul m n) (mul n m) :=
+  Nat.rec (fun (p : Nat) => Eq Nat (mul p n) (mul n p))
+          (symm Nat (mul n zero) zero (mul_zero_r n))
+          (fun (k : Nat) (ih : Eq Nat (mul k n) (mul n k)) =>
+              trans Nat (add n (mul k n)) (add n (mul n k)) (mul n (succ k))
+                    (cong Nat Nat (fun (z : Nat) => add n z) (mul k n) (mul n k) ih)
+                    (symm Nat (mul n (succ k)) (add n (mul n k)) (mul_succ_r n k))) m
+
+-- (a + b) * c = a*c + b*c
+def mul_distrib_r (a : Nat) (b : Nat) (c : Nat) : Eq Nat (mul (add a b) c) (add (mul a c) (mul b c)) :=
+  Nat.rec (fun (p : Nat) => Eq Nat (mul (add p b) c) (add (mul p c) (mul b c)))
+          (refl Nat (mul b c))
+          (fun (k : Nat) (ih : Eq Nat (mul (add k b) c) (add (mul k c) (mul b c))) =>
+              trans Nat (add c (mul (add k b) c)) (add c (add (mul k c) (mul b c))) (add (add c (mul k c)) (mul b c))
+                    (cong Nat Nat (fun (z : Nat) => add c z) (mul (add k b) c) (add (mul k c) (mul b c)) ih)
+                    (symm Nat (add (add c (mul k c)) (mul b c)) (add c (add (mul k c) (mul b c)))
+                          (add_assoc c (mul k c) (mul b c)))) a
+
+-- m * 1 = m
+def mul_one_r (m : Nat) : Eq Nat (mul m (succ zero)) m :=
+  trans Nat (mul m (succ zero)) (add m zero) m
+        (trans Nat (mul m (succ zero)) (add m (mul m zero)) (add m zero)
+               (mul_succ_r m zero)
+               (cong Nat Nat (fun (z : Nat) => add m z) (mul m zero) zero (mul_zero_r m)))
+        (add_zero_r m)
+
+test mul_3_2 : mul (succ (succ (succ zero))) (succ (succ zero)) = succ (succ (succ (succ (succ (succ zero)))))
+test distrib_2_1_3 :
+  mul (add (succ (succ zero)) (succ zero)) (succ (succ (succ zero)))
+  = add (mul (succ (succ zero)) (succ (succ (succ zero)))) (mul (succ zero) (succ (succ (succ zero))))
+
+eval mul (succ (succ (succ zero))) (succ (succ zero))
