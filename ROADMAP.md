@@ -193,8 +193,12 @@ preserved no matter how clever (or buggy) a tactic is.
       `add_comm`, `add_assoc`, `mul_zero_r`, `mul_succ_r`, **`mul_comm`
       (commutativity of ×)**, **`mul_distrib_r` (distributivity)**, `mul_one_r`
       — all certified, all by induction.
-- [ ] Ordering (`≤`), subtraction, `Int`/`Nat`-division — needed before most
-      number-theory statements are even expressible.
+- [x] **Ordering `≤`** (`stdlib/nat.elk`): `le m n := (leb m n = true)` with
+      `le_zero`, `le_refl`, `le_succ`, and **`n ≤ n + m`** — certified.
+      (`le_trans`/`le_antisymm` need Bool case-analysis or an indexed `le`;
+      pending.)
+- [ ] Subtraction, `Int`/`Nat`-division, then number-theory (divisibility,
+      primes) — and indexed inductives so `≤` can be a proper `Prop` family.
 - [ ] Foundations: logic, sets, relations, functions, orders.
 - [ ] Numbers: ℕ, ℤ, ℚ, ℝ (Cauchy/Dedekind), basic analysis.
 - [ ] **Bootstrapping strategy** (this is how you avoid the 6-year wall):
