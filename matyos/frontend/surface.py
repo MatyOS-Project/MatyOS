@@ -538,26 +538,35 @@ class Checker:
             except TacticError as e:
                 self.failures += 1
                 self._log("example", "", "FAILED", f"tactic: {e}")
-                print(f"example : {pretty(tt)}   [FAIL: tactic error: {e}]")
+                if echo:
+                    print(f"example : {pretty(tt)}   [FAIL: tactic error: {e}]")
                 return
             got = infer([], bt)
             if def_equal(got, tt):
                 self._log("example", "", "PROVEN", pretty(tt))
-                print(f"example : {pretty(tt)}   [QED]")
+                if echo:
+                    print(f"example : {pretty(tt)}   [QED]")
             else:
                 self.failures += 1
                 self._log("example", "", "FAILED", pretty(tt))
-                print(f"example : {pretty(tt)}   [FAIL: proof has type {pretty(got)}]")
+                if echo:
+                    print(f"example : {pretty(tt)}   [FAIL: proof has type {pretty(got)}]")
 
         elif kind == "check":
             _, term = cmd
             t = to_debruijn(term)
-            print(f"check {pretty(t)} : {pretty(infer([], t))}")
+            ty = pretty(infer([], t))
+            self._log("check", pretty(t), "ok", ty)
+            if echo:
+                print(f"check {pretty(t)} : {ty}")
 
         elif kind == "eval":
             _, term = cmd
             t = to_debruijn(term)
-            print(f"eval {pretty(t)} = {pretty(normalize(t))}")
+            nf = pretty(normalize(t))
+            self._log("eval", pretty(t), "ok", nf)
+            if echo:
+                print(f"eval {pretty(t)} = {nf}")
 
 
 def run_source(text, echo=True):

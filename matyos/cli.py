@@ -18,7 +18,8 @@ from matyos import __version__
 USAGE = """matyos <command> [args]
 
 Commands:
-  check <path>          check a .elk file, a project dir, or a .matyos archive
+  check <path> [--json] check a .elk file, project dir, or .matyos archive
+                        (--json emits a machine-readable result for tools/LLMs)
   new <name>            scaffold a new MatyOS project
   build <dir> [out]     seal a COMPLETED project into a compressed .matyos
   info <file.matyos>    show a sealed archive's manifest (no re-checking)
@@ -65,10 +66,38 @@ def _run_project(path):
     return 1 if failures else 0
 
 
-def _check(path):
+def _check_json(path):
+    """Emit a structured JSON result for tools / LLMs instead of pretty text."""
+    import json
+    from matyos.kernel.core import reset_environment
+    reset_environment()
+    if os.path.isdir(path) or path.endswith(".matyos"):
+        from matyos.project.engine import analyze_project
+        _, failures, manifest = analyze_project(path)
+        manifest["failures"] = failures
+        print(json.dumps(manifest, indent=2))
+        return 1 if failures else 0
+    from matyos.frontend.surface import Checker, ParseError
+    from matyos.kernel.core import TypeError_
+    checker = Checker()
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            checker.run_text(f.read(), echo=False)
+        out = {"kind": "file", "path": path, "failures": checker.failures,
+               "events": checker.events}
+    except (ParseError, TypeError_, FileNotFoundError) as e:
+        out = {"kind": "file", "path": path, "failures": 1,
+               "error": str(e), "events": checker.events}
+    print(json.dumps(out, indent=2))
+    return 1 if out["failures"] else 0
+
+
+def _check(path, as_json=False):
     if not os.path.exists(path):
         print(f"matyos: path not found: {path}", file=sys.stderr)
         return 2
+    if as_json:
+        return _check_json(path)
     if os.path.isdir(path) or path.endswith(".matyos"):
         return _run_project(path)
     return _run_file(path)
@@ -88,11 +117,13 @@ def main(argv=None):
         print(USAGE)
         return 0
     if cmd in ("check", "eval"):
+        as_json = "--json" in rest
+        rest = [a for a in rest if a != "--json"]
         if not rest:
             print(f"matyos: '{cmd}' needs a path, e.g. matyos check my_theory",
                   file=sys.stderr)
             return 2
-        return _check(rest[0])
+        return _check(rest[0], as_json=as_json)
     if cmd == "new":
         if not rest:
             print("matyos: 'new' needs a project name", file=sys.stderr)

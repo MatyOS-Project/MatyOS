@@ -214,3 +214,18 @@ Each MatyOS file type has a black-and-white icon (see
 | `∃` | `.hyp`  | hypothesis / conjecture (realistic) |
 | `✓` | `.test` | test / experiment |
 | `λ` | `.elk`  | definitions & datatypes |
+
+## Machine-readable output (`--json`) — for tools & LLMs
+
+Add `--json` to `matyos check` to get a structured result instead of pretty
+text — the same facts the kernel sees, ready for CI, tooling, or an LLM loop:
+
+```console
+$ matyos check --json my_theory          # a project -> the full MANIFEST as JSON
+$ matyos check --json proof.elk           # a file -> { failures, events: [...] }
+```
+
+For a project it emits the manifest (theories, each theorem's
+`status`/`depends_on`, tests, and the summary). For a file it emits the ordered
+event log (`def`/`theorem`/`proof`/`test`/… each with a `status`). Exit code is
+non-zero iff something failed, so it drops straight into automation.
