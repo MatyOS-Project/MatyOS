@@ -103,3 +103,32 @@ theorem t : forall (A : Type), A -> A
 proof t := by intro A x exact zero qed
 """)
     assert c.failures == 1 and "t" not in c.proven
+
+
+def test_rewrite_with_hypothesis():
+    c = run("""
+inductive Nat : Type := | zero : Nat | succ : Nat -> Nat
+theorem cong_succ : forall (a : Nat), forall (b : Nat), Eq Nat a b -> Eq Nat (succ a) (succ b)
+proof cong_succ := by intro a b h rewrite h refl qed
+""")
+    assert c.failures == 0 and "cong_succ" in c.proven
+
+
+def test_rewrite_then_assumption():
+    c = run("""
+inductive Nat : Type := | zero : Nat | succ : Nat -> Nat
+theorem rw : forall (a : Nat), forall (b : Nat), Eq Nat a b -> Eq Nat b b -> Eq Nat a b
+proof rw := by intro a b h1 h2 rewrite h1 assumption qed
+""")
+    assert c.failures == 0 and "rw" in c.proven
+
+
+def test_rewrite_non_equality_errors():
+    from matyos.kernel.core import N
+    # rewriting with a non-equality hypothesis must fail (not certify nonsense)
+    c = run("""
+inductive Nat : Type := | zero : Nat | succ : Nat -> Nat
+theorem bad : forall (a : Nat), Eq Nat a a
+proof bad := by intro a rewrite a refl qed
+""")
+    assert c.failures == 1 and "bad" not in c.proven

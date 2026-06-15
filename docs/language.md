@@ -146,8 +146,10 @@ Tactics available so far:
 | `exact <term>`  | close the goal with a term (may use the hypotheses) |
 | `assumption`    | close the goal using a hypothesis whose type matches it |
 | `refl`          | close a reflexive equality goal `Eq A a a` |
+| `rewrite <h>`   | given `h : Eq A a b`, replace `a` by `b` in the goal (transported along `h` via the `J` eliminator) |
 
 A block runs `by` … `qed`; it must end by closing the goal (`exact` /
-`assumption` / `refl`), otherwise the proof fails with “unsolved goal”.
-`apply` with sub-goals needs unification (elaboration, roadmap Phase C4) and is
-the next tactic to land. See [`examples/proofs/tactics.elk`](../examples/proofs/tactics.elk).
+`assumption` / `refl`). The engine builds a typed proof state (goal + context)
+and assembles a term the kernel re-checks. `apply` with sub-goals (needs
+unification) and `induction` are the next tactics to land. See
+[`examples/proofs/tactics.elk`](../examples/proofs/tactics.elk).

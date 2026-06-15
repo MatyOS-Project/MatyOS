@@ -37,3 +37,13 @@ example : forall (A : Type), forall (B : Type), A -> B -> A := by
   intro A B a b
   exact a
 qed
+
+-- `rewrite` rewrites the goal along an equation, then we close it.
+-- (succ is congruent for equality — proved as a tactic script.)
+theorem cong_succ :
+  forall (a : Nat), forall (b : Nat), Eq Nat a b -> Eq Nat (succ a) (succ b)
+proof cong_succ := by
+  intro a b h
+  rewrite h        -- goal  succ a = succ b  becomes  succ b = succ b
+  refl
+qed

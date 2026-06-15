@@ -35,7 +35,7 @@ from matyos.kernel.inductive import declare_inductive, REC
 from matyos.kernel.equality import setup_equality
 from matyos.frontend.tactics import run_tactics, TacticError
 
-_TACTIC_KW = {"by", "intro", "exact", "assumption", "refl", "qed"}
+_TACTIC_KW = {"by", "intro", "exact", "assumption", "refl", "rewrite", "qed"}
 KEYWORDS = {"fun", "forall", "Type", "Prop",
             "def", "axiom", "inductive", "check", "eval", "example",
             "theorem", "proof", "hypothesis", "conjecture", "test"} | _TACTIC_KW
@@ -335,6 +335,9 @@ class Parser:
             elif self.at_kw("refl"):
                 self.advance()
                 tactics.append(("refl",))
+            elif self.at_kw("rewrite"):
+                self.advance()
+                tactics.append(("rewrite", self.parse_term(list(tac_scope))))
             else:
                 raise ParseError(f"expected a tactic, got {self.peek()}")
         if not self.at_kw("qed"):
@@ -407,11 +410,12 @@ class Checker:
             deps |= self.cond_deps.get(n, set())
         return deps
 
-    def _term_of(self, body, goal_surface):
+    def _term_of(self, body, goal_db):
         """Turn a proof body into a de Bruijn term. A body is either a surface
-        term, or a tactic block ('by', tactics) run against the goal."""
+        term, or a tactic block ('by', tactics) run against the (de Bruijn) goal.
+        The typed tactic engine already returns a de Bruijn term."""
         if isinstance(body, tuple) and body and body[0] == "by":
-            return to_debruijn(run_tactics(goal_surface, body[1]))
+            return run_tactics(goal_db, body[1])
         return to_debruijn(body)
 
     def run_text(self, text, echo=True):
@@ -481,7 +485,7 @@ class Checker:
                 return
             stmt = self.obligations[name]
             try:
-                bt = self._term_of(body, self.obligation_surface.get(name))
+                bt = self._term_of(body, stmt)
             except TacticError as e:
                 self.failures += 1
                 self._log("proof", name, "FAILED", f"tactic: {e}")
@@ -534,7 +538,7 @@ class Checker:
             _, ty, body = cmd
             tt = to_debruijn(ty)
             try:
-                bt = self._term_of(body, ty)
+                bt = self._term_of(body, tt)
             except TacticError as e:
                 self.failures += 1
                 self._log("example", "", "FAILED", f"tactic: {e}")
