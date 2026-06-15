@@ -22,9 +22,20 @@ def _isolate():
     "stdlib/arith.elk", "stdlib/bool.elk", "stdlib/logic.elk", "stdlib/eq.elk",
     "stdlib/nat.elk",
     "examples/proofs/curry_howard.elk", "examples/proofs/tactics.elk",
+    "examples/proofs/induction.elk", "examples/proofs/nat_by_tactics.elk",
 ])
 def test_stdlib_files_check(path):
     assert run_file(os.path.join(ROOT, path)) == 0
+
+
+def test_commutativity_provable_by_tactics():
+    from matyos.frontend.surface import Checker
+    c = Checker()
+    c.run_text(open(os.path.join(ROOT, "examples/proofs/nat_by_tactics.elk"),
+                    encoding="utf-8").read(), echo=False)
+    assert c.failures == 0
+    for name in ("add_zero_r", "add_succ_r", "add_assoc", "add_comm"):
+        assert name in c.proven
 
 
 def test_nat_library_proves_ring_laws():

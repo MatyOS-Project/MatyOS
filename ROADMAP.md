@@ -184,6 +184,9 @@ preserved no matter how clever (or buggy) a tactic is.
 - [x] **`induction x`** — on `forall (x : D), …`, split into one sub-goal per
       constructor (base/step) via `D.rec`. Inductive proofs are now short
       scripts (e.g. `n+0=n` in 5 lines). → `examples/proofs/induction.elk`.
+- [x] **Validated on real algebra**: the additive laws (`add_zero_r`,
+      `add_succ_r`, `add_assoc`, **`add_comm`**) re-proved purely as
+      `induction`/`rewrite` scripts. → `examples/proofs/nat_by_tactics.elk`.
 - [ ] `apply` (unify a lemma's conclusion with the goal → sub-goals) — the last
       big elaboration piece: higher-order pattern **unification**.
 - [ ] `cases`, parameterised-inductive induction, implicit arguments.
