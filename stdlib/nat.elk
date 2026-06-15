@@ -133,3 +133,35 @@ example : le (succ (succ zero)) (succ (succ (succ zero))) := refl Bool true
 
 test leb_2_5 : leb (succ (succ zero)) (succ (succ (succ (succ (succ zero))))) = true
 test leb_3_1 : leb (succ (succ (succ zero))) (succ zero) = false
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Completing the commutative-semiring laws for (Nat, +, 0, *, 1).
+-- ─────────────────────────────────────────────────────────────────────────
+
+-- left identities / annihilator hold definitionally
+def add_zero_l (n : Nat) : Eq Nat (add zero n) n := refl Nat n
+def mul_zero_l (n : Nat) : Eq Nat (mul zero n) zero := refl Nat zero
+
+-- 1 * m = m
+def mul_one_l (m : Nat) : Eq Nat (mul (succ zero) m) m := add_zero_r m
+
+-- (a * b) * c = a * (b * c)   — associativity of multiplication
+def mul_assoc (a : Nat) (b : Nat) (c : Nat) : Eq Nat (mul (mul a b) c) (mul a (mul b c)) :=
+  Nat.rec (fun (p : Nat) => Eq Nat (mul (mul p b) c) (mul p (mul b c)))
+          (refl Nat zero)
+          (fun (k : Nat) (ih : Eq Nat (mul (mul k b) c) (mul k (mul b c))) =>
+              trans Nat (mul (add b (mul k b)) c)
+                        (add (mul b c) (mul (mul k b) c))
+                        (add (mul b c) (mul k (mul b c)))
+                    (mul_distrib_r b (mul k b) c)
+                    (cong Nat Nat (fun (z : Nat) => add (mul b c) z)
+                          (mul (mul k b) c) (mul k (mul b c)) ih)) a
+
+-- n <= succ n
+def le_succ_self (n : Nat) : le n (succ n) :=
+  Nat.rec (fun (p : Nat) => Eq Bool (leb p (succ p)) true) (refl Bool true)
+          (fun (k : Nat) (ih : Eq Bool (leb k (succ k)) true) => ih) n
+
+test mul_assoc_2_3_2 :
+  mul (mul (succ (succ zero)) (succ (succ (succ zero)))) (succ (succ zero))
+  = mul (succ (succ zero)) (mul (succ (succ (succ zero))) (succ (succ zero)))
