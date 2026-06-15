@@ -47,3 +47,17 @@ proof cong_succ := by
   rewrite h        -- goal  succ a = succ b  becomes  succ b = succ b
   refl
 qed
+
+-- `apply` a lemma: its conclusion is matched against the goal (inferring
+-- arguments), and any remaining premises become sub-goals.
+def cong (A : Type) (B : Type) (f : A -> B) (a : A) (b : A) (e : Eq A a b)
+    : Eq B (f a) (f b) :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq B (f a) (f x)) (refl B (f a)) b e
+
+theorem succ_cong :
+  forall (a : Nat), forall (b : Nat), Eq Nat a b -> Eq Nat (succ a) (succ b)
+proof succ_cong := by
+  intro a b h
+  apply (cong Nat Nat succ)   -- infers a, b from the goal; leaves the premise
+  exact h
+qed
