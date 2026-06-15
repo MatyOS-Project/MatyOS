@@ -1,108 +1,131 @@
 """
-A small tactic engine (Phase C5a).
+A typed tactic engine (Phase C5 / C4-rewrite).
 
-Tactics let you write a proof as a *script* that manipulates the goal, instead
-of spelling out the raw proof term. Crucially the tactic engine is **untrusted**:
-it only *builds* a surface term, which the kernel then type-checks against the
-theorem statement. A buggy tactic can at worst fail the kernel check — it can
-never certify a false theorem. (This is the de Bruijn criterion at work.)
+A *proof state* is a single goal: a local context `ctx` (kernel types, de Bruijn,
+ctx[0] = type of Var 0), the `target` type, and a continuation `build` that maps
+a term solving the current target (in `ctx`) to a closed term solving the
+ORIGINAL goal. Tactics refine the state; the closer (`exact`/`assumption`/`refl`)
+hands its term to `build`.
 
-Supported tactics (C5a):
-    intro x [y z ...]   peel function-type binders into named hypotheses
-    exact <term>        close the goal with an explicit term (may use hyps)
-    assumption          close the goal using a hypothesis whose type matches
-    refl                close a reflexive equality goal `Eq A a a`
+The engine is UNTRUSTED: it only *constructs* a term, which the kernel then
+type-checks against the theorem statement. A bug here can make a tactic fail —
+never certify a false theorem (the de Bruijn criterion).
 
-`apply` with sub-goals needs unification/elaboration (Phase C4) and is the next
-tactic milestone.
+Tactics: intro · exact · assumption · refl · rewrite.
+  rewrite h   (h : Eq A a b)  replaces occurrences of `a` in the goal by `b`,
+              transporting the proof back along `h` via the J eliminator.
 """
 
-from matyos.kernel.core import N, to_debruijn, def_equal
+from matyos.kernel.core import (
+    N, Term, to_debruijn, infer, normalize, def_equal, shift, _beta,
+    Var, Univ, PropSort, Const, Pi, Lam, App,
+)
 
 
 class TacticError(Exception):
     pass
 
 
-def _fold_lam(binders, body):
-    result = body
-    for name, ty in reversed(binders):
-        result = N.Lam(name, ty, result)
-    return result
-
-
-def _rename(node, old, new):
-    """Rename free occurrences of binder `old` to `new` in a surface type,
-    respecting shadowing."""
-    if isinstance(node, N.Var):
-        return N.Var(new) if node.name == old else node
-    if isinstance(node, (N.Const, N.U, N.Prop)):
-        return node
-    if isinstance(node, N.Arrow):
-        return N.Arrow(_rename(node.domain, old, new), _rename(node.codomain, old, new))
-    if isinstance(node, N.App):
-        return N.App(_rename(node.func, old, new), _rename(node.arg, old, new))
-    if isinstance(node, N.Pi):
-        dom = _rename(node.domain, old, new)
-        cod = node.codomain if node.name == old else _rename(node.codomain, old, new)
-        return N.Pi(node.name, dom, cod)
-    if isinstance(node, N.Lam):
-        dom = _rename(node.domain, old, new)
-        body = node.body if node.name == old else _rename(node.body, old, new)
-        return N.Lam(node.name, dom, body)
-    return node
-
-
-def _eq_parts(target):
-    """If `target` is `Eq A a b` (surface), return (A, a, b), else None."""
+def _eq_parts(t):
+    """If `t` normalises to `Eq A a b`, return (A, a, b), else None."""
+    t = normalize(t)
     spine = []
-    node = target
-    while isinstance(node, N.App):
-        spine.append(node.arg)
-        node = node.func
-    if isinstance(node, N.Const) and node.name == "Eq" and len(spine) == 3:
-        b, a, A = spine  # spine collected innermost-arg-last
+    while isinstance(t, App):
+        spine.append(t.arg)
+        t = t.func
+    if isinstance(t, Const) and t.name == "Eq" and len(spine) == 3:
+        b, a, A = spine            # spine is innermost-arg-last
         return A, a, b
     return None
 
 
-def run_tactics(goal_surface, tactics):
-    """Build a surface proof term for `goal_surface` from a tactic list.
-    Raises TacticError on an unsolvable/ill-formed script."""
-    binders = []          # [(name, type_surface)] introduced so far
-    target = goal_surface
+def _abstract(term, a, k=0):
+    """Replace occurrences of `a` (lifted to depth k) by Var(k), and shift other
+    free variables up by one — i.e. abstract `a` out to form a 1-binder body."""
+    if def_equal(term, shift(a, k, 0)):
+        return Var(k)
+    if isinstance(term, Var):
+        return Var(term.index + 1) if term.index >= k else term
+    if isinstance(term, (Univ, Const, PropSort)):
+        return term
+    if isinstance(term, Pi):
+        return Pi(_abstract(term.domain, a, k), _abstract(term.codomain, a, k + 1))
+    if isinstance(term, Lam):
+        return Lam(_abstract(term.domain, a, k), _abstract(term.body, a, k + 1))
+    if isinstance(term, App):
+        return App(_abstract(term.func, a, k), _abstract(term.arg, a, k))
+    raise TacticError("rewrite: cannot abstract over this term")
+
+
+def _transport(A, a, b, P, target_Pa, ht):
+    """Build  Eq.J A a P' d b ht : (P b) -> (P a)  for rewriting a -> b.
+    P' := fun (y : A) (e : Eq A a y) => (P y) -> (P a);  d := identity on (P a)."""
+    A1, a1 = shift(A, 1, 0), shift(a, 1, 0)
+    eq_a_y = App(App(App(Const("Eq"), A1), a1), Var(0))      # under binder y
+    P2, a2 = shift(P, 2, 0), shift(a, 2, 0)                  # under binders y, e
+    p_at_y = App(P2, Var(1))
+    p_at_a = App(P2, a2)
+    body_pp = Pi(p_at_y, shift(p_at_a, 1, 0))               # (P y) -> (P a)
+    pprime = Lam(A, Lam(eq_a_y, body_pp))
+    d = Lam(target_Pa, Var(0))                             # (P a) -> (P a)
+    jx = Const("Eq.J")
+    return App(App(App(App(App(App(jx, A), a), pprime), d), b), ht)
+
+
+def run_tactics(goal, tactics):
+    """Run a tactic script against `goal` (a kernel Term, or surface to convert).
+    Returns the closed proof term, or raises TacticError."""
+    if not isinstance(goal, Term):
+        goal = to_debruijn(goal)
+
+    ctx = []            # ctx[0] = type of Var 0 (innermost)
+    names = []          # parallel binder names, names[0] = innermost
+    target = goal
+    build = lambda p: p   # term solving target in ctx -> closed term for goal
 
     for tac in tactics:
         op = tac[0]
         if op == "intro":
             for nm in tac[1]:
-                if isinstance(target, N.Pi):
-                    binders.append((nm, target.domain))
-                    target = _rename(target.codomain, target.name, nm)
-                elif isinstance(target, N.Arrow):
-                    binders.append((nm, target.domain))
-                    target = target.codomain
-                else:
-                    raise TacticError(
-                        f"intro {nm}: goal is not a function type")
+                t = normalize(target)
+                if not isinstance(t, Pi):
+                    raise TacticError(f"intro {nm}: goal is not a function type")
+                A = t.domain
+                ctx = [A] + ctx
+                names = [nm] + names
+                build = (lambda bld, dom: (lambda p: bld(Lam(dom, p))))(build, A)
+                target = t.codomain
+
         elif op == "exact":
-            return _fold_lam(binders, tac[1])
+            return build(to_debruijn(tac[1], names))
+
         elif op == "assumption":
-            scope = [n for n, _ in reversed(binders)]
-            tgt = to_debruijn(target, scope)
-            for nm, ty in reversed(binders):
-                if def_equal(to_debruijn(ty, scope), tgt):
-                    return _fold_lam(binders, N.Var(nm))
+            for i in range(len(ctx)):
+                if def_equal(shift(ctx[i], i + 1, 0), target):
+                    return build(Var(i))
             raise TacticError("assumption: no hypothesis matches the goal")
+
         elif op == "refl":
             parts = _eq_parts(target)
-            if parts:
-                A, a, b = parts
-                scope = [n for n, _ in reversed(binders)]
-                if def_equal(to_debruijn(a, scope), to_debruijn(b, scope)):
-                    return _fold_lam(binders,
-                                     N.App(N.App(N.Const("refl"), A), a))
+            if parts and def_equal(parts[1], parts[2]):
+                A, a, _ = parts
+                return build(App(App(Const("refl"), A), a))
             raise TacticError("refl: goal is not a reflexive equality")
+
+        elif op == "rewrite":
+            ht = to_debruijn(tac[1], names)
+            parts = _eq_parts(infer(ctx, ht))
+            if not parts:
+                raise TacticError("rewrite: the hypothesis is not an equality")
+            A, a, b = parts
+            body = _abstract(target, a, 0)
+            if not def_equal(_beta(body, a), target):
+                raise TacticError("rewrite: could not relocate the term to rewrite")
+            P = Lam(A, body)
+            tr = _transport(A, a, b, P, target, ht)
+            build = (lambda bld, t: (lambda p: bld(App(t, p))))(build, tr)
+            target = _beta(body, b)
+
         else:
             raise TacticError(f"unknown tactic: {op}")
 

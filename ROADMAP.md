@@ -176,9 +176,13 @@ preserved no matter how clever (or buggy) a tactic is.
 - [x] `intro`, `exact`, `assumption`, `refl` over a (linear) goal.
       → `matyos/frontend/tactics.py`, `examples/proofs/tactics.elk`.
 
-### Phase C5b — Tactics with sub-goals (needs C4)
-- [ ] A proper proof state (goal stack + context + metavariables).
-- [ ] `apply` (generates sub-goals), `induction`, `cases`, `rewrite`.
+### Phase C5b — Richer tactics  ← *started*
+- [x] A **typed proof state** (goal + de Bruijn context + a term-building
+      continuation), and the **`rewrite`** tactic — rewrite the goal along an
+      equation, transported via the `J` eliminator. → `matyos/frontend/tactics.py`.
+      (Ends hand-writing congruence/equational proof terms.)
+- [ ] `apply` (generates sub-goals) and `induction` — need metavariables +
+      unification (the rest of C4 elaboration).
 - [ ] Automation: `simp` (rewriting), linear-arithmetic decision procedure,
       an SMT/`omega`-style bridge.
 - [ ] Tactics writable *in* the language (reflection / metaprogramming).
