@@ -149,6 +149,7 @@ Tactics available so far:
 | `rewrite <h>`   | given `h : Eq A a b`, replace `a` by `b` in the goal (transported along `h` via the `J` eliminator) |
 | `induction x`   | on a goal `forall (x : D), …`, split into one sub-goal per constructor of `D` (base, then step) via `D.rec` |
 | `apply <f>`     | match `f`'s conclusion against the goal (inferring arguments by first-order unification); remaining premises become sub-goals |
+| `auto`          | search for a proof automatically (refl / assumption / intro / apply hypotheses) up to a bounded depth; fails if none is found |
 
 A block runs `by` … `qed`; it must end by closing the goal (`exact` /
 `assumption` / `refl`). The engine builds a typed proof state (goal + context)

@@ -153,6 +153,77 @@ def _match(pat, term, subst):
     return False
 
 
+def _inst(t, subst):
+    """Substitute solved metavariables (a dict id -> term) throughout `t`."""
+    if isinstance(t, Meta):
+        return _inst(subst[t.id], subst) if t.id in subst else t
+    if isinstance(t, (Var, Univ, Const, PropSort)):
+        return t
+    if isinstance(t, Pi):
+        return Pi(_inst(t.domain, subst), _inst(t.codomain, subst))
+    if isinstance(t, Lam):
+        return Lam(_inst(t.domain, subst), _inst(t.body, subst))
+    if isinstance(t, App):
+        return App(_inst(t.func, subst), _inst(t.arg, subst))
+    return t
+
+
+class _NoProof(Exception):
+    pass
+
+
+def _auto(ctx, target, depth):
+    """Search for a closed term proving `target` in `ctx`. Tries refl,
+    assumption, intro, and applying each hypothesis (premises solved
+    recursively). Raises _NoProof if nothing is found within `depth`."""
+    tn = normalize(target)
+    parts = _eq_parts(tn)
+    if parts and def_equal(parts[1], parts[2]):
+        return App(App(Const("refl"), parts[0]), parts[1])
+    for i in range(len(ctx)):
+        if def_equal(shift(ctx[i], i + 1, 0), target):
+            return Var(i)
+    if isinstance(tn, Pi):
+        try:
+            return Lam(tn.domain, _auto([tn.domain] + ctx, tn.codomain, depth))
+        except _NoProof:
+            pass
+    if depth <= 0:
+        raise _NoProof
+    for i in range(len(ctx)):
+        try:
+            return _auto_apply(Var(i), normalize(shift(ctx[i], i + 1, 0)),
+                               ctx, target, depth)
+        except _NoProof:
+            continue
+    raise _NoProof
+
+
+def _auto_apply(head, hty, ctx, target, depth):
+    rest, arg_metas, arg_types, mid = hty, [], [], 0
+    while isinstance(rest, Pi):
+        m = Meta(mid)
+        mid += 1
+        arg_metas.append(m)
+        arg_types.append(rest.domain)         # earlier metas already substituted
+        rest = _mbeta(rest.codomain, m)
+    subst = {}
+    if not arg_metas or not _match(rest, normalize(target), subst):
+        raise _NoProof
+    args = []
+    for k, m in enumerate(arg_metas):
+        if m.id in subst:
+            args.append(subst[m.id])
+        else:
+            aty = _inst(arg_types[k], subst)
+            if _has_meta(aty):
+                raise _NoProof                  # undetermined argument; give up
+            term = _auto(ctx, aty, depth - 1)
+            subst[m.id] = term
+            args.append(term)
+    return _mk_app(head, args)
+
+
 def _instantiate(term, metas):
     if isinstance(term, Meta):
         sol = metas[term.id].solution
@@ -263,6 +334,13 @@ def run_tactics(goal, tactics):
             children = [new_goal(g.ctx, g.names, m) for m in minors]
             g.solution = _mk_app(Const(recname), [P] + [Meta(c) for c in children])
             queue[0:1] = children
+
+        elif op == "auto":
+            try:
+                g.solution = _auto(g.ctx, g.target, 6)
+                queue.pop(0)
+            except _NoProof:
+                raise TacticError("auto: could not find a proof")
 
         elif op == "apply":
             ft = to_debruijn(tac[1], g.names)
