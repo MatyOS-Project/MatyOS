@@ -232,6 +232,12 @@ preserved no matter how clever (or buggy) a tactic is.
       intuitionistic goals (identity, modus ponens, composition, K) on its own
       and fails honestly on non-theorems. The same propose→check→backtrack loop
       an LLM policy would drive. → `matyos/frontend/tactics.py:_auto`.
+- [x] **`ProofSession` — the interactive harness**: a steppable proof state.
+      `goals_json()` serializes the open goals (hypotheses + target); `step(tac)`
+      applies one tactic and returns the new state; `proof()` yields the closed,
+      kernel-checked term. This is exactly the interface an LLM agent drives:
+      see the goals → propose a tactic → observe → repeat.
+      → `matyos/frontend/tactics.py:ProofSession`.
 - [ ] REPL + LSP (hover types, goals-on-cursor, errors).
 - [ ] Live **proof-state** serialization (open goals + context) for tactic mode.
 - [ ] **Proof-search harness**: LLM proposes term/tactic → kernel verifies →

@@ -229,3 +229,29 @@ For a project it emits the manifest (theories, each theorem's
 `status`/`depends_on`, tests, and the summary). For a file it emits the ordered
 event log (`def`/`theorem`/`proof`/`test`/… each with a `status`). Exit code is
 non-zero iff something failed, so it drops straight into automation.
+
+## Driving proofs programmatically (`ProofSession`) — the LLM loop
+
+`matyos.frontend.tactics.ProofSession` exposes the proof state as a steppable,
+JSON-serializable object — the interface an external policy (an LLM agent)
+drives:
+
+```python
+from matyos.frontend.tactics import ProofSession
+from matyos.frontend.surface import setup_equality
+from matyos.kernel.core import to_debruijn
+
+setup_equality()
+s = ProofSession(to_debruijn(goal))      # goal: a kernel type
+s.goals_json()        # [{ "hypotheses": [{name,type}], "target": "..." }]
+s.step(("intro", ["A", "x"]))            # apply one tactic
+s.goals_json()        # observe the new goals
+s.step(("assumption",))
+s.is_done()           # True
+term = s.proof()      # the closed proof term — hand it to the kernel to certify
+```
+
+The loop is: **show goals → propose a tactic → observe the result → repeat**,
+with the kernel as the final, automatic arbiter of correctness. Today the
+policy is the `auto` heuristic; tomorrow it can be an LLM — the harness and the
+verifier are the same.

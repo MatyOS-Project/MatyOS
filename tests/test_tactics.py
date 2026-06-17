@@ -236,3 +236,32 @@ theorem bad : forall (A : Type), forall (B : Type), A -> B
 proof bad := by auto qed
 """)
     assert c.failures == 1 and "bad" not in c.proven
+
+
+def test_proofsession_stepwise():
+    # the interactive LLM-loop harness: inspect goals, step a tactic, repeat
+    from matyos.frontend.tactics import ProofSession
+    from matyos.frontend.surface import setup_equality
+    from matyos.kernel.core import N, to_debruijn, infer, def_equal
+    core.reset_environment()
+    setup_equality()
+    goal = N.Pi("A", N.U(0), N.Arrow(N.Var("A"), N.Var("A")))
+    s = ProofSession(to_debruijn(goal))
+    assert s.goals_json()[0]["hypotheses"] == []
+    s.step(("intro", ["A", "x"]))
+    js = s.goals_json()[0]
+    assert {"name": "x", "type": "A"} in js["hypotheses"]
+    assert js["target"] == "A"
+    s.step(("assumption",))
+    assert s.is_done()
+    assert def_equal(infer([], s.proof()), to_debruijn(goal))
+
+
+def test_proofsession_unsolved_errors():
+    from matyos.frontend.tactics import ProofSession, TacticError
+    from matyos.kernel.core import N, to_debruijn
+    s = ProofSession(to_debruijn(N.Pi("A", N.U(0), N.Arrow(N.Var("A"), N.Var("A")))))
+    s.step(("intro", ["A", "x"]))
+    import pytest as _pytest
+    with _pytest.raises(TacticError):
+        s.proof()   # still one open goal
