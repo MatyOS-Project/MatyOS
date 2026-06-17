@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from matyos.kernel import core
 from matyos.kernel.core import (
     N, Term, to_debruijn, infer, normalize, def_equal, shift, _beta, _mk_app,
-    const_type, Var, Univ, PropSort, Const, Pi, Lam, App,
+    const_type, pretty, Var, Univ, PropSort, Const, Pi, Lam, App,
 )
 
 
@@ -241,20 +241,53 @@ def _instantiate(term, metas):
     return term
 
 
-def run_tactics(goal, tactics):
-    if not isinstance(goal, Term):
-        goal = to_debruijn(goal)
+class ProofSession:
+    """A steppable proof state, for interactive / LLM-driven proving.
 
-    metas = []
+    Create with a goal, inspect `goals_json()`, apply one tactic at a time with
+    `step(tac)`, and call `proof()` once no goals remain to get the closed term
+    (which a caller then hands to the kernel). This is the harness an external
+    policy — e.g. an LLM — drives: see the goals, propose a tactic, observe the
+    new goals, repeat.
+    """
 
-    def new_goal(ctx, names, target):
-        metas.append(_Goal(ctx, names, target))
-        return len(metas) - 1
+    def __init__(self, goal):
+        if not isinstance(goal, Term):
+            goal = to_debruijn(goal)
+        self.metas = []
+        self.root = self._new([], [], goal)
+        self.queue = [self.root]
 
-    root = new_goal([], [], goal)
-    queue = [root]
+    def _new(self, ctx, names, target):
+        self.metas.append(_Goal(ctx, names, target))
+        return len(self.metas) - 1
 
-    for tac in tactics:
+    def is_done(self):
+        return not self.queue
+
+    def goals_json(self):
+        out = []
+        for gid in self.queue:
+            g = self.metas[gid]
+            hyps = [{"name": (g.names[i] if i < len(g.names) else f"h{i}"),
+                     "type": pretty(shift(g.ctx[i], i + 1, 0), g.names)}
+                    for i in range(len(g.ctx))]
+            out.append({"hypotheses": hyps,
+                        "target": pretty(g.target, g.names)})
+        return out
+
+    def proof(self):
+        if self.queue:
+            raise TacticError(f"{len(self.queue)} unsolved goal(s) remain")
+        return _instantiate(Meta(self.root), self.metas)
+
+    def run(self, tactics):
+        for tac in tactics:
+            self.step(tac)
+        return self.proof()
+
+    def step(self, tac):
+        metas, queue, new_goal = self.metas, self.queue, self._new
         if not queue:
             raise TacticError("no open goals left for tactic " + tac[0])
         gid = queue[0]
@@ -364,6 +397,7 @@ def run_tactics(goal, tactics):
         else:
             raise TacticError(f"unknown tactic: {op}")
 
-    if queue:
-        raise TacticError(f"{len(queue)} unsolved goal(s) remain")
-    return _instantiate(Meta(root), metas)
+
+def run_tactics(goal, tactics):
+    """Run a whole tactic script and return the closed proof term."""
+    return ProofSession(goal).run(tactics)
