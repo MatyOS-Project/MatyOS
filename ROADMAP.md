@@ -227,6 +227,11 @@ preserved no matter how clever (or buggy) a tactic is.
       status (certified / conditional / open), its conjecture dependencies,
       tests, and per-command events as JSON — so a tool or LLM consumes exactly
       what the kernel sees, no text-scraping. (`matyos/cli.py`.)
+- [x] **`auto` — proof search**: a bounded backtracking searcher (refl /
+      assumption / intro / apply-hypotheses) that *finds* proofs of
+      intuitionistic goals (identity, modus ponens, composition, K) on its own
+      and fails honestly on non-theorems. The same propose→check→backtrack loop
+      an LLM policy would drive. → `matyos/frontend/tactics.py:_auto`.
 - [ ] REPL + LSP (hover types, goals-on-cursor, errors).
 - [ ] Live **proof-state** serialization (open goals + context) for tactic mode.
 - [ ] **Proof-search harness**: LLM proposes term/tactic → kernel verifies →

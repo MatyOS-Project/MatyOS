@@ -212,3 +212,27 @@ theorem bad : forall (a : Nat), Eq Nat (succ a) a
 proof bad := by intro a apply (cong Nat Nat succ a a) qed
 """)
     assert c.failures == 1 and "bad" not in c.proven
+
+
+def test_auto_proves_combinators():
+    c = run("""
+theorem id_thm : forall (A : Type), A -> A
+proof id_thm := by auto qed
+theorem mp : forall (A : Type), forall (B : Type), (A -> B) -> A -> B
+proof mp := by auto qed
+theorem comp : forall (A : Type), forall (B : Type), forall (C : Type), (B -> C) -> (A -> B) -> A -> C
+proof comp := by auto qed
+theorem k : forall (A : Type), forall (B : Type), A -> B -> A
+proof k := by auto qed
+""")
+    assert c.failures == 0
+    for n in ("id_thm", "mp", "comp", "k"):
+        assert n in c.proven
+
+
+def test_auto_fails_on_non_theorem():
+    c = run("""
+theorem bad : forall (A : Type), forall (B : Type), A -> B
+proof bad := by auto qed
+""")
+    assert c.failures == 1 and "bad" not in c.proven

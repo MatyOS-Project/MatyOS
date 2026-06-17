@@ -1,0 +1,16 @@
+-- `auto` searches for a proof by itself: it tries refl / assumption / intro /
+-- applying hypotheses (solving premises recursively). The kernel still
+-- re-checks whatever it finds. This is the search an LLM prover would drive.
+
+theorem identity   : forall (A : Type), A -> A
+proof identity   := by auto qed
+
+theorem modus_ponens : forall (A : Type), forall (B : Type), (A -> B) -> A -> B
+proof modus_ponens := by auto qed
+
+theorem composition : forall (A : Type), forall (B : Type), forall (C : Type),
+  (B -> C) -> (A -> B) -> A -> C
+proof composition := by auto qed
+
+theorem const_k : forall (A : Type), forall (B : Type), A -> B -> A
+proof const_k := by auto qed
