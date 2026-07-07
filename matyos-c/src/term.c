@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+TmDeltaHook tm_delta_hook = NULL;   /* set by env.c when an environment loads */
+TmIotaHook  tm_iota_hook  = NULL;
+
 /* ---- arena ---- */
 #define ARENA_BLOCK (1 << 16)
 struct Arena {
@@ -92,13 +95,24 @@ Term *tm_beta(Arena *ar, Term *body, Term *arg) {
 /* ---- normalize (full beta normal form) ---- */
 Term *tm_normalize(Arena *ar, Term *t) {
     switch (t->kind) {
-    case T_VAR: case T_UNIV: case T_PROP: case T_CONST: return t;
+    case T_VAR: case T_UNIV: case T_PROP: return t;
+    case T_CONST: {
+        if (tm_delta_hook) {                       /* delta: unfold a definition */
+            Term *v = tm_delta_hook(ar, t);
+            if (v) return tm_normalize(ar, v);
+        }
+        return t;
+    }
     case T_PI:  return mk_pi (ar, tm_normalize(ar, t->a), tm_normalize(ar, t->b));
     case T_LAM: return mk_lam(ar, tm_normalize(ar, t->a), tm_normalize(ar, t->b));
     case T_APP: {
         Term *f = tm_normalize(ar, t->a);
         Term *x = tm_normalize(ar, t->b);
         if (f->kind == T_LAM) return tm_normalize(ar, tm_beta(ar, f->b, x));
+        if (tm_iota_hook) {                        /* iota: fire a recursor */
+            Term *r = tm_iota_hook(ar, mk_app(ar, f, x));
+            if (r) return tm_normalize(ar, r);
+        }
         return mk_app(ar, f, x);
     }
     }

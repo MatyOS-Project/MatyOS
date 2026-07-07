@@ -47,4 +47,14 @@ int   tm_eq(Term *x, Term *y);                     /* structural (alpha via de B
 int   tm_def_equal(Arena *ar, Term *x, Term *y);   /* equal normal forms */
 void  tm_print(Term *t);                           /* debug printer */
 
+/* Delta/iota reduction hooks, installed by the environment (env.c). While NULL
+ * (no environment loaded), normalize does pure beta only — the M1/M2 behaviour.
+ *  - delta: given a Const, return its unfolding (definition body), or NULL.
+ *  - iota:  given an application spine, return the recursor/eliminator
+ *           contractum, or NULL if it is not a redex. */
+typedef Term *(*TmDeltaHook)(Arena *ar, Term *cst);
+typedef Term *(*TmIotaHook)(Arena *ar, Term *app);
+extern TmDeltaHook tm_delta_hook;
+extern TmIotaHook  tm_iota_hook;
+
 #endif /* MATYOS_TERM_H */

@@ -19,7 +19,7 @@ make CC="python -m ziglang cc" test
 src/
   term.{h,c}    kernel terms (de Bruijn), arena, shift/subst/normalize/def_equal   [M1 ✓]
   infer.{h,c}   the trusted type checker (imax Pi, impredicative Prop)              [M2 ✓]
-  env.{h,c}     global environment, inductives, recursors, iota, positivity         [M3]
+  env.{h,c}     global environment, inductives, recursors, iota, positivity         [M3 ✓]
   equality.*    Eq / refl / J and transport                                         [M4]
   parse.{h,c}   tokenizer + parser for the .elk surface language                    [M5]
   check.{h,c}   commands: def/axiom/inductive/example/check/eval + scientific method [M5/M6]
