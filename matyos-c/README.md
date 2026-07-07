@@ -21,11 +21,11 @@ src/
   infer.{h,c}   the trusted type checker (imax Pi, impredicative Prop)              [M2 ✓]
   env.{h,c}     global environment, inductives, recursors, iota, positivity         [M3 ✓]
   env.{h,c}     Eq / refl / J eliminator + transport (in env.c)                      [M4 ✓]
-  parse.{h,c}   tokenizer + parser for the .elk surface language                    [M5]
-  check.{h,c}   commands: def/axiom/inductive/example/check/eval + scientific method [M5/M6]
+  parse.{h,c}   tokenizer + parser for the .elk surface language                    [M5 ✓]
+  check.{h,c}   commands: def/axiom/inductive/example/check/eval + scientific method [M5 ✓ / M6]
   tactics.*     intro/exact/assumption/refl/rewrite/induction/apply/auto            [M7]
   project.*     .thm/.prf/.hyp/.test, .matyos archives, --json                      [M8]
-  main.c        the `matyos-c` CLI
+  main.c        the `matyos-c` CLI  (matyos-c check <file.elk>)                      [M5 ✓]
 test/           unit tests per module
 ```
 

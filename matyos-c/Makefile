@@ -6,22 +6,29 @@
 CC     ?= cc
 CFLAGS ?= -std=c11 -O2 -Wall -Wextra
 SRC    := $(wildcard src/*.c)
+LIBSRC := $(filter-out src/main.c, $(SRC))   # kernel/front-end, no CLI entry point
 
-.PHONY: all test clean
-all: test
+.PHONY: all test bin clean
+all: test bin
 
 build:
 	mkdir -p build
 
-test: build $(SRC) $(wildcard test/*.c)
-	$(CC) $(CFLAGS) $(SRC) test/test_term.c -o build/test_term
+# the matyos-c CLI
+bin: build $(SRC)
+	$(CC) $(CFLAGS) $(SRC) -o build/matyos-c
+
+test: build $(LIBSRC) $(wildcard test/*.c)
+	$(CC) $(CFLAGS) $(LIBSRC) test/test_term.c -o build/test_term
 	./build/test_term
-	$(CC) $(CFLAGS) $(SRC) test/test_infer.c -o build/test_infer
+	$(CC) $(CFLAGS) $(LIBSRC) test/test_infer.c -o build/test_infer
 	./build/test_infer
-	$(CC) $(CFLAGS) $(SRC) test/test_inductive.c -o build/test_inductive
+	$(CC) $(CFLAGS) $(LIBSRC) test/test_inductive.c -o build/test_inductive
 	./build/test_inductive
-	$(CC) $(CFLAGS) $(SRC) test/test_equality.c -o build/test_equality
+	$(CC) $(CFLAGS) $(LIBSRC) test/test_equality.c -o build/test_equality
 	./build/test_equality
+	$(CC) $(CFLAGS) $(LIBSRC) test/test_parse.c -o build/test_parse
+	./build/test_parse
 
 clean:
 	rm -rf build

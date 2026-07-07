@@ -61,4 +61,12 @@ const char *declare_inductive(Arena *ar, const char *name,
                               int nparams, SParam *params, int univ,
                               int nctors, SCtor *ctors, int motive_univ);
 
+/* Surface-driven form used by the .elk front end: each constructor is given by
+ * its full type (a surface SNode, e.g. `Nat -> Nat` for succ); this decomposes
+ * the Pi-telescope into declare_inductive's arg format (a domain whose head is
+ * `name` becomes a recursive REC argument). `sort` must be a Type<u> node. */
+const char *declare_inductive_ctypes(Arena *ar, const char *name,
+                                     int nparams, SParam *params, SNode *sort,
+                                     int nctors, const char **cnames, SNode **ctypes);
+
 #endif /* MATYOS_ENV_H */

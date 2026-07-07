@@ -177,8 +177,7 @@ static Term *to_db(Arena *ar, SNode *n, NameCtx *env) {
         int idx = 0;
         for (NameCtx *c = env; c; c = c->rest, idx++)
             if (strcmp(c->name, n->name) == 0) return mk_var(ar, idx);
-        snprintf(env_err, sizeof env_err, "unbound name in generated type: %s", n->name);
-        return NULL;
+        return mk_const(ar, n->name);   /* not bound -> a global constant */
     }
     case SN_CONST: return mk_const(ar, n->name);
     case SN_UNIV:  return mk_univ(ar, n->level);
@@ -335,6 +334,37 @@ const char *declare_inductive(Arena *ar, const char *name,
     if (!check_is_type(ar, rec_name)) return NULL;
 
     return rec_name;
+}
+
+/* Head of an application spine, as a name (SN_VAR/SN_CONST), else NULL. */
+static const char *s_head_name(SNode *n) {
+    while (n->kind == SN_APP) n = n->a;
+    return (n->kind == SN_VAR || n->kind == SN_CONST) ? n->name : NULL;
+}
+
+const char *declare_inductive_ctypes(Arena *ar, const char *name,
+                                     int nparams, SParam *params, SNode *sort,
+                                     int nctors, const char **cnames, SNode **ctypes) {
+    if (sort->kind != SN_UNIV) {
+        snprintf(env_err, sizeof env_err,
+                 "inductive '%s': only 'Type[u]' result sorts are supported", name);
+        return NULL;
+    }
+    SCtor *ctors = (SCtor *)arena_alloc(ar, sizeof(SCtor) * (nctors ? nctors : 1));
+    for (int ci = 0; ci < nctors; ci++) {
+        SArg *args = (SArg *)arena_alloc(ar, sizeof(SArg) * 64);
+        int na = 0;
+        SNode *t = ctypes[ci];
+        while (t->kind == SN_PI) {                 /* peel the argument telescope */
+            const char *hd = s_head_name(t->a);
+            args[na].name = t->bind ? t->bind : "_";
+            args[na].type = (hd && strcmp(hd, name) == 0) ? s_rec() : t->a;
+            na++;
+            t = t->b;
+        }
+        ctors[ci].name = cnames[ci]; ctors[ci].nargs = na; ctors[ci].args = args;
+    }
+    return declare_inductive(ar, name, nparams, params, sort->level, nctors, ctors, 0);
 }
 
 /* ========================================================================

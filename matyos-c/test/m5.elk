@@ -1,0 +1,19 @@
+-- A small MatyOS-C sample: Peano arithmetic, checked by `matyos-c check`.
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+def add (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+
+check add
+eval add (succ (succ zero)) (succ zero)          -- 2 + 1
+
+-- addition computes, so equalities on numerals hold by refl
+example : Eq Nat (add (succ zero) (succ zero)) (succ (succ zero)) :=
+  refl Nat (succ (succ zero))
+
+-- the polymorphic identity, and reflexivity for any type
+def id (A : Type) (x : A) : A := x
+example : forall (A : Type), forall (a : A), Eq A a a :=
+  fun (A : Type) (a : A) => refl A a
