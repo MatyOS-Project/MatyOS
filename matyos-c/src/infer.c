@@ -1,4 +1,5 @@
 #include "infer.h"
+#include "env.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -21,8 +22,11 @@ Term *infer(Arena *ar, Ctx *ctx, Term *t) {
         return mk_univ(ar, t->i + 1);            /* Type i : Type (i+1) */
     case T_PROP:
         return mk_univ(ar, 0);                   /* Prop : Type0 */
-    case T_CONST:
-        FAIL("unknown constant: %s", t->name);   /* no environment until M3 */
+    case T_CONST: {
+        Term *ty = env_const_type(t->name);      /* closed: valid in any context */
+        if (!ty) FAIL("unknown constant: %s", t->name);
+        return ty;
+    }
     case T_VAR: {
         Ctx *c = ctx; int k = t->i;
         while (k > 0 && c) { c = c->rest; k--; }
