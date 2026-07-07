@@ -24,13 +24,15 @@ src/
   parse.{h,c}   tokenizer + parser for the .elk surface language                    [M5 ✓]
   check.{h,c}   commands: def/axiom/inductive/example/check/eval + scientific method [M5 ✓ / M6 ✓]
   tactics.{h,c} intro/exact/assumption/refl/rewrite/induction/apply/auto            [M7 ✓]
-  project.{h,c} .thm/.prf/.hyp/.test project dirs + scaffold; --json (check.c)       [M8a,M8b ✓ / M8c]
-  main.c        the `matyos-c` CLI  (matyos-c check <file.elk>)                      [M5 ✓]
+  project.{h,c} project dirs + scaffold + .matyos archives (new/pack/build/info)     [M8 ✓]
+  zip.{h,c}     minimal STORE-method zip reader/writer for .matyos                   [M8 ✓]
+  main.c        the `matyos-c` CLI (check[--json]/new/pack/unpack/build/info)        [M8 ✓]
 test/           unit tests per module
 ```
 
-Goal (**reached** as of M7): `matyos-c check <file>` reproduces the Python
+**Status: complete (M1–M8).** `matyos-c check <file>` reproduces the Python
 PROVEN/QED/PASS verdicts on every `../stdlib/*.elk` and
 `../examples/proofs/*.elk` file — including the tactic proofs of `add_comm`,
-`add_assoc`, and the semiring/ordering laws. (M8, the `.matyos` project
-archive + `--json` output, is still open.)
+`add_assoc`, and the semiring/ordering laws. The CLI also does projects
+(`new`/`check <dir>`/`pack`/`build`/`info`) with `.matyos` archives that
+Python's `matyos` reads interchangeably, and `--json` machine output.

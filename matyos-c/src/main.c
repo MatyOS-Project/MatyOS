@@ -23,10 +23,21 @@ static char *read_file(const char *path) {
     return buf;
 }
 
+static int ends_with(const char *s, const char *suf) {
+    size_t n = strlen(s), m = strlen(suf);
+    return n >= m && strcmp(s + n - m, suf) == 0;
+}
+
 static int cmd_check(const char *path, int as_json) {
     if (path_is_dir(path)) {                 /* a project directory */
         Arena *ar = arena_new();
         int failures = project_check(ar, path);
+        arena_free(ar);
+        return failures > 0 ? 1 : (failures < 0 ? 2 : 0);
+    }
+    if (ends_with(path, ".matyos")) {        /* a sealed archive */
+        Arena *ar = arena_new();
+        int failures = project_check_archive(ar, path);
         arena_free(ar);
         return failures > 0 ? 1 : (failures < 0 ? 2 : 0);
     }
@@ -59,23 +70,36 @@ static int cmd_check(const char *path, int as_json) {
 
 int main(int argc, char **argv) {
     /* collect flags */
-    int as_json = 0;
-    const char *path = NULL, *cmd = NULL;
+    int as_json = 0, force = 0;
+    const char *cmd = NULL, *a1 = NULL, *a2 = NULL;
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--json") == 0) as_json = 1;
-        else if (!cmd && (!strcmp(argv[i], "check") || !strcmp(argv[i], "version") || !strcmp(argv[i], "new"))) cmd = argv[i];
-        else if (!path) path = argv[i];
+        if (!strcmp(argv[i], "--json")) as_json = 1;
+        else if (!strcmp(argv[i], "--force")) force = 1;
+        else if (!cmd) cmd = argv[i];
+        else if (!a1) a1 = argv[i];
+        else if (!a2) a2 = argv[i];
     }
-    if (cmd && !strcmp(cmd, "version")) { printf("matyos-c 0.1 (C rewrite)\n"); return 0; }
-    if (cmd && !strcmp(cmd, "new")) {
-        if (!path) { fprintf(stderr, "usage: matyos-c new <name>\n"); return 2; }
-        if (project_scaffold(path)) return 1;
-        printf("Created project '%s'.  Try:  matyos-c check %s\n", path, path);
+    if (!cmd) { fprintf(stderr, "usage: matyos-c <check|new|pack|unpack|build|info|version> ...\n"); return 1; }
+    if (!strcmp(cmd, "version")) { printf("matyos-c 0.1 (C rewrite)\n"); return 0; }
+    if (!strcmp(cmd, "check")) { if (!a1) { fprintf(stderr, "usage: matyos-c check [--json] <path>\n"); return 2; } return cmd_check(a1, as_json); }
+    if (!strcmp(cmd, "new")) {
+        if (!a1) { fprintf(stderr, "usage: matyos-c new <name>\n"); return 2; }
+        if (project_scaffold(a1)) return 1;
+        printf("Created project '%s'.  Try:  matyos-c check %s\n", a1, a1);
         return 0;
     }
-    if (cmd && !strcmp(cmd, "check") && path) return cmd_check(path, as_json);
-    if (!cmd && path) return cmd_check(path, as_json);   /* matyos-c <file-or-dir> */
-    fprintf(stderr, "usage: matyos-c check [--json] <file.elk | project-dir>\n"
-                    "       matyos-c new <name>\n");
-    return 1;
+    if (!strcmp(cmd, "pack") || !strcmp(cmd, "unpack") || !strcmp(cmd, "build") || !strcmp(cmd, "info")) {
+        if (!a1) { fprintf(stderr, "usage: matyos-c %s <path> [out]\n", cmd); return 2; }
+        Arena *ar = arena_new(); int rc;
+        if (!strcmp(cmd, "pack"))       rc = project_pack(ar, a1, a2);
+        else if (!strcmp(cmd, "unpack")) rc = project_unpack(ar, a1, a2);
+        else if (!strcmp(cmd, "build"))  rc = project_build(ar, a1, a2, force);
+        else                             rc = project_info(ar, a1);
+        arena_free(ar);
+        return rc;
+    }
+    /* bare path -> check it */
+    if (path_is_dir(cmd) || ends_with(cmd, ".elk") || ends_with(cmd, ".matyos")) return cmd_check(cmd, as_json);
+    fprintf(stderr, "matyos-c: unknown command '%s'\n", cmd);
+    return 2;
 }
