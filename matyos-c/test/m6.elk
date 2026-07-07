@@ -1,0 +1,20 @@
+-- Scientific-method workflow: hypotheses/conjectures are assumed (realistic),
+-- theorems are stated then discharged, and a proof is reported "certified" only
+-- if it uses no assumption, else "conditional".
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+-- a fully certified theorem (no assumptions)
+theorem id_thm : forall (A : Type), A -> A
+proof id_thm := fun (A : Type) (x : A) => x
+
+-- an assumption we have not proved
+conjecture classical : forall (P : Type), P
+
+-- a theorem discharged USING the conjecture -> reported conditional on it
+theorem anything : forall (P : Type), P
+proof anything := classical
+
+-- computation still works; a passing test on numerals
+test one_plus : succ zero = succ zero

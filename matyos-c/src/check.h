@@ -4,7 +4,19 @@
 #define MATYOS_CHECK_H
 #include "parse.h"
 
-typedef struct { int failures; } Checker;
+/* a string set / string->set map, arena-allocated */
+typedef struct StrList { char *s; struct StrList *next; } StrList;
+typedef struct Oblig   { char *name; Term *type; struct Oblig *next; } Oblig;
+typedef struct DepMap  { char *name; StrList *deps; struct DepMap *next; } DepMap;
+
+typedef struct {
+    Arena  *ar;
+    int     failures;
+    Oblig  *obligations;    /* theorem name -> stated (de Bruijn) type      */
+    StrList *assumptions;   /* hypothesis/conjecture names (trusted)        */
+    StrList *proven;        /* theorem names discharged by a proof          */
+    DepMap  *cond_deps;     /* const name -> assumptions it depends on      */
+} Checker;
 
 void checker_init(Arena *ar, Checker *c);              /* fresh env + equality prelude */
 void checker_exec(Arena *ar, Checker *c, Cmd *cmd, int echo);

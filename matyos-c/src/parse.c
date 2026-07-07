@@ -287,6 +287,45 @@ int parser_next(Parser *p, Cmd *out) {
         if (!(out->body = parse_term(p))) return 0;
         return 1;
     }
+    /* ----- scientific-method commands ----- */
+    if (at_kw(p, "theorem")) {
+        p->i++;
+        out->kind = CMD_THEOREM;
+        if (!(out->name = ident(p))) return 0;
+        SParam *bs = (SParam *)arena_alloc(p->ar, sizeof(SParam) * 64);
+        int nb = parse_binders(p, bs, 64);
+        if (nb < 0) return 0;
+        out->nparams = nb; out->params = bs;
+        if (!eat_sym(p, ":")) return 0;
+        if (!(out->type = parse_term(p))) return 0;
+        return 1;
+    }
+    if (at_kw(p, "proof")) {
+        p->i++;
+        out->kind = CMD_PROOF;
+        if (!(out->name = ident(p))) return 0;
+        if (!eat_sym(p, ":=")) return 0;
+        if (at_kw(p, "by")) { snprintf(parse_err, sizeof parse_err, "tactic blocks arrive in M7"); return 0; }
+        if (!(out->body = parse_term(p))) return 0;
+        return 1;
+    }
+    if (at_kw(p, "hypothesis") || at_kw(p, "conjecture")) {
+        out->kind = at_kw(p, "hypothesis") ? CMD_HYP : CMD_CONJ;
+        p->i++;
+        if (!(out->name = ident(p))) return 0;
+        if (!eat_sym(p, ":")) return 0;
+        if (!(out->type = parse_term(p))) return 0;
+        return 1;
+    }
+    if (at_kw(p, "test")) {
+        p->i++;
+        out->kind = CMD_TEST;
+        if (!(out->name = ident(p))) return 0;
+        if (!eat_sym(p, ":")) return 0;
+        if (!(out->body = parse_term(p))) return 0;
+        if (at_sym(p, "=")) { p->i++; if (!(out->rhs = parse_term(p))) return 0; }
+        return 1;
+    }
     snprintf(parse_err, sizeof parse_err, "expected a command, got '%s'", cur(p).text);
     return 0;
 }
