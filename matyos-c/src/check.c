@@ -64,7 +64,7 @@ static void emit(Checker *c, const char *kind, const char *name, const char *sta
     e->name = arena_strdup(c->ar, name ? name : "");
     e->status = arena_strdup(c->ar, status);
     e->detail = arena_strdup(c->ar, detail ? detail : "");
-    e->deps = deps; e->next = NULL;
+    e->theory = c->cur_theory; e->deps = deps; e->next = NULL;
     if (c->events_tail) c->events_tail->next = e; else c->events = e;
     c->events_tail = e;
 }
@@ -86,7 +86,7 @@ static Term *term_of(Arena *ar, Cmd *cmd, Term *goal) {
 void checker_init(Arena *ar, Checker *c) {
     c->ar = ar; c->failures = 0;
     c->obligations = NULL; c->assumptions = NULL; c->proven = NULL; c->cond_deps = NULL;
-    c->events = NULL; c->events_tail = NULL;
+    c->events = NULL; c->events_tail = NULL; c->cur_theory = NULL;
     env_reset();
     env_setup_equality(ar);
 }

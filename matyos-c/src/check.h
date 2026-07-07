@@ -12,6 +12,7 @@ typedef struct DepMap  { char *name; StrList *deps; struct DepMap *next; } DepMa
 /* an ordered structured log entry (for --json and project reports) */
 typedef struct CheckEvent {
     char *kind, *name, *status, *detail;   /* e.g. kind="proof", status="PROVEN" */
+    const char *theory;                    /* project theory this came from, or NULL */
     StrList *deps;
     struct CheckEvent *next;
 } CheckEvent;
@@ -24,6 +25,7 @@ typedef struct {
     StrList *proven;        /* theorem names discharged by a proof          */
     DepMap  *cond_deps;     /* const name -> assumptions it depends on      */
     CheckEvent *events, *events_tail;      /* ordered event log             */
+    const char *cur_theory;                /* theory tag for new events     */
 } Checker;
 
 void checker_init(Arena *ar, Checker *c);              /* fresh env + equality prelude */

@@ -1,0 +1,11 @@
+-- Shared vocabulary for the arithmetic theory.
+inductive Nat : Type :=
+  | zero : Nat
+  | succ : Nat -> Nat
+
+def add (m : Nat) (n : Nat) : Nat :=
+  Nat.rec (fun (_ : Nat) => Nat) n (fun (k : Nat) (ih : Nat) => succ ih) m
+
+def cong (A : Type) (B : Type) (f : A -> B) (a : A) (b : A) (e : Eq A a b)
+    : Eq B (f a) (f b) :=
+  Eq.J A a (fun (x : A) (_ : Eq A a x) => Eq B (f a) (f x)) (refl B (f a)) b e

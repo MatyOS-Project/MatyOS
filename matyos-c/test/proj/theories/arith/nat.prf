@@ -1,0 +1,1 @@
+proof add_zero_right := by induction n refl intro k ih rewrite ih refl qed

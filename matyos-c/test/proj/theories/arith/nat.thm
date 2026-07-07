@@ -1,0 +1,1 @@
+theorem add_zero_right : forall (n : Nat), Eq Nat (add n zero) n

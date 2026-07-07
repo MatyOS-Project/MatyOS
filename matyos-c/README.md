@@ -24,7 +24,7 @@ src/
   parse.{h,c}   tokenizer + parser for the .elk surface language                    [M5 ✓]
   check.{h,c}   commands: def/axiom/inductive/example/check/eval + scientific method [M5 ✓ / M6 ✓]
   tactics.{h,c} intro/exact/assumption/refl/rewrite/induction/apply/auto            [M7 ✓]
-  project.*     .thm/.prf/.hyp/.test, .matyos archives, --json                      [M8]
+  project.{h,c} .thm/.prf/.hyp/.test project dirs + scaffold; --json (check.c)       [M8a,M8b ✓ / M8c]
   main.c        the `matyos-c` CLI  (matyos-c check <file.elk>)                      [M5 ✓]
 test/           unit tests per module
 ```

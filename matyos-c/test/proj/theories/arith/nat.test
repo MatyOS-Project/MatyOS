@@ -1,0 +1,3 @@
+test add_2_3 :
+  add (succ (succ zero)) (succ (succ (succ zero)))
+  = succ (succ (succ (succ (succ zero))))
