@@ -18,6 +18,20 @@ void  env_declare_const(const char *name, Term *type, Term *value /* may be NULL
 Term *env_const_type(const char *name);   /* NULL if unknown */
 Term *env_const_value(const char *name);  /* NULL if unknown or opaque */
 
+/* A checked global definition: verifies `type` is a sort and `value : type`,
+ * then registers it so Const(name) delta-reduces to value. Returns 0 on a type
+ * error (env_err set), 1 on success. Mirrors core.define. */
+int   env_define(Arena *ar, const char *name, Term *type, Term *value);
+
+/* ---- custom eliminator reductions (e.g. the J rule), keyed by constant name.
+ *      The generic recursor scheme (declare_inductive) does not cover J. ---- */
+typedef Term *(*Reducer)(Arena *ar, Term **spine_args, int nargs);
+void  env_register_reducer(const char *name, Reducer fn);
+
+/* Register Eq, refl and the based J eliminator + its reduction rule (mirrors
+ * kernel/equality.py:setup_equality). */
+void  env_setup_equality(Arena *ar);
+
 /* ---- a tiny named surface-term builder, used only to construct the generated
  *      inductive/constructor/recursor types before lowering to de Bruijn.
  *      (The .elk parser in M5 will lower to de Bruijn the same way.) ---- */
@@ -30,6 +44,10 @@ SNode *s_pi(Arena *ar, const char *bind, SNode *dom, SNode *cod);
 SNode *s_lam(Arena *ar, const char *bind, SNode *dom, SNode *body);
 SNode *s_app(Arena *ar, SNode *f, SNode *x);
 SNode *s_rec(void);   /* sentinel: a recursive constructor argument (= D params) */
+
+/* Lower a closed named surface term to a de Bruijn kernel term (NULL if it
+ * references an unbound name). */
+Term *s_to_term(Arena *ar, SNode *n);
 
 /* ---- declaring an inductive type ---- */
 typedef struct { const char *name; SNode *type; } SParam;  /* parameter / telescope entry */

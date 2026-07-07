@@ -31,15 +31,31 @@ typedef struct RecEntry {
     struct RecEntry *next;
 } RecEntry;
 
+typedef struct RedEntry {
+    char *name; Reducer fn; struct RedEntry *next;
+} RedEntry;
+
 static GEntry   *g_consts = NULL;
 static RecEntry *g_recs   = NULL;
+static RedEntry *g_reds   = NULL;
 
 static void install_hooks(void);
 
 void env_reset(void) {
     while (g_consts) { GEntry *n = g_consts->next; free(g_consts->name); free(g_consts); g_consts = n; }
     while (g_recs)   { RecEntry *n = g_recs->next; free(g_recs->rec_name); free(g_recs->inductive); free(g_recs); g_recs = n; }
+    while (g_reds)   { RedEntry *n = g_reds->next; free(g_reds->name); free(g_reds); g_reds = n; }
     install_hooks();
+}
+
+void env_register_reducer(const char *name, Reducer fn) {
+    RedEntry *e = (RedEntry *)malloc(sizeof(RedEntry));
+    e->name = xstrdup(name); e->fn = fn; e->next = g_reds; g_reds = e;
+}
+static Reducer find_reducer(const char *name) {
+    for (RedEntry *e = g_reds; e; e = e->next)
+        if (strcmp(e->name, name) == 0) return e->fn;
+    return NULL;
 }
 
 void env_declare_const(const char *name, Term *type, Term *value) {
@@ -87,7 +103,10 @@ static Term *iota_hook(Arena *ar, Term *app) {
     Term *head = spine(ar, app, &args, &n);
     if (head->kind != T_CONST) return NULL;
     RecEntry *info = find_rec(head->name);
-    if (!info) return NULL;
+    if (!info) {                          /* not a recursor: try a custom reducer (J) */
+        Reducer r = find_reducer(head->name);
+        return r ? r(ar, args, n) : NULL;
+    }
 
     int p = info->num_params, nc = info->nctors;
     int expected = p + 1 + nc + 1;      /* params, motive, minors, scrutinee */
@@ -178,6 +197,8 @@ static Term *to_db(Arena *ar, SNode *n, NameCtx *env) {
     }
     return NULL;
 }
+
+Term *s_to_term(Arena *ar, SNode *n) { return to_db(ar, n, NULL); }
 
 static int s_mentions(SNode *n, const char *name) {
     if (n == s_rec()) return 0;
@@ -314,4 +335,76 @@ const char *declare_inductive(Arena *ar, const char *name,
     if (!check_is_type(ar, rec_name)) return NULL;
 
     return rec_name;
+}
+
+/* ========================================================================
+ * Checked definitions.
+ * ===================================================================== */
+int env_define(Arena *ar, const char *name, Term *type, Term *value) {
+    Term *s = infer(ar, NULL, type);
+    if (!s) { snprintf(env_err, sizeof env_err, "definition '%s': type does not check: %s", name, infer_err); return 0; }
+    s = tm_normalize(ar, s);
+    if (s->kind != T_UNIV && s->kind != T_PROP) {
+        snprintf(env_err, sizeof env_err, "definition '%s': annotation is not a type", name); return 0;
+    }
+    Term *bt = infer(ar, NULL, value);
+    if (!bt) { snprintf(env_err, sizeof env_err, "definition '%s': body does not check: %s", name, infer_err); return 0; }
+    if (!tm_def_equal(ar, bt, type)) {
+        snprintf(env_err, sizeof env_err, "definition '%s': body type does not match annotation", name); return 0;
+    }
+    env_declare_const(name, type, value);
+    return 1;
+}
+
+/* ========================================================================
+ * Propositional equality: Eq / refl / Eq.J + the J reduction rule.
+ * Mirrors kernel/equality.py.
+ * ===================================================================== */
+/* Eq.J A a P d b (refl _ _)  ==>  d */
+static Term *j_reduce(Arena *ar, Term **args, int n) {
+    if (n < 6) return NULL;
+    Term **ea; int en;
+    Term *ehead = spine(ar, tm_normalize(ar, args[5]), &ea, &en);
+    if (ehead->kind == T_CONST && strcmp(ehead->name, "refl") == 0) {
+        Term *result = args[3];                 /* d */
+        for (int k = 6; k < n; k++) result = mk_app(ar, result, args[k]);
+        return result;
+    }
+    return NULL;
+}
+
+void env_setup_equality(Arena *ar) {
+    SNode *U0 = s_univ(ar, 0);
+    SNode *vA = s_var(ar, "A"), *va = s_var(ar, "a");
+    #define ARROW(d, c)  s_pi(ar, "_", (d), (c))
+    #define EQS(A, x, y) s_app(ar, s_app(ar, s_app(ar, s_const(ar, "Eq"), (A)), (x)), (y))
+    #define REFLS(A, x)  s_app(ar, s_app(ar, s_const(ar, "refl"), (A)), (x))
+    #define PAPP(P, b, e) s_app(ar, s_app(ar, (P), (b)), (e))
+
+    /* Eq : (A:Type0) -> A -> A -> Type0 */
+    env_declare_const("Eq",
+        s_to_term(ar, s_pi(ar, "A", U0, ARROW(vA, ARROW(vA, U0)))), NULL);
+
+    /* refl : (A:Type0)(a:A) -> Eq A a a */
+    env_declare_const("refl",
+        s_to_term(ar, s_pi(ar, "A", U0, s_pi(ar, "a", vA, EQS(vA, va, va)))), NULL);
+
+    /* Eq.J : (A:Type0)(a:A)(P:(b:A)->Eq A a b->Type0)(d:P a (refl A a))
+     *        (b2:A)(e:Eq A a b2) -> P b2 e */
+    SNode *vP = s_var(ar, "P"), *vb = s_var(ar, "b"), *vb2 = s_var(ar, "b2"), *ve = s_var(ar, "e");
+    SNode *j_type =
+        s_pi(ar, "A", U0,
+          s_pi(ar, "a", vA,
+            s_pi(ar, "P", s_pi(ar, "b", vA, ARROW(EQS(vA, va, vb), U0)),
+              s_pi(ar, "d", PAPP(vP, va, REFLS(vA, va)),
+                s_pi(ar, "b2", vA,
+                  s_pi(ar, "e", EQS(vA, va, vb2),
+                    PAPP(vP, vb2, ve)))))));
+    env_declare_const("Eq.J", s_to_term(ar, j_type), NULL);
+
+    env_register_reducer("Eq.J", j_reduce);
+    #undef ARROW
+    #undef EQS
+    #undef REFLS
+    #undef PAPP
 }

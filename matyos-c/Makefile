@@ -20,6 +20,8 @@ test: build $(SRC) $(wildcard test/*.c)
 	./build/test_infer
 	$(CC) $(CFLAGS) $(SRC) test/test_inductive.c -o build/test_inductive
 	./build/test_inductive
+	$(CC) $(CFLAGS) $(SRC) test/test_equality.c -o build/test_equality
+	./build/test_equality
 
 clean:
 	rm -rf build
