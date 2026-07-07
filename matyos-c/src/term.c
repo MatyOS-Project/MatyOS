@@ -152,3 +152,31 @@ void tm_print(Term *t) {
     case T_META: printf("?%d", t->i); break;
     }
 }
+
+/* ---- printer into a growable string ---- */
+typedef struct { char *buf; size_t len, cap; } SB;
+static void sb_puts(SB *s, const char *p) {
+    size_t n = strlen(p);
+    if (s->len + n + 1 > s->cap) { while (s->len + n + 1 > s->cap) s->cap *= 2; s->buf = realloc(s->buf, s->cap); }
+    memcpy(s->buf + s->len, p, n); s->len += n; s->buf[s->len] = 0;
+}
+static void tm_build(SB *s, Term *t) {
+    char tmp[32];
+    switch (t->kind) {
+    case T_VAR:  snprintf(tmp, sizeof tmp, "#%d", t->i); sb_puts(s, tmp); break;
+    case T_UNIV: snprintf(tmp, sizeof tmp, "Type%d", t->i); sb_puts(s, tmp); break;
+    case T_PROP: sb_puts(s, "Prop"); break;
+    case T_CONST:sb_puts(s, t->name); break;
+    case T_PI:   sb_puts(s, "(Pi "); tm_build(s, t->a); sb_puts(s, " -> "); tm_build(s, t->b); sb_puts(s, ")"); break;
+    case T_LAM:  sb_puts(s, "(fun "); tm_build(s, t->a); sb_puts(s, " => "); tm_build(s, t->b); sb_puts(s, ")"); break;
+    case T_APP:  sb_puts(s, "("); tm_build(s, t->a); sb_puts(s, " "); tm_build(s, t->b); sb_puts(s, ")"); break;
+    case T_META: snprintf(tmp, sizeof tmp, "?%d", t->i); sb_puts(s, tmp); break;
+    }
+}
+char *tm_str(Arena *ar, Term *t) {
+    SB s; s.cap = 64; s.len = 0; s.buf = malloc(s.cap); s.buf[0] = 0;
+    tm_build(&s, t);
+    char *out = arena_strdup(ar, s.buf);
+    free(s.buf);
+    return out;
+}

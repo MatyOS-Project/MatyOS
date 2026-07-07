@@ -17,19 +17,28 @@ static char *read_file(const char *path) {
     return buf;
 }
 
-static int cmd_check(const char *path) {
+static int cmd_check(const char *path, int as_json) {
     char *text = read_file(path);
     if (!text) return 2;
     Arena *ar = arena_new();
-    int failures = elk_run_source(ar, text, 1);
     int rc;
-    if (failures < 0) {
-        fprintf(stderr, "matyos-c: parse error: %s\n", parse_err);
-        rc = 2;
+    if (as_json) {
+        Checker c; checker_init(ar, &c);
+        if (checker_run_text(ar, &c, text, 0) < 0) {
+            fprintf(stderr, "matyos-c: parse error: %s\n", parse_err); rc = 2;
+        } else {
+            checker_print_json_file(&c, path);
+            rc = c.failures ? 1 : 0;
+        }
     } else {
-        printf("\n%s: %d failure%s\n", failures ? "FAIL" : "OK",
-               failures, failures == 1 ? "" : "s");
-        rc = failures ? 1 : 0;
+        int failures = elk_run_source(ar, text, 1);
+        if (failures < 0) {
+            fprintf(stderr, "matyos-c: parse error: %s\n", parse_err); rc = 2;
+        } else {
+            printf("\n%s: %d failure%s\n", failures ? "FAIL" : "OK",
+                   failures, failures == 1 ? "" : "s");
+            rc = failures ? 1 : 0;
+        }
     }
     arena_free(ar);
     free(text);
@@ -37,9 +46,17 @@ static int cmd_check(const char *path) {
 }
 
 int main(int argc, char **argv) {
-    if (argc >= 3 && strcmp(argv[1], "check") == 0) return cmd_check(argv[2]);
-    if (argc == 2) return cmd_check(argv[1]);          /* matyos-c <file.elk> */
-    if (argc >= 2 && strcmp(argv[1], "version") == 0) { printf("matyos-c 0.1 (C rewrite)\n"); return 0; }
-    fprintf(stderr, "usage: matyos-c check <file.elk>\n");
+    /* collect flags */
+    int as_json = 0;
+    const char *path = NULL, *cmd = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--json") == 0) as_json = 1;
+        else if (!cmd && (strcmp(argv[i], "check") == 0 || strcmp(argv[i], "version") == 0)) cmd = argv[i];
+        else if (!path) path = argv[i];
+    }
+    if (cmd && strcmp(cmd, "version") == 0) { printf("matyos-c 0.1 (C rewrite)\n"); return 0; }
+    if (cmd && strcmp(cmd, "check") == 0 && path) return cmd_check(path, as_json);
+    if (!cmd && path) return cmd_check(path, as_json);   /* matyos-c <file.elk> */
+    fprintf(stderr, "usage: matyos-c check [--json] <file.elk>\n");
     return 1;
 }

@@ -48,7 +48,8 @@ Term *tm_beta(Arena *ar, Term *body, Term *arg);   /* (\.body) arg */
 Term *tm_normalize(Arena *ar, Term *t);            /* full beta normal form */
 int   tm_eq(Term *x, Term *y);                     /* structural (alpha via de Bruijn) */
 int   tm_def_equal(Arena *ar, Term *x, Term *y);   /* equal normal forms */
-void  tm_print(Term *t);                           /* debug printer */
+void  tm_print(Term *t);                           /* debug printer (stdout) */
+char *tm_str(Arena *ar, Term *t);                  /* same, into an arena string */
 
 /* Delta/iota reduction hooks, installed by the environment (env.c). While NULL
  * (no environment loaded), normalize does pure beta only — the M1/M2 behaviour.
