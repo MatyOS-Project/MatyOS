@@ -23,11 +23,14 @@ src/
   env.{h,c}     Eq / refl / J eliminator + transport (in env.c)                      [M4 ✓]
   parse.{h,c}   tokenizer + parser for the .elk surface language                    [M5 ✓]
   check.{h,c}   commands: def/axiom/inductive/example/check/eval + scientific method [M5 ✓ / M6 ✓]
-  tactics.*     intro/exact/assumption/refl/rewrite/induction/apply/auto            [M7]
+  tactics.{h,c} intro/exact/assumption/refl/rewrite/induction/apply/auto            [M7 ✓]
   project.*     .thm/.prf/.hyp/.test, .matyos archives, --json                      [M8]
   main.c        the `matyos-c` CLI  (matyos-c check <file.elk>)                      [M5 ✓]
 test/           unit tests per module
 ```
 
-Goal: `matyos-c check <file>` reproduces the Python results on the existing
-`../stdlib/*.elk` and `../examples/proofs/*.elk` files.
+Goal (**reached** as of M7): `matyos-c check <file>` reproduces the Python
+PROVEN/QED/PASS verdicts on every `../stdlib/*.elk` and
+`../examples/proofs/*.elk` file — including the tactic proofs of `add_comm`,
+`add_assoc`, and the semiring/ordering laws. (M8, the `.matyos` project
+archive + `--json` output, is still open.)

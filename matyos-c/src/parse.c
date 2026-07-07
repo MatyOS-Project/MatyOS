@@ -213,7 +213,49 @@ static SNode *parse_term(Parser *p) {
     return left;
 }
 
-/* ---- commands (M5: def / axiom / inductive / example / check / eval) ---- */
+/* Parse a tactic block `by <tactic>* qed` into out->tactics. Returns 1 on ok. */
+static int parse_by(Parser *p, Cmd *out) {
+    p->i++;  /* 'by' */
+    Tactic *ts = (Tactic *)arena_alloc(p->ar, sizeof(Tactic) * 128);
+    int nt = 0;
+    while (!at_kw(p, "qed") && !at_eof(p)) {
+        if (nt >= 128) { snprintf(parse_err, sizeof parse_err, "too many tactics"); return 0; }
+        Tactic *t = &ts[nt];
+        memset(t, 0, sizeof *t);
+        if (at_kw(p, "intro")) {
+            p->i++;
+            const char **nm = (const char **)arena_alloc(p->ar, sizeof(char *) * 32);
+            int nn = 0;
+            while (cur(p).kind == TK_ID && !in_set(KEYWORDS, cur(p).text)) {
+                if (nn < 32) nm[nn] = cur(p).text;
+                nn++; p->i++;
+            }
+            if (nn == 0) { snprintf(parse_err, sizeof parse_err, "intro: expected a name"); return 0; }
+            t->kind = TAC_INTRO; t->nnames = nn; t->names = nm;
+        } else if (at_kw(p, "exact")) {
+            p->i++; t->kind = TAC_EXACT; if (!(t->term = parse_term(p))) return 0;
+        } else if (at_kw(p, "assumption")) { p->i++; t->kind = TAC_ASSUMPTION; }
+        else if (at_kw(p, "refl"))         { p->i++; t->kind = TAC_REFL; }
+        else if (at_kw(p, "auto"))         { p->i++; t->kind = TAC_AUTO; }
+        else if (at_kw(p, "rewrite")) {
+            p->i++; t->kind = TAC_REWRITE; if (!(t->term = parse_term(p))) return 0;
+        } else if (at_kw(p, "apply")) {
+            p->i++; t->kind = TAC_APPLY; if (!(t->term = parse_term(p))) return 0;
+        } else if (at_kw(p, "induction")) {
+            p->i++; t->kind = TAC_INDUCTION; if (!(t->var = ident(p))) return 0;
+        } else {
+            snprintf(parse_err, sizeof parse_err, "expected a tactic, got '%s'", cur(p).text);
+            return 0;
+        }
+        nt++;
+    }
+    if (!at_kw(p, "qed")) { snprintf(parse_err, sizeof parse_err, "tactic block must end with 'qed'"); return 0; }
+    p->i++;  /* 'qed' */
+    out->is_tactic = 1; out->ntactics = nt; out->tactics = ts;
+    return 1;
+}
+
+/* ---- commands ---- */
 int parser_next(Parser *p, Cmd *out) {
     memset(out, 0, sizeof *out);
     if (at_eof(p)) { out->kind = CMD_EOF; return 1; }
@@ -271,7 +313,7 @@ int parser_next(Parser *p, Cmd *out) {
         if (!eat_sym(p, ":")) return 0;
         if (!(out->type = parse_term(p))) return 0;
         if (!eat_sym(p, ":=")) return 0;
-        if (at_kw(p, "by")) { snprintf(parse_err, sizeof parse_err, "tactic blocks arrive in M7"); return 0; }
+        if (at_kw(p, "by")) return parse_by(p, out);
         if (!(out->body = parse_term(p))) return 0;
         return 1;
     }
@@ -305,7 +347,7 @@ int parser_next(Parser *p, Cmd *out) {
         out->kind = CMD_PROOF;
         if (!(out->name = ident(p))) return 0;
         if (!eat_sym(p, ":=")) return 0;
-        if (at_kw(p, "by")) { snprintf(parse_err, sizeof parse_err, "tactic blocks arrive in M7"); return 0; }
+        if (at_kw(p, "by")) return parse_by(p, out);
         if (!(out->body = parse_term(p))) return 0;
         return 1;
     }

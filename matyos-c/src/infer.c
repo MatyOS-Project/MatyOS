@@ -65,6 +65,8 @@ Term *infer(Arena *ar, Ctx *ctx, Term *t) {
         if (!tm_def_equal(ar, xt, ft->a)) FAIL("argument type mismatch");
         return tm_beta(ar, ft->b, t->b);         /* substitute the argument */
     }
+    case T_META:
+        FAIL("infer: unsolved metavariable escaped the tactic engine");
     }
     FAIL("infer: unknown term");
 }

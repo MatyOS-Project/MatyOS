@@ -64,12 +64,13 @@ Term *mk_lam(Arena *ar, Term *dom, Term *body) {
 Term *mk_app(Arena *ar, Term *fn, Term *arg) {
     Term *t = mk(ar, T_APP); t->a = fn; t->b = arg; return t;
 }
+Term *mk_meta(Arena *ar, int id) { Term *t = mk(ar, T_META); t->i = id; return t; }
 
 /* ---- shift / subst ---- */
 Term *tm_shift(Arena *ar, Term *t, int d, int c) {
     switch (t->kind) {
     case T_VAR:  return t->i >= c ? mk_var(ar, t->i + d) : t;
-    case T_UNIV: case T_PROP: case T_CONST: return t;
+    case T_UNIV: case T_PROP: case T_CONST: case T_META: return t;
     case T_PI:   return mk_pi (ar, tm_shift(ar, t->a, d, c), tm_shift(ar, t->b, d, c + 1));
     case T_LAM:  return mk_lam(ar, tm_shift(ar, t->a, d, c), tm_shift(ar, t->b, d, c + 1));
     case T_APP:  return mk_app(ar, tm_shift(ar, t->a, d, c), tm_shift(ar, t->b, d, c));
@@ -79,7 +80,7 @@ Term *tm_shift(Arena *ar, Term *t, int d, int c) {
 Term *tm_subst(Arena *ar, Term *t, int j, Term *s) {
     switch (t->kind) {
     case T_VAR:  return t->i == j ? s : t;
-    case T_UNIV: case T_PROP: case T_CONST: return t;
+    case T_UNIV: case T_PROP: case T_CONST: case T_META: return t;
     case T_PI:   return mk_pi (ar, tm_subst(ar, t->a, j, s),
                                tm_subst(ar, t->b, j + 1, tm_shift(ar, s, 1, 0)));
     case T_LAM:  return mk_lam(ar, tm_subst(ar, t->a, j, s),
@@ -95,7 +96,7 @@ Term *tm_beta(Arena *ar, Term *body, Term *arg) {
 /* ---- normalize (full beta normal form) ---- */
 Term *tm_normalize(Arena *ar, Term *t) {
     switch (t->kind) {
-    case T_VAR: case T_UNIV: case T_PROP: return t;
+    case T_VAR: case T_UNIV: case T_PROP: case T_META: return t;
     case T_CONST: {
         if (tm_delta_hook) {                       /* delta: unfold a definition */
             Term *v = tm_delta_hook(ar, t);
@@ -126,6 +127,7 @@ int tm_eq(Term *x, Term *y) {
     switch (x->kind) {
     case T_VAR:  return x->i == y->i;
     case T_UNIV: return x->i == y->i;
+    case T_META: return x->i == y->i;
     case T_PROP: return 1;
     case T_CONST:return strcmp(x->name, y->name) == 0;
     case T_PI: case T_LAM: case T_APP:
@@ -147,5 +149,6 @@ void tm_print(Term *t) {
     case T_PI:   printf("(Pi "); tm_print(t->a); printf(" -> "); tm_print(t->b); printf(")"); break;
     case T_LAM:  printf("(fun "); tm_print(t->a); printf(" => "); tm_print(t->b); printf(")"); break;
     case T_APP:  printf("("); tm_print(t->a); printf(" "); tm_print(t->b); printf(")"); break;
+    case T_META: printf("?%d", t->i); break;
     }
 }

@@ -199,6 +199,23 @@ static Term *to_db(Arena *ar, SNode *n, NameCtx *env) {
 
 Term *s_to_term(Arena *ar, SNode *n) { return to_db(ar, n, NULL); }
 
+Term *s_to_term_scoped(Arena *ar, SNode *n, const char **names, int count) {
+    NameCtx *ctx = NULL;                     /* build so names[0] is index #0 */
+    for (int k = count - 1; k >= 0; k--) {
+        NameCtx *e = (NameCtx *)arena_alloc(ar, sizeof(NameCtx));
+        e->name = names[k]; e->rest = ctx; ctx = e;
+    }
+    return to_db(ar, n, ctx);
+}
+
+int env_recursor_info(const char *recname, int *num_params, int *nctors) {
+    RecEntry *r = find_rec(recname);
+    if (!r) return 0;
+    if (num_params) *num_params = r->num_params;
+    if (nctors) *nctors = r->nctors;
+    return 1;
+}
+
 static int s_mentions(SNode *n, const char *name) {
     if (n == s_rec()) return 0;
     switch (n->kind) {

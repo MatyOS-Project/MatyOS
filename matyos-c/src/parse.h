@@ -12,13 +12,26 @@ typedef enum {
 
 typedef struct { const char *name; SNode *ctype; } CtorDecl;
 
+typedef enum {
+    TAC_INTRO, TAC_EXACT, TAC_ASSUMPTION, TAC_REFL,
+    TAC_REWRITE, TAC_INDUCTION, TAC_APPLY, TAC_AUTO
+} TacKind;
+
+typedef struct {
+    TacKind kind;
+    int nnames; const char **names;  /* intro */
+    SNode *term;                     /* exact / rewrite / apply */
+    const char *var;                 /* induction */
+} Tactic;
+
 typedef struct {
     CmdKind kind;
     const char *name;
     int      nparams;  SParam   *params;   /* def / inductive / theorem */
     SNode   *type;                          /* def/axiom/example/theorem type; inductive sort */
     SNode   *body;                          /* def/example body; check/eval/proof/test term */
-    int      is_tactic;                     /* body is a tactic block ('by' ...) — M7 */
+    int      is_tactic;                     /* body is a tactic block ('by' ... 'qed') */
+    int      ntactics; Tactic  *tactics;    /* when is_tactic */
     int      nctors;   CtorDecl *ctors;     /* inductive */
     SNode   *rhs;                           /* test: optional expected value */
 } Cmd;

@@ -31,6 +31,8 @@ test: build $(LIBSRC) $(wildcard test/*.c)
 	./build/test_parse
 	$(CC) $(CFLAGS) $(LIBSRC) test/test_science.c -o build/test_science
 	./build/test_science
+	$(CC) $(CFLAGS) $(LIBSRC) test/test_tactics.c -o build/test_tactics
+	./build/test_tactics
 
 clean:
 	rm -rf build

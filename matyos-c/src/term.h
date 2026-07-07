@@ -11,7 +11,9 @@ typedef enum {
     T_CONST,  /* global constant, field name                    */
     T_PI,     /* dependent function type: a=domain, b=codomain  */
     T_LAM,    /* lambda: a=domain (arg type), b=body            */
-    T_APP     /* application: a=function, b=argument            */
+    T_APP,    /* application: a=function, b=argument            */
+    T_META    /* metavariable hole (tactic engine only), field i = id.
+               * Opaque to shift/subst/normalize; never reaches infer. */
 } TermKind;
 
 typedef struct Term Term;
@@ -37,6 +39,7 @@ Term *mk_const(Arena *ar, const char *name);
 Term *mk_pi(Arena *ar, Term *dom, Term *cod);
 Term *mk_lam(Arena *ar, Term *dom, Term *body);
 Term *mk_app(Arena *ar, Term *fn, Term *arg);
+Term *mk_meta(Arena *ar, int id);
 
 /* ---- pure operations ---- */
 Term *tm_shift(Arena *ar, Term *t, int d, int cutoff);

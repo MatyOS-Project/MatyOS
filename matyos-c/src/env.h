@@ -49,6 +49,14 @@ SNode *s_rec(void);   /* sentinel: a recursive constructor argument (= D params)
  * references an unbound name). */
 Term *s_to_term(Arena *ar, SNode *n);
 
+/* Lower with a binder scope: names[0] is the innermost binder (de Bruijn #0).
+ * Used by the tactic engine so proof terms can reference intro'd hypotheses. */
+Term *s_to_term_scoped(Arena *ar, SNode *n, const char **names, int count);
+
+/* If `recname` is a registered recursor, fill *num_params / *nctors and
+ * return 1; else return 0. Used by the `induction` tactic. */
+int env_recursor_info(const char *recname, int *num_params, int *nctors);
+
 /* ---- declaring an inductive type ---- */
 typedef struct { const char *name; SNode *type; } SParam;  /* parameter / telescope entry */
 typedef struct { const char *name; SNode *type; } SArg;    /* ctor arg; type may be s_rec() */

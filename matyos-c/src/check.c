@@ -1,8 +1,16 @@
 #include "check.h"
 #include "infer.h"
+#include "tactics.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Turn a proof/example body into a de Bruijn term: a tactic block is run
+ * against the goal; a plain body is lowered directly. NULL on tactic failure. */
+static Term *term_of(Arena *ar, Cmd *cmd, Term *goal) {
+    if (cmd->is_tactic) return run_tactics(ar, goal, cmd->tactics, cmd->ntactics);
+    return s_to_term(ar, cmd->body);
+}
 
 /* ---- small arena-backed string set / map ---- */
 static int set_has(StrList *s, const char *n) {
@@ -107,7 +115,8 @@ void checker_exec(Arena *ar, Checker *c, Cmd *cmd, int echo) {
     }
     case CMD_EXAMPLE: {
         Term *tt = s_to_term(ar, cmd->type);
-        Term *bt = s_to_term(ar, cmd->body);
+        Term *bt = term_of(ar, cmd, tt);
+        if (!bt) { c->failures++; if (echo) { printf("example : "); tm_print(tt); printf("   [FAIL: tactic: %s]\n", tactic_err); } break; }
         Term *got = infer(ar, NULL, bt);
         if (got && tm_def_equal(ar, got, tt)) {
             if (echo) { printf("example : "); tm_print(tt); printf("   [QED]\n"); }
@@ -164,7 +173,8 @@ void checker_exec(Arena *ar, Checker *c, Cmd *cmd, int echo) {
         Oblig *o = NULL;
         for (Oblig *it = c->obligations; it; it = it->next) if (strcmp(it->name, cmd->name) == 0) { o = it; break; }
         if (!o) { c->failures++; if (echo) printf("proof %s   [FAIL: no theorem '%s' declared]\n", cmd->name, cmd->name); break; }
-        Term *bt = s_to_term(ar, cmd->body);
+        Term *bt = term_of(ar, cmd, o->type);
+        if (!bt) { c->failures++; if (echo) printf("proof %s   [FAIL: tactic: %s]\n", cmd->name, tactic_err); break; }
         Term *got = infer(ar, NULL, bt);
         if (got && tm_def_equal(ar, got, o->type)) {
             env_declare_const(cmd->name, o->type, bt);   /* certify + reusable */
