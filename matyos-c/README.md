@@ -18,7 +18,7 @@ make CC="python -m ziglang cc" test
 ```
 src/
   term.{h,c}    kernel terms (de Bruijn), arena, shift/subst/normalize/def_equal   [M1 ✓]
-  infer.{h,c}   the trusted type checker                                            [M2]
+  infer.{h,c}   the trusted type checker (imax Pi, impredicative Prop)              [M2 ✓]
   env.{h,c}     global environment, inductives, recursors, iota, positivity         [M3]
   equality.*    Eq / refl / J and transport                                         [M4]
   parse.{h,c}   tokenizer + parser for the .elk surface language                    [M5]

@@ -16,6 +16,8 @@ build:
 test: build $(SRC) $(wildcard test/*.c)
 	$(CC) $(CFLAGS) $(SRC) test/test_term.c -o build/test_term
 	./build/test_term
+	$(CC) $(CFLAGS) $(SRC) test/test_infer.c -o build/test_infer
+	./build/test_infer
 
 clean:
 	rm -rf build
