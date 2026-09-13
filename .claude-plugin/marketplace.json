@@ -1,0 +1,19 @@
+{
+  "$schema": "https://code.claude.com/.claude-plugin/marketplace.schema.json",
+  "name": "matyos-plugins",
+  "owner": {
+    "name": "Ahmed Hafdi",
+    "url": "https://github.com/MatyOS-Project/MatyOS"
+  },
+  "description": "MatyOS — lend any model the discipline of the scientific method: verify closed forms, check OEIS, check proofs, and run the discovery engine.",
+  "plugins": [
+    {
+      "name": "matyos",
+      "source": "./plugins/matyos",
+      "description": "MatyOS verification & discovery MCP server: PSLQ closed-form detection, live OEIS lookup, trusted-kernel proof checking, and one-pass discovery.",
+      "license": "MIT",
+      "category": "mcp",
+      "keywords": ["proof-assistant", "mathematics", "discovery", "oeis", "pslq", "mcp"]
+    }
+  ]
+}
