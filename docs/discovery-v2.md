@@ -64,7 +64,8 @@ So the scorer does not judge; it computes reproducible **proxies** and returns a
 breakdown for a human to read:
 
 - **numerical anomaly** — does a characteristic number land on a known constant?
-  (real, high-precision match; the honest PSLQ version is a `STUB`)
+  (real: PSLQ integer-relation detection over a constant basis, via mpmath —
+  recovers closed forms like the golden ratio (1+sqrt5)/2)
 - **structural novelty** — irreducible to a trivially simpler object? (crude)
 - **resonance** — did this object arrive by a cross-domain transfer that survived?
   (real, read from provenance)
@@ -73,9 +74,9 @@ breakdown for a human to read:
 ### 4. Cheap verification + human triage — `verify.py`, `triage.py`
 
 Before anything is surfaced: recompute the anomaly at higher precision (guards
-against short-prefix coincidences), check for prior art (an offline OEIS-style
-table stands in for the real networked OEIS/literature search — a `STUB`), and
-optionally hand off to a proof assistant (`STUB`). The output is a short **ranked
+against short-prefix coincidences), check for prior art (a **live OEIS query**,
+falling back to a small offline table with no network), and optionally hand off
+to a proof assistant (`STUB`). The output is a short **ranked
 shortlist for a human**, never an autonomous claim.
 
 ## The toy loop
@@ -92,7 +93,7 @@ geometric → singular fit, no transfer).
 
 - Competing with Lean/mathlib as a proof kernel (v1's job, and a decade-scale one).
 - Solving named open problems (a separate proof-search mission).
-- Real PSLQ, networked OEIS/literature search, and Lean handoff — all `STUB`s with
+- Literature search beyond OEIS, and the Lean proof handoff — still `STUB`s with
   stable signatures, left for the next iteration.
 - The evolutionary outer loop (feed survivors back as seeds under a budget). The
   seam for it is `DiscoveryEngine.step`.

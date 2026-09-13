@@ -31,8 +31,11 @@ class Verification:
     notes: list[str] = field(default_factory=list)
 
 
-# A deliberately tiny stand-in for OEIS: prefix -> known identifier/name.
-# STUB: the real component queries OEIS and the literature over the network.
+import json
+import urllib.parse
+import urllib.request
+
+# Offline fallback used when the OEIS API is unreachable.
 _LOCAL_OEIS: dict[tuple[int, ...], str] = {
     (0, 1, 1, 2, 3, 5, 8, 13): "A000045 (Fibonacci numbers)",
     (1, 1, 2, 3, 5, 8, 13, 21): "A000045 (Fibonacci numbers, offset)",
@@ -40,47 +43,88 @@ _LOCAL_OEIS: dict[tuple[int, ...], str] = {
     (0, 1, 3, 6, 10, 15): "A000217 (triangular numbers)",
 }
 
+_OEIS_URL = "https://oeis.org/search"
+_OEIS_UA = {"User-Agent": "MatyOS-discovery/0.1"}
+
+
+def oeis_lookup(ints: tuple[int, ...], timeout: float = 8.0) -> tuple[str | None, bool]:
+    """Look a sequence up in OEIS. Returns (identifier_or_None, was_live).
+
+    Tries the live OEIS API first (it returns a JSON list of matches); on any
+    network failure it falls back to the small local table, so the engine still
+    runs offline. ``was_live`` says which path answered.
+    """
+    if len(ints) >= 4:
+        q = ",".join(str(n) for n in ints)
+        url = f"{_OEIS_URL}?{urllib.parse.urlencode({'q': q, 'fmt': 'json'})}"
+        try:
+            req = urllib.request.Request(url, headers=_OEIS_UA)
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                data = json.load(resp)
+            results = data if isinstance(data, list) else data.get("results") or []
+            if results:
+                r = results[0]
+                name = r.get("name", "")
+                return f"A{int(r['number']):06d} ({name[:60]})", True
+            return None, True  # live answer: genuinely not in OEIS
+        except Exception:
+            pass  # fall through to offline table
+    for prefix, name in _LOCAL_OEIS.items():
+        if _startswith(ints, prefix) or _startswith(prefix, ints):
+            return name, False
+    return None, False
+
 
 def verify(obj: MathObject) -> Verification:
     notes: list[str] = []
     confirmed = _high_precision_confirm(obj, notes)
-    art = _prior_art(obj)
-    if art:
-        notes.append(f"prior art: {art}")
+    art = _prior_art(obj, notes)
     return Verification(confirmed=confirmed, prior_art=art, notes=notes)
 
 
 def _high_precision_confirm(obj: MathObject, notes: list[str]) -> bool:
-    """Re-run the numerical-anomaly check on a longer prefix, if we can extend it.
+    """Independently re-derive the closed form from a much longer prefix.
 
-    For a formula we can generate more terms and confirm the match strengthens. For
-    a bare sequence prefix we cannot extend it, so a match is reported as
-    unconfirmed (short-prefix) rather than confirmed.
+    A formula can be extended, so we recompute its ratio from a far longer prefix
+    and confirm the same closed form is found — guarding against a match that was
+    a short-prefix coincidence. A bare sequence cannot be extended, so a match on
+    it is reported as unconfirmed.
     """
+    from matyos.discovery import anomaly
     if isinstance(obj, Formula):
-        long_terms = obj.evaluate_prefix(60)
-        long_seq = Sequence(provenance=obj.provenance, terms=long_terms)
-        s = scorer.score(long_seq)
-        if s.breakdown.get("numerical_anomaly", 0.0) >= 1.0:
-            notes.append("high-precision confirm: constant match holds on 60-term prefix")
-            return True
-        notes.append("high-precision confirm: match did not survive longer prefix")
+        terms = obj.evaluate_prefix(300)
+        ratios = [t / s for s, t in zip(terms, terms[1:]) if s != 0]
+        if len(ratios) >= 4 and anomaly.HAVE_PSLQ:
+            rel = anomaly.find_closed_form(ratios[-1])
+            if rel is not None:
+                notes.append(f"high-precision confirm: {rel.formula} holds on a 300-term prefix")
+                return True
+        notes.append("high-precision confirm: no closed form on the longer prefix")
         return False
     if isinstance(obj, Sequence):
         s = scorer.score(obj)
         if s.breakdown.get("numerical_anomaly", 0.0) >= 1.0:
-            notes.append("constant match on given prefix (unconfirmed: cannot extend a bare sequence)")
+            notes.append("closed form on given prefix (unconfirmed: cannot extend a bare sequence)")
         return False
     return False
 
 
-def _prior_art(obj: MathObject) -> str | None:
+def _prior_art(obj: MathObject, notes: list[str]) -> str | None:
     if isinstance(obj, Sequence):
-        ints = _as_ints(obj.terms)
-        if ints is not None:
-            for prefix, name in _LOCAL_OEIS.items():
-                if _startswith(ints, prefix) or _startswith(prefix, ints):
-                    return name
+        terms = obj.terms
+    elif isinstance(obj, Formula):
+        terms = obj.evaluate_prefix(12)   # the sequence this rule generates
+    else:
+        return None
+    ints = _as_ints(terms)
+    if ints is None:
+        return None
+    ident, live = oeis_lookup(ints)
+    src = "OEIS live" if live else "offline table"
+    if ident:
+        notes.append(f"prior art [{src}]: {ident}")
+        return ident
+    notes.append(f"no prior art [{src}] — not a known sequence")
     return None
 
 

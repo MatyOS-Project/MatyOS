@@ -27,6 +27,7 @@ from decimal import Decimal, getcontext
 from fractions import Fraction
 
 from matyos.discovery.objects import MathObject, Sequence, Formula
+from matyos.discovery import anomaly
 
 getcontext().prec = 50
 
@@ -70,45 +71,50 @@ def score(obj: MathObject) -> Score:
     return Score(total=total, breakdown=breakdown, notes=notes)
 
 
-def _characteristic_number(obj: MathObject) -> Decimal | None:
-    """Extract one real number that characterises the object, or None.
+def _characteristic_ratio_exact(obj: MathObject) -> Fraction | None:
+    """Exact limiting ratio of consecutive terms, or None if it doesn't settle.
 
-    For a sequence, the limiting ratio of consecutive terms (if it appears to
-    settle). For a formula, the same, computed from a longer generated prefix.
+    For a Formula we generate a long prefix (exact Fractions), so the ratio is
+    known to very high precision — what PSLQ needs. For a bare Sequence we can
+    only use the terms we have.
     """
-    terms: tuple[Fraction, ...]
-    if isinstance(obj, Sequence):
+    if isinstance(obj, Formula):
+        terms = obj.evaluate_prefix(160)
+    elif isinstance(obj, Sequence):
         terms = obj.terms
-    elif isinstance(obj, Formula):
-        terms = obj.evaluate_prefix(40)
     else:
         return None
-
     ratios = [t / s for s, t in zip(terms, terms[1:]) if s != 0]
     if len(ratios) < 4:
         return None
-    tail = ratios[-3:]
-    # Require the last few ratios to agree to a few digits before we call it a limit.
-    lo, hi = min(tail), max(tail)
+    lo, hi = min(ratios[-3:]), max(ratios[-3:])
     if hi - lo > Fraction(1, 10 ** 4):
         return None
-    return Decimal(tail[-1].numerator) / Decimal(tail[-1].denominator)
+    return ratios[-1]
 
 
 def _numerical_anomaly(obj: MathObject) -> tuple[float, str]:
-    """1.0 if a characteristic number matches a known constant, else 0.0.
+    """1.0 if the object's characteristic number has a closed form, else 0.0.
 
-    This is the only proxy that is fully real: it is a genuine (if narrow)
-    high-precision constant match, in the spirit of the Ramanujan Machine. A real
-    system would use PSLQ over a basis of constants; that is left as a STUB below.
+    The real signal, in the spirit of the Ramanujan Machine: run PSLQ
+    (:mod:`matyos.discovery.anomaly`) to search for an integer relation against a
+    basis of constants. If mpmath is unavailable we fall back to matching a small
+    table of known constants.
     """
-    x = _characteristic_number(obj)
-    if x is None:
+    ratio = _characteristic_ratio_exact(obj)
+    if ratio is None:
         return 0.0, ""
+    if anomaly.HAVE_PSLQ:
+        rel = anomaly.find_closed_form(ratio)
+        if rel is not None:
+            return 1.0, f"closed form found (PSLQ): {rel.formula}"
+        return 0.0, f"ratio ~{float(ratio):.10f} (no closed form found)"
+    # Fallback: coarse known-constant table.
+    x = Decimal(ratio.numerator) / Decimal(ratio.denominator)
     for name, value in _KNOWN_CONSTANTS.items():
         if abs(x - value) < _MATCH_TOLERANCE:
-            return 1.0, f"characteristic number {x:.10f} matches {name}"
-    return 0.0, f"characteristic number {x:.10f} (no known-constant match)"
+            return 1.0, f"characteristic number {x:.10f} matches {name} (no PSLQ; install mpmath)"
+    return 0.0, f"characteristic number {x:.10f} (no match; install mpmath for PSLQ)"
 
 
 def _structural_novelty(obj: MathObject) -> float:
@@ -142,14 +148,3 @@ def _surprise(obj: MathObject) -> float:
     scores how far into the tail it sits.
     """
     return 0.5
-
-
-# --- STUBS: real interestingness machinery, deliberately not implemented here ---
-
-def pslq_constant_match(_value: Decimal, _basis: list[Decimal]) -> None:
-    """STUB. Integer-relation detection (PSLQ) of a value against a constant basis.
-
-    The honest version of :func:`_numerical_anomaly`. Returns the integer relation
-    if one exists. Not implemented in the scaffold.
-    """
-    raise NotImplementedError("PSLQ constant matching is a v2 TODO")

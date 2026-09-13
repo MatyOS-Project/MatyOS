@@ -10,9 +10,10 @@ from fractions import Fraction
 import pytest
 
 from matyos.discovery.objects import Sequence, Formula
-from matyos.discovery import generator, scorer, verify as verify_mod
+from matyos.discovery import generator, scorer, verify as verify_mod, anomaly
 from matyos.discovery.engine import DiscoveryEngine
 
+pslq = pytest.mark.skipif(not anomaly.HAVE_PSLQ, reason="mpmath/PSLQ not installed")
 
 FIB = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
 
@@ -41,13 +42,34 @@ def test_geometric_sequence_is_singular_under_order2_fit():
     assert list(generator.cross_domain_transfer(s)) == []
 
 
+@pslq
 def test_scorer_flags_golden_ratio_anomaly_on_transferred_formula():
     s = Sequence.of(FIB, name="fib")
     f = next(generator.cross_domain_transfer(s))
     sc = scorer.score(f)
     assert sc.breakdown["numerical_anomaly"] == pytest.approx(1.0)
     assert sc.breakdown["resonance"] == pytest.approx(1.0)
-    assert "phi" in sc.notes["numerical_anomaly"]
+    assert "sqrt5" in sc.notes["numerical_anomaly"]
+
+
+@pslq
+def test_pslq_recovers_golden_ratio_closed_form():
+    phi = 1.6180339887498948482045868343656381177203  # passed exactly below
+    from fractions import Fraction
+    # exact rational extremely close to phi: use Fibonacci ratio of large terms
+    a, b = 0, 1
+    for _ in range(200):
+        a, b = b, a + b
+    rel = anomaly.find_closed_form(Fraction(b, a))
+    assert rel is not None
+    assert rel.formula == "x = (1 + sqrt5) / 2"
+
+
+@pslq
+def test_pslq_rejects_pure_rational_ratio():
+    # A ratio that merely settles near a rational is not a closed-form discovery.
+    from fractions import Fraction
+    assert anomaly.find_closed_form(Fraction(160, 159)) is None
 
 
 def test_arithmetic_sequence_scores_low_on_novelty():
@@ -56,6 +78,7 @@ def test_arithmetic_sequence_scores_low_on_novelty():
     assert sc.breakdown["structural_novelty"] <= 0.2
 
 
+@pslq
 def test_high_precision_confirm_holds_for_fibonacci_formula():
     s = Sequence.of(FIB, name="fib")
     f = next(generator.cross_domain_transfer(s))
@@ -64,12 +87,13 @@ def test_high_precision_confirm_holds_for_fibonacci_formula():
 
 
 def test_prior_art_lookup_identifies_fibonacci():
-    s = Sequence.of(FIB, name="fib")
-    v = verify_mod.verify(s)
-    assert v.prior_art is not None
-    assert "A000045" in v.prior_art
+    # Works live (OEIS) or offline (local table): both return A000045.
+    ident, _live = verify_mod.oeis_lookup((0, 1, 1, 2, 3, 5, 8, 13))
+    assert ident is not None
+    assert "A000045" in ident
 
 
+@pslq
 def test_engine_end_to_end_ranks_fibonacci_formula_first():
     engine = DiscoveryEngine(min_score=0.2)
     seeds = [
@@ -80,11 +104,9 @@ def test_engine_end_to_end_ranks_fibonacci_formula_first():
     assert candidates, "engine produced no candidates"
     top = max(candidates, key=lambda c: c.score.total)
     assert isinstance(top.object, Formula)
-    assert "phi" in top.score.notes.get("numerical_anomaly", "")
+    assert "sqrt5" in top.score.notes.get("numerical_anomaly", "")
 
 
-def test_stubs_are_explicit():
-    with pytest.raises(NotImplementedError):
-        scorer.pslq_constant_match(None, [])
+def test_formal_handoff_is_stub():
     with pytest.raises(NotImplementedError):
         verify_mod.formal_handoff(None)
