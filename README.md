@@ -47,11 +47,39 @@ from day one around two bets:
 
 ## Install
 
-Download the `matyos` binary for your platform from the
-[**Releases**](https://github.com/MatyOS-Project/MatyOS/releases) page.
+### pip (recommended)
 
-Then put it on your `PATH` — or let the installer do it for you (it copies the
-binary to a per-user location and updates your `PATH`):
+```console
+$ pip install "matyos[mcp]"     # [mcp] pulls the discovery + MCP extras
+$ matyos version
+$ matyos check demo.elk         # type-check a proof file
+$ matyos discover               # run the v2 discovery engine
+```
+
+Published on PyPI: <https://pypi.org/project/matyos/>.
+
+### Use it inside Claude Code (MCP plugin)
+
+MatyOS ships as a Claude Code plugin, so any model in Claude Code can call it to
+verify closed forms (PSLQ), check OEIS, check proofs with the trusted kernel, and
+run the discovery loop. Prerequisite: [`uv`](https://docs.astral.sh/uv/) on your
+`PATH` (`pip install --user uv` or `brew install uv`).
+
+```
+/plugin marketplace add MatyOS-Project/MatyOS
+/plugin install matyos@matyos-plugins
+/mcp                            # confirm the "matyos" server is listed
+```
+
+The plugin launches the server with `uvx --from "matyos[mcp]" matyos-mcp`, which
+fetches MatyOS from PyPI on first run — no manual install needed. See
+[docs/mcp-server.md](docs/mcp-server.md).
+
+### Standalone binary
+
+Or download the `matyos` binary for your platform from the
+[**Releases**](https://github.com/MatyOS-Project/MatyOS/releases) page and put it
+on your `PATH` — or let the installer do it for you:
 
 ```console
 :: Windows  (run from the folder containing matyos.exe / this repo)
