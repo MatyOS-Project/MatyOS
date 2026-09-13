@@ -1,101 +1,98 @@
-<svg viewBox="0 0 1060 860" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
-  <rect x="0" y="0" width="1060" height="860" fill="#ffffff"/>
+<svg viewBox="0 0 1060 880" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+  <rect x="0" y="0" width="1060" height="880" fill="#ffffff"/>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0 0L10 5L0 10z" fill="context-stroke"/>
     </marker>
   </defs>
 
-  <text x="40" y="38" font-size="22" font-weight="700" fill="#26261f">MatyOS discovery loop — with the rigor guards</text>
-  <text x="40" y="60" font-size="13.5" fill="#5F5E5A">experimental-math discipline: observe → detect → guard → validate → refute → iterate</text>
+  <text x="40" y="38" font-size="22" font-weight="700" fill="#26261f">MatyOS — the scientific method any model plugs into</text>
+  <text x="40" y="60" font-size="13.5" fill="#5F5E5A">the model brings the ideas · MatyOS forces the method and checks every step</text>
 
-  <!-- spine cx 470, x300 w340, step 72 -->
-  <!-- 1 Seeds+question -->
-  <rect x="300" y="80" width="340" height="50" rx="11" fill="#EEEDFE" stroke="#AFA9EC"/>
-  <circle cx="616" cy="98" r="6" fill="#7F77DD"/>
-  <text x="318" y="102" font-size="14" font-weight="700" fill="#3C3489">1 · Seeds + question</text>
-  <text x="318" y="120" font-size="11.5" fill="#534AB7">what to look at + the aim — LLM drafts, human sets</text>
-  <line x1="470" y1="130" x2="470" y2="150" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- TOP: socket -->
+  <rect x="150" y="82" width="760" height="52" rx="12" fill="#EEEDFE" stroke="#AFA9EC"/>
+  <circle cx="176" cy="108" r="6" fill="#7F77DD"/>
+  <text x="530" y="105" text-anchor="middle" font-size="15" font-weight="700" fill="#3C3489">Any model plugs in here  —  LLM · agent · a robot's model</text>
+  <text x="530" y="124" text-anchor="middle" font-size="12" fill="#534AB7">the intelligence comes from the model; the discipline comes from MatyOS</text>
+  <line x1="530" y1="134" x2="530" y2="156" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <!-- 2 Generate -->
-  <rect x="300" y="152" width="340" height="50" rx="11" fill="#EEEDFE" stroke="#AFA9EC"/>
-  <circle cx="616" cy="170" r="6" fill="#7F77DD"/>
-  <text x="318" y="174" font-size="14" font-weight="700" fill="#3C3489">2 · Generate <tspan font-size="11" font-weight="400" fill="#534AB7">(+ cross-domain transfer)</tspan></text>
-  <text x="318" y="192" font-size="11.5" fill="#534AB7">the one real differentiator — expand it</text>
-  <line x1="470" y1="202" x2="470" y2="222" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- MIDDLE: scientific-method loop, spine cx 400 -->
+  <!-- 1 Question -->
+  <rect x="230" y="158" width="340" height="48" rx="11" fill="#EEEDFE" stroke="#AFA9EC"/>
+  <circle cx="546" cy="176" r="6" fill="#7F77DD"/>
+  <text x="248" y="180" font-size="14" font-weight="700" fill="#3C3489">1 · Question</text>
+  <text x="248" y="197" font-size="11.5" fill="#534AB7">model asks; human sharpens the aim</text>
+  <line x1="400" y1="206" x2="400" y2="224" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 2 Hypothesize -->
+  <rect x="230" y="226" width="340" height="48" rx="11" fill="#EEEDFE" stroke="#AFA9EC"/>
+  <circle cx="546" cy="244" r="6" fill="#7F77DD"/>
+  <text x="248" y="248" font-size="14" font-weight="700" fill="#3C3489">2 · Hypothesize</text>
+  <text x="248" y="265" font-size="11.5" fill="#534AB7">model proposes a pattern or idea</text>
+  <line x1="400" y1="274" x2="400" y2="292" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <!-- 3 Observe -->
-  <rect x="300" y="224" width="340" height="50" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
-  <text x="318" y="246" font-size="14" font-weight="700" fill="#085041">3 · Observe — several invariants</text>
-  <text x="318" y="264" font-size="11.5" fill="#0F6E56">ratio, growth rate, generating fn, asymptotic constant — high precision</text>
-  <line x1="470" y1="274" x2="470" y2="294" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="230" y="294" width="340" height="48" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
+  <text x="248" y="316" font-size="14" font-weight="700" fill="#085041">3 · Observe / experiment</text>
+  <text x="248" y="333" font-size="11.5" fill="#0F6E56">MatyOS computes the evidence — high precision</text>
+  <line x1="400" y1="342" x2="400" y2="360" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <!-- 4 Detect -->
-  <rect x="300" y="296" width="340" height="50" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
-  <text x="318" y="318" font-size="14" font-weight="700" fill="#085041">4 · Detect — PSLQ integer relation</text>
-  <text x="318" y="336" font-size="11.5" fill="#0F6E56">the discovery act: is the number a closed form?</text>
-  <line x1="470" y1="346" x2="470" y2="366" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- 4 Test -->
+  <rect x="230" y="362" width="340" height="48" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
+  <rect x="540" y="376" width="20" height="15" rx="3" fill="#FAC775"/><text x="550" y="387" text-anchor="middle" font-size="9" font-weight="700" fill="#633806">◆</text>
+  <text x="248" y="384" font-size="14" font-weight="700" fill="#085041">4 · Test</text>
+  <text x="248" y="401" font-size="11.5" fill="#0F6E56">does it hold? already known? (PSLQ + OEIS)</text>
+  <line x1="400" y1="410" x2="400" y2="428" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <!-- 5 Significance gate (rigor) -->
-  <rect x="300" y="368" width="340" height="52" rx="11" fill="#FAECE7" stroke="#E2704A" stroke-width="1.6"/>
-  <text x="616" y="390" text-anchor="middle" font-size="13" font-weight="700" fill="#993C1D">▲</text>
-  <text x="318" y="390" font-size="14" font-weight="700" fill="#712B13">5 · Significance gate</text>
-  <text x="318" y="408" font-size="11.5" fill="#993C1D">precision ≫ coeff-size × #constants, else reject as numerology</text>
-  <line x1="470" y1="420" x2="470" y2="440" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <!-- 5 Refute -->
+  <rect x="230" y="430" width="340" height="48" rx="11" fill="#FAECE7" stroke="#E2704A" stroke-width="1.6"/>
+  <text x="546" y="452" text-anchor="middle" font-size="12" font-weight="700" fill="#993C1D">▲</text>
+  <text x="248" y="452" font-size="14" font-weight="700" fill="#712B13">5 · Refute — try to break it</text>
+  <text x="248" y="469" font-size="11.5" fill="#993C1D">extreme cases, larger n; survives or dies</text>
+  <line x1="400" y1="478" x2="400" y2="496" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <!-- 6 Validate -->
-  <rect x="300" y="442" width="340" height="50" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
-  <rect x="610" y="456" width="20" height="15" rx="3" fill="#FAC775"/><text x="620" y="467" text-anchor="middle" font-size="9" font-weight="700" fill="#633806">◆</text>
-  <text x="318" y="464" font-size="14" font-weight="700" fill="#085041">6 · Validate</text>
-  <text x="318" y="482" font-size="11.5" fill="#0F6E56">re-confirm at higher precision + OEIS/literature: already known?</text>
-  <line x1="470" y1="492" x2="470" y2="512" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-  <!-- 7 Refute (rigor) -->
-  <rect x="300" y="514" width="340" height="52" rx="11" fill="#FAECE7" stroke="#E2704A" stroke-width="1.6"/>
-  <text x="616" y="536" text-anchor="middle" font-size="13" font-weight="700" fill="#993C1D">▲</text>
-  <text x="318" y="536" font-size="14" font-weight="700" fill="#712B13">7 · Refute — try to break it</text>
-  <text x="318" y="554" font-size="11.5" fill="#993C1D">larger n, extreme &amp; degenerate cases; survives or dies</text>
-  <line x1="470" y1="566" x2="470" y2="586" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-  <!-- 8 Human triage -->
-  <rect x="300" y="588" width="340" height="56" rx="11" fill="#F1EFE8" stroke="#B4B2A9"/>
-  <text x="318" y="612" font-size="14" font-weight="700" fill="#444441">8 · Human triage</text>
-  <text x="318" y="630" font-size="11.5" fill="#5F5E5A">pick · interpret · generalize — LLM drafts, human judges</text>
-  <line x1="470" y1="644" x2="470" y2="664" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-  <!-- 9 Breed + novelty -->
-  <rect x="300" y="666" width="340" height="52" rx="11" fill="#FAEEDA" stroke="#FAC775"/>
-  <text x="318" y="688" font-size="14" font-weight="700" fill="#633806">9 · Breed next seeds + questions</text>
-  <text x="318" y="706" font-size="11.5" fill="#854F0B">with novelty pressure — push out of the seed's basin</text>
+  <!-- 6 Conclude + label -->
+  <rect x="230" y="498" width="340" height="54" rx="11" fill="#FAECE7" stroke="#E2704A" stroke-width="1.6"/>
+  <text x="546" y="522" text-anchor="middle" font-size="12" font-weight="700" fill="#993C1D">▲</text>
+  <text x="248" y="520" font-size="14" font-weight="700" fill="#712B13">6 · Conclude + honesty label</text>
+  <text x="248" y="538" font-size="11.5" fill="#993C1D">certified / conditional / conjecture — never a guess called a fact</text>
 
   <!-- loop back -->
-  <path d="M300 692 L120 692 L120 105 L300 105" fill="none" stroke="#D4537E" stroke-width="2.5" marker-end="url(#arrow)"/>
-  <text x="120" y="400" text-anchor="middle" font-size="12.5" font-weight="700" fill="#D4537E" transform="rotate(-90 120 400)">the loop</text>
+  <path d="M230 525 L120 525 L120 182 L230 182" fill="none" stroke="#D4537E" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="120" y="360" text-anchor="middle" font-size="12.5" font-weight="700" fill="#D4537E" transform="rotate(-90 120 360)">iterate — new questions</text>
 
-  <!-- optional prove -->
-  <line x1="640" y1="616" x2="700" y2="616" stroke="#5DCAA5" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
-  <rect x="700" y="590" width="320" height="52" rx="11" fill="#E1F5EE" stroke="#5DCAA5" stroke-dasharray="6 4"/>
-  <rect x="992" y="603" width="20" height="15" rx="3" fill="#FAC775"/><text x="1002" y="614" text-anchor="middle" font-size="9" font-weight="700" fill="#633806">◆</text>
-  <text x="716" y="612" font-size="13" font-weight="700" fill="#085041">Prove — optional, rare</text>
-  <text x="716" y="630" font-size="11" fill="#0F6E56">borrow Lean, only if a pick is provable</text>
+  <!-- BOTTOM: substrate services -->
+  <rect x="150" y="588" width="760" height="96" rx="12" fill="#EAF3DE" stroke="#97C459"/>
+  <text x="170" y="612" font-size="14" font-weight="700" fill="#3B6D11">What MatyOS provides underneath (the substrate)</text>
+  <rect x="170" y="624" width="220" height="46" rx="9" fill="#ffffff" stroke="#C0DD97"/>
+  <text x="280" y="645" text-anchor="middle" font-size="12.5" font-weight="700" fill="#3B6D11">Memory</text>
+  <text x="280" y="661" text-anchor="middle" font-size="10.5" fill="#3B6D11">what was tried, found, ruled out</text>
+  <rect x="404" y="624" width="252" height="46" rx="9" fill="#ffffff" stroke="#C0DD97"/>
+  <text x="530" y="645" text-anchor="middle" font-size="12.5" font-weight="700" fill="#3B6D11">Judge — the trusted checker</text>
+  <text x="530" y="661" text-anchor="middle" font-size="10.5" fill="#3B6D11">kernel + realistic logic + PSLQ + OEIS</text>
+  <rect x="670" y="624" width="222" height="46" rx="9" fill="#ffffff" stroke="#C0DD97"/>
+  <text x="781" y="645" text-anchor="middle" font-size="12.5" font-weight="700" fill="#3B6D11">Honesty labels</text>
+  <text x="781" y="661" text-anchor="middle" font-size="10.5" fill="#3B6D11">certain vs likely, tracked</text>
 
-  <!-- legend -->
-  <rect x="700" y="80" width="320" height="176" rx="12" fill="#ffffff" stroke="#e4e3ee"/>
-  <text x="716" y="104" font-size="13.5" font-weight="700" fill="#26261f">legend</text>
-  <circle cx="724" cy="124" r="6" fill="#7F77DD"/><text x="738" y="128" font-size="12" fill="#444441">● runs on your plugged-in LLM</text>
-  <rect x="718" y="140" width="14" height="12" rx="3" fill="#FAC775"/><text x="738" y="150" font-size="12" fill="#444441">◆ borrowed (OEIS, Lean)</text>
-  <text x="716" y="174" font-size="12" fill="#712B13" font-weight="700">▲ rigor gate — new</text>
-  <text x="716" y="192" font-size="11.5" fill="#444441">stops numerology &amp; false generalization</text>
-  <text x="716" y="216" font-size="12" fill="#444441"><tspan font-weight="700" fill="#085041">green</tspan> compute/verify · <tspan font-weight="700" fill="#3C3489">purple</tspan> generative</text>
-  <text x="716" y="236" font-size="11.5" fill="#444441">honesty label rides every surviving find</text>
+  <!-- RIGHT: who does what -->
+  <rect x="600" y="158" width="292" height="120" rx="12" fill="#ffffff" stroke="#e4e3ee"/>
+  <text x="616" y="182" font-size="13.5" font-weight="700" fill="#26261f">who does what</text>
+  <circle cx="624" cy="202" r="6" fill="#7F77DD"/><text x="638" y="206" font-size="12" fill="#444441">● model = the ideas (intelligence)</text>
+  <text x="616" y="228" font-size="12" fill="#712B13" font-weight="700">▲ MatyOS = enforces + checks</text>
+  <rect x="618" y="240" width="14" height="12" rx="3" fill="#FAC775"/><text x="638" y="250" font-size="12" fill="#444441">◆ borrowed (OEIS, Lean)</text>
+  <text x="616" y="270" font-size="11" fill="#5F5E5A">the value is the enforcement, not the word</text>
 
-  <!-- what changed -->
-  <rect x="700" y="278" width="320" height="150" rx="12" fill="#EAF3DE" stroke="#97C459"/>
-  <text x="716" y="302" font-size="13.5" font-weight="700" fill="#3B6D11">what the mathematician added</text>
-  <text x="716" y="324" font-size="11.5" fill="#3B6D11">＋ split Detect (find) from Validate (check)</text>
-  <text x="716" y="343" font-size="11.5" fill="#3B6D11">＋ Significance gate — kills spurious PSLQ hits</text>
-  <text x="716" y="362" font-size="11.5" fill="#3B6D11">＋ Refute step — falsify before believing</text>
-  <text x="716" y="381" font-size="11.5" fill="#3B6D11">＋ several invariants, not just the ratio</text>
-  <text x="716" y="400" font-size="11.5" fill="#3B6D11">＋ novelty pressure in the loop</text>
-  <text x="716" y="419" font-size="11.5" fill="#3B6D11">＋ resonance = real co-occurrence, not provenance</text>
+  <!-- the point -->
+  <rect x="600" y="292" width="292" height="118" rx="12" fill="#FAEEDA" stroke="#FAC775"/>
+  <text x="616" y="316" font-size="13" font-weight="700" fill="#633806">the point</text>
+  <text x="616" y="338" font-size="11.5" fill="#854F0B">plain LLM agents guess fluently.</text>
+  <text x="616" y="356" font-size="11.5" fill="#854F0B">MatyOS makes a model do science:</text>
+  <text x="616" y="374" font-size="11.5" fill="#854F0B">hypothesize → test → refute → label,</text>
+  <text x="616" y="392" font-size="11.5" fill="#854F0B">with a trusted judge it cannot fool.</text>
+
+  <!-- honest scope -->
+  <rect x="150" y="702" width="760" height="80" rx="12" fill="#FAECE7" stroke="#F0997B"/>
+  <text x="170" y="726" font-size="13" font-weight="700" fill="#712B13">honest scope</text>
+  <text x="170" y="747" font-size="11.5" fill="#993C1D">• the model supplies the insight — MatyOS supplies the rigor, not the genius</text>
+  <text x="170" y="765" font-size="11.5" fill="#993C1D">• the "language of things" grows domain by domain (numbers → sequences → graphs → …), not universal on day one</text>
 </svg>
