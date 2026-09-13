@@ -39,11 +39,17 @@ def toy_seeds() -> list[Sequence]:
     ]
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    import sys
+    argv = sys.argv[1:] if argv is None else argv
+    engine = DiscoveryEngine(min_score=0.2)
+    if "--json" in argv:
+        import json
+        print(json.dumps({"candidates": engine.records(toy_seeds())}, indent=2))
+        return 0
     if not anomaly.HAVE_PSLQ:
         print("(note: mpmath not installed — PSLQ off, using coarse fallback. "
               "`pip install mpmath` for real closed-form discovery.)\n")
-    engine = DiscoveryEngine(min_score=0.2)
     print(engine.report(toy_seeds()))
     return 0
 

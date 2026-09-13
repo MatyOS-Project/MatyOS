@@ -199,8 +199,9 @@ def main(argv=None):
         return 0
     if cmd == "discover":
         # Experimental v2 discovery engine. Runs the built-in toy loop for now.
+        # `--json` emits structured results for the dashboard / tooling.
         from matyos.discovery.__main__ import main as discover_main
-        return discover_main()
+        return discover_main(rest)
     # bare path -> check it
     if os.path.exists(cmd) or cmd.endswith((".elk", ".matyos")):
         return _check(cmd)

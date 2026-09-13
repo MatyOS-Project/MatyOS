@@ -65,3 +65,32 @@ class DiscoveryEngine:
 
     def report(self, seeds: list[MathObject], limit: int = 10) -> str:
         return triage.render_shortlist(self.run(seeds), limit=limit)
+
+    def records(self, seeds: list[MathObject], limit: int = 20) -> list[dict]:
+        """Structured results for a UI / tooling — the JSON form of the shortlist."""
+        ranked = sorted(self.run(seeds), key=lambda c: c.score.total, reverse=True)[:limit]
+        return [_candidate_record(c, i + 1) for i, c in enumerate(ranked)]
+
+
+def _candidate_record(c: Candidate, rank: int) -> dict:
+    from matyos.discovery.objects import Sequence, Formula
+    obj = c.object
+    if isinstance(obj, Formula):
+        display = {"kind": "formula", "text": obj.text}
+    elif isinstance(obj, Sequence):
+        display = {"kind": "sequence", "terms": [str(t) for t in obj.terms[:12]]}
+    else:
+        display = {"kind": "object", "text": obj.key()}
+    return {
+        "rank": rank,
+        "display": display,
+        "provenance": obj.provenance,
+        "score": round(c.score.total, 4),
+        "proxies": {k: round(v, 3) for k, v in c.score.breakdown.items()},
+        "closed_form": c.score.notes.get("numerical_anomaly", ""),
+        "verification": {
+            "confirmed": c.verification.confirmed,
+            "prior_art": c.verification.prior_art,
+            "notes": c.verification.notes,
+        },
+    }
