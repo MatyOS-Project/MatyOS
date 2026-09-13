@@ -20,11 +20,22 @@ from matyos.discovery.engine import DiscoveryEngine
 from matyos.discovery import anomaly
 
 
+def _recur(p: int, q: int, a0: int, a1: int, n: int = 10) -> list[int]:
+    s = [a0, a1]
+    while len(s) < n:
+        s.append(p * s[-1] + q * s[-2])
+    return s
+
+
 def toy_seeds() -> list[Sequence]:
+    # Same recurrences as Fibonacci (ratio -> golden) and Pell (ratio -> silver),
+    # but with unusual starting values that are NOT catalogued in OEIS. So the
+    # engine finds a real closed form AND reports no prior art — the shape of a
+    # candidate worth a human's look.
     return [
-        Sequence.of([0, 1, 1, 2, 3, 5, 8, 13, 21, 34], name="fibonacci"),
-        Sequence.of([0, 1, 2, 5, 12, 29, 70, 169, 408], name="pell"),
-        Sequence.of([2, 4, 6, 8, 10, 12], name="evens"),  # arithmetic: honest miss
+        Sequence.of(_recur(1, 1, 17, 100), name="fib-type(17,100)"),
+        Sequence.of(_recur(2, 1, 7, 50), name="silver-type(7,50)"),
+        Sequence.of([0, 1, 1, 2, 3, 5, 8, 13, 21, 34], name="fibonacci (known, for contrast)"),
     ]
 
 

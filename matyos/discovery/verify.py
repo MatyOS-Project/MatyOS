@@ -61,7 +61,13 @@ def oeis_lookup(ints: tuple[int, ...], timeout: float = 8.0) -> tuple[str | None
             req = urllib.request.Request(url, headers=_OEIS_UA)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.load(resp)
-            results = data if isinstance(data, list) else data.get("results") or []
+            # OEIS returns a JSON list of matches, or literal `null` for no match.
+            if isinstance(data, list):
+                results = data
+            elif isinstance(data, dict):
+                results = data.get("results") or []
+            else:
+                results = []
             if results:
                 r = results[0]
                 name = r.get("name", "")
