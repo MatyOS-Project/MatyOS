@@ -28,13 +28,26 @@ def _basis():
         ("1", mp.mpf(1)),
         ("pi", mp.pi),
         ("pi^2", mp.pi ** 2),
+        ("pi^3", mp.pi ** 3),
+        ("pi^4", mp.pi ** 4),
         ("e", mp.e),
         ("sqrt2", mp.sqrt(2)),
         ("sqrt3", mp.sqrt(3)),
         ("sqrt5", mp.sqrt(5)),
+        ("sqrt6", mp.sqrt(6)),
+        ("sqrt7", mp.sqrt(7)),
         ("ln2", mp.log(2)),
-        ("gamma", mp.euler),
+        ("ln3", mp.log(3)),
+        ("gamma", mp.euler),          # Euler-Mascheroni
+        ("catalan", mp.catalan),      # Catalan's constant G
+        ("zeta3", mp.zeta(3)),        # Apery's constant
     ]
+
+
+# A genuine closed form is sparse: x equals a short combination of constants.
+# Numerology, especially against a large basis, fits a *dense* relation with many
+# terms. Capping the number of non-x terms is the strongest guard against it.
+MAX_TERMS = 4
 
 
 @dataclass(frozen=True)
@@ -69,6 +82,9 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5) -> "Relation
     # That is not a constant discovery, so it does not count as an anomaly.
     nonzero_basis = [n for c, n in zip(rel[1:], names[1:]) if c != 0]
     if nonzero_basis == ["1"] or not nonzero_basis:
+        return None
+    # Sparsity gate: reject dense relations — numerology, not a closed form.
+    if len(nonzero_basis) > MAX_TERMS:
         return None
     # Confirm the relation really holds (guard against a spurious PSLQ hit).
     residual = sum(mp.mpf(c) * v for c, v in zip(rel, vec))

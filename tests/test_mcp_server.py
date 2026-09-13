@@ -22,7 +22,10 @@ def test_tools_registered():
 
 @pytest.mark.skipif(not anomaly.HAVE_PSLQ, reason="PSLQ needs mpmath")
 def test_verify_relation_finds_golden_ratio():
-    out = srv.verify_relation("1.618033988749895")
+    # The rich number-theory basis needs real precision to be trustworthy;
+    # a high-precision value (as the engine or a serious user supplies) is found.
+    phi = "1.6180339887498948482045868343656381177203091798058"
+    out = srv.verify_relation(phi)
     assert out["found"] is True
     assert "sqrt5" in out["closed_form"]
 

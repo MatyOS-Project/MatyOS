@@ -177,6 +177,29 @@ def test_series_domain_finds_basel_closed_form():
 
 
 @pslq
+def test_series_finds_apery_zeta3():
+    z = Series(term_fn=lambda n: 1 / (n * n * n), text="sum 1/n^3", start=1)
+    sc = scorer.score(z)
+    assert sc.breakdown["numerical_anomaly"] == pytest.approx(1.0)
+    assert "zeta3" in sc.notes["numerical_anomaly"]
+
+
+@pslq
+def test_series_finds_pi4_over_90():
+    z = Series(term_fn=lambda n: 1 / n ** 4, text="sum 1/n^4", start=1)
+    rel = anomaly.find_closed_form(z.value(60), dps=60)
+    assert rel is not None and rel.formula == "x = (pi^4) / 90"
+
+
+def test_order3_recurrence_detected():
+    # Tribonacci: a[n] = a[n-1] + a[n-2] + a[n-3]
+    trib = Sequence.of([0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81], name="trib")
+    transfers = list(generator.cross_domain_transfer(trib))
+    assert transfers, "order-3 recurrence should be detected"
+    assert "a[n-3]" in transfers[0].text
+
+
+@pslq
 def test_series_leibniz_is_pi_over_4():
     leib = Series(term_fn=lambda n: (-1) ** n / (2 * n + 1), text="leibniz", start=0)
     rel = anomaly.find_closed_form(leib.value(50))

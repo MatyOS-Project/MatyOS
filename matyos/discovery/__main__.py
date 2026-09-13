@@ -35,7 +35,10 @@ def toy_seeds() -> list:
         Sequence.of(_recur(1, 1, 17, 100), name="fib-type(17,100)"),
         Sequence.of(_recur(2, 1, 7, 50), name="silver-type(7,50)"),
         Series(term_fn=lambda n: 1 / (n * n), text="sum 1/n^2", start=1),
+        Series(term_fn=lambda n: 1 / (n * n * n), text="sum 1/n^3", start=1),
+        Series(term_fn=lambda n: 1 / n ** 4, text="sum 1/n^4", start=1),
         Series(term_fn=lambda n: (-1) ** n / (2 * n + 1), text="sum (-1)^n/(2n+1)", start=0),
+        Sequence.of([0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81], name="tribonacci"),
     ]
 
 

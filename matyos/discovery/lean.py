@@ -55,7 +55,7 @@ def lean_statement(record: dict) -> str | None:
     not proving.
     """
     cf = record.get("closed_form", "")
-    if "closed form found" not in cf:
+    if "(PSLQ):" not in cf:          # a real hit; not "(no closed form found)"
         return None
     rhs = _to_lean_expr(_rhs_of(cf))
     disp = record.get("display", {})

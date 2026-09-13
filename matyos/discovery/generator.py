@@ -71,6 +71,26 @@ def cross_domain_transfer(obj: MathObject) -> Iterator[MathObject]:
             text = f"a[n] = ({p})*a[n-1] + ({q})*a[n-2],  a0={a0}, a1={a1}"
             yield Formula(provenance=f"transfer:sequence->formula({obj.name or obj.key()})",
                           fn=make(p, q, a0, a1), text=text)
+        else:
+            rec3 = _fit_order3_recurrence(obj.terms)
+            if rec3 is not None:
+                p, q, r = rec3
+                a0, a1, a2 = obj.terms[0], obj.terms[1], obj.terms[2]
+
+                def make3(p, q, r, a0, a1, a2):
+                    def fn(n):
+                        xs = [a0, a1, a2]
+                        if n < 3:
+                            return xs[n]
+                        for _ in range(3, n + 1):
+                            xs = [xs[1], xs[2], p * xs[2] + q * xs[1] + r * xs[0]]
+                        return xs[2]
+                    return fn
+
+                text = (f"a[n] = ({p})*a[n-1] + ({q})*a[n-2] + ({r})*a[n-3],  "
+                        f"a0={a0}, a1={a1}, a2={a2}")
+                yield Formula(provenance=f"transfer:sequence->formula3({obj.name or obj.key()})",
+                              fn=make3(p, q, r, a0, a1, a2), text=text)
 
     if isinstance(obj, Formula):
         # formula -> series: the reciprocal series sum(1/a(n)). If the sequence
@@ -113,3 +133,35 @@ def _fit_order2_recurrence(terms: tuple[Fraction, ...]) -> tuple[Fraction, Fract
         if p * terms[n - 1] + q * terms[n - 2] != terms[n]:
             return None
     return p, q
+
+
+def _det3(m) -> Fraction:
+    return (m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+            - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]))
+
+
+def _fit_order3_recurrence(terms):
+    """Solve for rational p, q, r in a[n] = p*a[n-1] + q*a[n-2] + r*a[n-3].
+
+    Uses indices 3,4,5 (Cramer's rule over exact fractions), then verifies the
+    whole prefix. Needs at least 7 terms so the fit is checked, not just solved.
+    Returns None if too few terms, singular, or the fit fails anywhere.
+    """
+    if len(terms) < 7:
+        return None
+    a0, a1, a2, a3, a4, a5 = terms[0], terms[1], terms[2], terms[3], terms[4], terms[5]
+    M = [[a2, a1, a0], [a3, a2, a1], [a4, a3, a2]]
+    b = [a3, a4, a5]
+    det = _det3(M)
+    if det == 0:
+        return None
+    def col(M, i, b):
+        return [[b[r] if c == i else M[r][c] for c in range(3)] for r in range(3)]
+    p = _det3(col(M, 0, b)) / det
+    q = _det3(col(M, 1, b)) / det
+    r = _det3(col(M, 2, b)) / det
+    for n in range(3, len(terms)):
+        if p * terms[n - 1] + q * terms[n - 2] + r * terms[n - 3] != terms[n]:
+            return None
+    return p, q, r
