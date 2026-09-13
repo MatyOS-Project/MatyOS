@@ -125,6 +125,69 @@ INVARIANTS = {
 }
 
 
+# ---- spectral invariants (need mpmath for eigenvalues) -----------------------
+
+try:
+    import mpmath as _mp
+    HAVE_SPECTRAL = True
+except Exception:                       # pragma: no cover
+    HAVE_SPECTRAL = False
+
+
+def _adjacency_eigs(g: Graph):
+    adj = g._adj()
+    A = _mp.matrix(g.n, g.n)
+    for v in range(g.n):
+        for w in adj[v]:
+            A[v, w] = 1
+    return sorted(_mp.eigsy(A, eigvals_only=True))     # ascending, real
+
+
+def _laplacian_eigs(g: Graph):
+    adj = g._adj()
+    L = _mp.matrix(g.n, g.n)
+    for v in range(g.n):
+        L[v, v] = len(adj[v])
+        for w in adj[v]:
+            L[v, w] = -1
+    return sorted(_mp.eigsy(L, eigvals_only=True))
+
+
+def spectral_radius(g: Graph) -> float:
+    """Largest adjacency eigenvalue. Satisfies avg_degree <= it <= max_degree."""
+    return float(_adjacency_eigs(g)[-1]) if g.n else 0.0
+
+
+def energy(g: Graph) -> float:
+    """Graph energy: sum of absolute values of adjacency eigenvalues."""
+    return float(sum(abs(e) for e in _adjacency_eigs(g))) if g.n else 0.0
+
+
+def algebraic_connectivity(g: Graph) -> float:
+    """Fiedler value: 2nd-smallest Laplacian eigenvalue (0 iff disconnected).
+    Bounded above by vertex connectivity and by min_degree."""
+    if g.n < 2:
+        return 0.0
+    return float(_laplacian_eigs(g)[1])
+
+
+def laplacian_spectral_radius(g: Graph) -> float:
+    """Largest Laplacian eigenvalue. Satisfies it <= order and >= max_degree+1."""
+    return float(_laplacian_eigs(g)[-1]) if g.n else 0.0
+
+
+SPECTRAL_INVARIANTS = {
+    "spectral_radius": spectral_radius, "energy": energy,
+    "algebraic_connectivity": algebraic_connectivity,
+    "laplacian_spectral_radius": laplacian_spectral_radius,
+} if HAVE_SPECTRAL else {}
+
+
+def all_invariants() -> dict:
+    """Combinatorial invariants, plus spectral ones when mpmath is available."""
+    return {**INVARIANTS, **SPECTRAL_INVARIANTS}
+
+
 # ---- graph generators --------------------------------------------------------
 
 def path(n):    return Graph.of(n, [(i, i + 1) for i in range(n - 1)], f"P{n}")
@@ -168,18 +231,19 @@ def graffiti_search(graphs=None, invariants=None) -> list[GraphConjecture]:
     They hold on the sample; proving them for all graphs is a human/Lean job.
     """
     graphs = graphs or sample_graphs()
-    inv = invariants or INVARIANTS
+    inv = invariants or all_invariants()
     names = list(inv)
+    eps = 1e-9                          # tolerance: spectral invariants are floats
     out: list[GraphConjecture] = []
-    vals = {name: [Fraction(inv[name](g)) for g in graphs] for name in names}
+    vals = {name: [float(inv[name](g)) for g in graphs] for name in names}
     for a in names:
         for b in names:
             if a == b:
                 continue
             va, vb = vals[a], vals[b]
-            if all(x <= y for x, y in zip(va, vb)):
-                tight = sum(1 for x, y in zip(va, vb) if x == y)
-                strict = sum(1 for x, y in zip(va, vb) if x < y)
+            if all(x <= y + eps for x, y in zip(va, vb)):
+                tight = sum(1 for x, y in zip(va, vb) if abs(x - y) <= eps)
+                strict = sum(1 for x, y in zip(va, vb) if y - x > eps)
                 if tight >= 1 and strict >= 1:      # tight, but a real inequality
                     out.append(GraphConjecture(f"{a} <= {b}", len(graphs), tight))
     out.sort(key=lambda c: c.tight, reverse=True)

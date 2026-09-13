@@ -79,7 +79,11 @@ triangles, diameter, radius) over a spread of small connected graphs and returns
 the tight inequalities `A(G) <= B(G)` that held on every one — candidate theorems
 (e.g. it rediscovers `radius <= diameter` and `min_degree <= avg_degree <=
 max_degree`). They hold on the sample; proving them for all graphs is a human/Lean
-job. Pure Python, no dependencies; spectral invariants are future work.
+job. Combinatorial invariants are pure Python; **spectral invariants** (spectral
+radius, graph energy, algebraic connectivity / Fiedler value, Laplacian spectral
+radius) use mpmath eigenvalues when available — with these the search rediscovers
+the classic bracket `avg_degree <= spectral_radius <= max_degree` and
+`laplacian_spectral_radius <= order`.
 
 ### 2. Generator / Mutator — `generator.py`
 

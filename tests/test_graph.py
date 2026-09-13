@@ -37,3 +37,23 @@ def test_graffiti_rediscovers_true_inequalities():
 def test_graffiti_conjectures_are_tight_and_nontrivial():
     for c in G.graffiti_search():
         assert 1 <= c.tight < c.support        # tight on some, strict on some
+
+
+import pytest
+spectral = pytest.mark.skipif(not G.HAVE_SPECTRAL, reason="spectral needs mpmath")
+
+
+@spectral
+def test_spectral_radius_known_values():
+    assert G.spectral_radius(G.complete(4)) == pytest.approx(3.0)   # K_n -> n-1
+    assert G.spectral_radius(G.cycle(5)) == pytest.approx(2.0)      # C_n -> 2
+    assert G.algebraic_connectivity(G.complete(4)) == pytest.approx(4.0)  # K_n -> n
+
+
+@spectral
+def test_graffiti_rediscovers_spectral_bracket():
+    conj = {c.text for c in G.graffiti_search()}
+    # classic: avg_degree <= spectral_radius <= max_degree
+    assert "avg_degree <= spectral_radius" in conj
+    assert "spectral_radius <= max_degree" in conj
+    assert "laplacian_spectral_radius <= order" in conj
