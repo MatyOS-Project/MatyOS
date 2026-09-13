@@ -18,7 +18,7 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import Iterator
 
-from matyos.discovery.objects import MathObject, Sequence, Formula
+from matyos.discovery.objects import MathObject, Sequence, Formula, Series
 
 
 def mutate(obj: MathObject) -> Iterator[MathObject]:
@@ -71,6 +71,25 @@ def cross_domain_transfer(obj: MathObject) -> Iterator[MathObject]:
             text = f"a[n] = ({p})*a[n-1] + ({q})*a[n-2],  a0={a0}, a1={a1}"
             yield Formula(provenance=f"transfer:sequence->formula({obj.name or obj.key()})",
                           fn=make(p, q, a0, a1), text=text)
+
+    if isinstance(obj, Formula):
+        # formula -> series: the reciprocal series sum(1/a(n)). If the sequence
+        # grows the sum converges to a constant, which we then hunt a closed form
+        # for. A genuinely different domain (a number, not a rule).
+        fn = obj.fn
+
+        def recip(n, fn=fn):
+            v = fn(int(n))
+            return 1 / v if v else 0
+
+        # only worth it if terms grow (so the reciprocal series converges)
+        try:
+            growing = abs(fn(6)) > abs(fn(3)) > 0
+        except Exception:
+            growing = False
+        if growing:
+            yield Series(provenance=f"transfer:formula->series({obj.text})",
+                         term_fn=recip, text=f"sum 1/({obj.text})", start=1)
 
 
 def _fit_order2_recurrence(terms: tuple[Fraction, ...]) -> tuple[Fraction, Fraction] | None:

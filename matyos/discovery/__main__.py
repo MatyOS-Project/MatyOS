@@ -15,7 +15,7 @@ offline table with no network.
 
 from __future__ import annotations
 
-from matyos.discovery.objects import Sequence
+from matyos.discovery.objects import Sequence, Series
 from matyos.discovery.engine import DiscoveryEngine
 from matyos.discovery import anomaly
 
@@ -27,15 +27,15 @@ def _recur(p: int, q: int, a0: int, a1: int, n: int = 10) -> list[int]:
     return s
 
 
-def toy_seeds() -> list[Sequence]:
-    # Same recurrences as Fibonacci (ratio -> golden) and Pell (ratio -> silver),
-    # but with unusual starting values that are NOT catalogued in OEIS. So the
-    # engine finds a real closed form AND reports no prior art — the shape of a
-    # candidate worth a human's look.
+def toy_seeds() -> list:
+    # Two domains:
+    #  - sequences: ratio -> a metallic constant (golden, silver)
+    #  - series:    sum   -> a hidden constant (Basel -> pi^2/6, Leibniz -> pi/4)
     return [
         Sequence.of(_recur(1, 1, 17, 100), name="fib-type(17,100)"),
         Sequence.of(_recur(2, 1, 7, 50), name="silver-type(7,50)"),
-        Sequence.of([0, 1, 1, 2, 3, 5, 8, 13, 21, 34], name="fibonacci (known, for contrast)"),
+        Series(term_fn=lambda n: 1 / (n * n), text="sum 1/n^2", start=1),
+        Series(term_fn=lambda n: (-1) ** n / (2 * n + 1), text="sum (-1)^n/(2n+1)", start=0),
     ]
 
 

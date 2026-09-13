@@ -18,13 +18,14 @@ Anything marked ``STUB`` is a deliberate placeholder with a stable signature and
 no real implementation yet. Nothing here should be mistaken for working discovery.
 """
 
-from matyos.discovery.objects import MathObject, Sequence, Formula
+from matyos.discovery.objects import MathObject, Sequence, Formula, Series
 from matyos.discovery.engine import DiscoveryEngine, Candidate
 
 __all__ = [
     "MathObject",
     "Sequence",
     "Formula",
+    "Series",
     "DiscoveryEngine",
     "Candidate",
 ]

@@ -27,6 +27,7 @@ def _basis():
     return [
         ("1", mp.mpf(1)),
         ("pi", mp.pi),
+        ("pi^2", mp.pi ** 2),
         ("e", mp.e),
         ("sqrt2", mp.sqrt(2)),
         ("sqrt3", mp.sqrt(3)),
@@ -107,6 +108,8 @@ def value_of(rel: "Relation", dps: int = 50):
 def _to_mpf(value):
     if isinstance(value, Fraction):
         return mp.mpf(value.numerator) / mp.mpf(value.denominator)
+    if isinstance(value, mp.mpf):
+        return value                      # already high-precision (e.g. a series value)
     return mp.mpf(str(value))
 
 

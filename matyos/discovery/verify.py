@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from fractions import Fraction
 
-from matyos.discovery.objects import MathObject, Sequence, Formula
+from matyos.discovery.objects import MathObject, Sequence, Formula, Series
 from matyos.discovery import scorer
 
 
@@ -106,6 +106,15 @@ def _high_precision_confirm(obj: MathObject, notes: list[str]) -> bool:
     it is reported as unconfirmed.
     """
     from matyos.discovery import anomaly
+    if isinstance(obj, Series):
+        val = obj.value(60)
+        if val is not None and anomaly.HAVE_PSLQ:
+            rel = anomaly.find_closed_form(val, dps=60)
+            if rel is not None:
+                notes.append(f"high-precision confirm: sum = {rel.formula[4:]} holds at 60 digits")
+                return True
+        notes.append("high-precision confirm: no closed form at higher precision")
+        return False
     if isinstance(obj, Formula):
         terms = obj.evaluate_prefix(300)
         ratios = [t / s for s, t in zip(terms, terms[1:]) if s != 0]
@@ -133,6 +142,17 @@ def refute(obj: MathObject) -> tuple[str, str]:
     "survived", "refuted", or "n/a" (nothing falsifiable — no closed form).
     """
     from matyos.discovery import anomaly
+    if isinstance(obj, Series) and anomaly.HAVE_PSLQ:
+        v1, v2 = obj.value(50), obj.value(72)
+        if v1 is None:
+            return "n/a", ""
+        r1 = anomaly.find_closed_form(v1, dps=50)
+        if r1 is None:
+            return "n/a", ""
+        r2 = anomaly.find_closed_form(v2, dps=72)
+        if r2 is not None and r2.formula == r1.formula:
+            return "survived", f"refutation survived: sum = {r1.formula[4:]} stable to 72 digits"
+        return "refuted", "refuted: the closed form did not survive higher precision"
     if not (isinstance(obj, Formula) and anomaly.HAVE_PSLQ):
         return "n/a", ""
     near = obj.evaluate_prefix(120)
@@ -154,6 +174,17 @@ def refute(obj: MathObject) -> tuple[str, str]:
 
 
 def _prior_art(obj: MathObject, notes: list[str]) -> str | None:
+    if isinstance(obj, Series):
+        # For a constant, matching known constants MEANS it is a known expression;
+        # a sum with NO closed form is the interesting mystery (novel frontier).
+        from matyos.discovery import anomaly
+        val = obj.value(50) if anomaly.HAVE_PSLQ else None
+        rel = anomaly.find_closed_form(val, dps=50) if val is not None else None
+        if rel is not None:
+            notes.append(f"prior art: expressible in known constants ({rel.formula[4:]})")
+            return "known constant"
+        notes.append("no prior art: sum has no closed form in the known-constant basis — a mystery constant")
+        return None
     if isinstance(obj, Sequence):
         terms = obj.terms
     elif isinstance(obj, Formula):

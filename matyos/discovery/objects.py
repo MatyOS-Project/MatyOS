@@ -79,3 +79,32 @@ class Formula(MathObject):
 
     def key(self) -> str:
         return "formula:" + self.text
+
+
+@dataclass(frozen=True)
+class Series(MathObject):
+    """A convergent series, the second discovery domain.
+
+    Defined by a term function ``term_fn(n)`` summed from ``start`` to infinity.
+    Its characteristic quantity is a *value* (a real constant), not a ratio — so
+    hunting its closed form asks "does this sum equal something known?", the
+    Ramanujan-Machine move (Basel's sum -> pi^2/6, Leibniz's -> pi/4, ...).
+    ``value`` uses mpmath's convergence acceleration, so slowly-converging sums
+    still reach full precision; it returns None if mpmath is unavailable.
+    """
+
+    term_fn: Callable[[int], object] = None  # type: ignore[assignment]
+    text: str = ""
+    start: int = 1
+    domain: str = field(default="series", init=False)
+
+    def value(self, dps: int = 50):
+        try:
+            import mpmath as mp
+        except Exception:
+            return None
+        mp.mp.dps = dps
+        return mp.nsum(self.term_fn, [self.start, mp.inf])
+
+    def key(self) -> str:
+        return "series:" + self.text

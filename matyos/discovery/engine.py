@@ -50,6 +50,9 @@ class DiscoveryEngine:
                 produced.setdefault(m.key(), m)
             for t in generator.cross_domain_transfer(seed):
                 produced.setdefault(t.key(), t)
+                # chain one more hop, e.g. sequence -> formula -> series
+                for t2 in generator.cross_domain_transfer(t):
+                    produced.setdefault(t2.key(), t2)
         return list(produced.values())
 
     def run(self, seeds: list[MathObject]) -> list[Candidate]:

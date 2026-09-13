@@ -9,7 +9,7 @@ from fractions import Fraction
 
 import pytest
 
-from matyos.discovery.objects import Sequence, Formula
+from matyos.discovery.objects import Sequence, Formula, Series
 from matyos.discovery import generator, scorer, verify as verify_mod, anomaly
 from matyos.discovery.engine import DiscoveryEngine
 
@@ -149,6 +149,39 @@ def test_store_dedupes_and_persists(tmp_path):
     p = tmp_path / "store.json"
     s.save(p)
     assert CandidateStore.load(p).seen("k1")
+
+
+@pslq
+def test_series_domain_finds_basel_closed_form():
+    basel = Series(term_fn=lambda n: 1 / (n * n), text="sum 1/n^2", start=1)
+    sc = scorer.score(basel)
+    assert sc.breakdown["numerical_anomaly"] == pytest.approx(1.0)
+    assert "pi^2" in sc.notes["numerical_anomaly"]      # sum = pi^2/6
+
+
+@pslq
+def test_series_leibniz_is_pi_over_4():
+    leib = Series(term_fn=lambda n: (-1) ** n / (2 * n + 1), text="leibniz", start=0)
+    rel = anomaly.find_closed_form(leib.value(50))
+    assert rel is not None and rel.formula == "x = (pi) / 4"
+
+
+@pslq
+def test_series_known_constant_labelled_known_and_survives_refute():
+    basel = Series(term_fn=lambda n: 1 / (n * n), text="sum 1/n^2", start=1)
+    v = verify_mod.verify(basel)
+    assert v.refutation == "survived"
+    assert v.label["truth_name"] == "realistic"   # unproven
+    assert v.label["novelty"] == "known"          # pi^2/6 is a known constant
+
+
+@pslq
+def test_formula_transfers_to_reciprocal_series():
+    s = Sequence.of(FIB, name="fib")
+    f = next(generator.cross_domain_transfer(s))
+    series = [t for t in generator.cross_domain_transfer(f) if isinstance(t, Series)]
+    assert series, "growing recurrence should transfer to a reciprocal series"
+    assert series[0].provenance.startswith("transfer:formula->series")
 
 
 @pslq

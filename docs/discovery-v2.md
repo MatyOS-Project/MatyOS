@@ -43,19 +43,26 @@ The loop is: **seeds → generate → score → verify → shortlist.**
 
 ### 1. Object Representation Layer — `objects.py`
 
-A generic vocabulary for mathematical *objects* (sequences, formulas, graphs,
-operators, structures), not proof terms. `MathObject` is the base; the scaffold
-implements `Sequence` and `Formula`. Each object records a `provenance` trail so
-the shortlist can explain where a candidate came from.
+A generic vocabulary for mathematical *objects* (sequences, formulas, series,
+graphs, operators…), not proof terms. `MathObject` is the base; the engine
+implements `Sequence`, `Formula`, and `Series` — a convergent sum whose
+characteristic quantity is a *value* (a constant), not a ratio. Each object
+records a `provenance` trail so the shortlist can explain where it came from.
 
 ### 2. Generator / Mutator — `generator.py`
 
 Produces candidates from existing objects. Within-domain moves (compose,
-generalize, specialize) plus the differentiator, `cross_domain_transfer`. The
-scaffold implements one transfer direction end to end — `sequence -> formula` via
-order-2 linear-recurrence detection — enough to make the mechanic real. Pure
-geometric sequences make that fit singular, and the code returns no transfer rather
-than a wrong one; that honesty is deliberate.
+generalize, specialize) plus the differentiator, `cross_domain_transfer`. Two
+transfer hops are built: `sequence -> formula` (order-2 linear-recurrence
+detection) and `formula -> series` (the reciprocal series `sum 1/a(n)`, whose
+value is then hunted for a closed form). So a number-sequence can become a rule,
+and a rule can become a constant — genuinely crossing domains. Pure geometric
+sequences make the recurrence fit singular, and the code returns no transfer
+rather than a wrong one; that honesty is deliberate.
+
+*Known gap:* a series with **no** closed form is the interesting mystery
+constant, but the scorer currently rewards closed-form-found, so unknown-constant
+mysteries score low and get filtered. Surfacing them needs a mystery-aware score.
 
 ### 3. Interestingness Scorer — `scorer.py`
 

@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from decimal import Decimal, getcontext
 from fractions import Fraction
 
-from matyos.discovery.objects import MathObject, Sequence, Formula
+from matyos.discovery.objects import MathObject, Sequence, Formula, Series
 from matyos.discovery import anomaly
 
 getcontext().prec = 50
@@ -101,6 +101,18 @@ def _numerical_anomaly(obj: MathObject) -> tuple[float, str]:
     basis of constants. If mpmath is unavailable we fall back to matching a small
     table of known constants.
     """
+    # Series: the characteristic quantity is the sum's value, not a ratio.
+    if isinstance(obj, Series):
+        if not anomaly.HAVE_PSLQ:
+            return 0.0, ""
+        val = obj.value()
+        if val is None:
+            return 0.0, ""
+        rel = anomaly.find_closed_form(val)
+        if rel is not None:
+            return 1.0, f"closed form found (PSLQ): sum = {rel.formula[4:]}"
+        return 0.0, f"sum ~{float(val):.10f} (no known closed form — mystery constant)"
+
     ratio = _characteristic_ratio_exact(obj)
     if ratio is None:
         return 0.0, ""
