@@ -5,33 +5,45 @@
 <h1 align="center">MatyOS</h1>
 
 <p align="center">
-  <strong>A dependently-typed proof assistant, built to be LLM-native.</strong>
+  <strong>The scientific method as software — a trusted substrate any AI model plugs into to do science honestly.</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/tests-233%20passing-brightgreen" alt="tests"/>
+  <img src="https://img.shields.io/badge/tests-338%20passing-brightgreen" alt="tests"/>
   <img src="https://img.shields.io/badge/platforms-win%20%C2%B7%20linux%20%C2%B7%20macos-blue" alt="platforms"/>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="license"/>
+  <img src="https://img.shields.io/badge/PyPI-matyos-blue" alt="PyPI"/>
   <img src="https://img.shields.io/badge/status-early%20%C2%B7%20sound%20kernel-orange" alt="status"/>
 </p>
 
 ---
 
-MatyOS is a proof assistant in the tradition of **Lean, Coq and Agda**: you
-state theorems as types and prove them by writing terms that a small, trusted
-**kernel** checks. Its long-term goal is to be a system that **large language
-models can use to do mathematics** — analysis, conjecture, and proof — with
-first-class support for *uncertainty* (the `realistic` truth value).
+MatyOS lends any model — an LLM, an agent, in time a robot's model — the
+**discipline of the scientific method**: hypothesize, test, try to refute, and
+label what is *certain* versus merely *likely*, with every claim checkable by a
+small trusted **kernel**. The model brings the ideas; MatyOS brings the rigor.
 
-> **Honest status.** This is an early but *sound* core, not yet a Lean
-> competitor in capability. What works today: a trusted dependent-type kernel,
-> inductive types with recursors, propositional equality, proof by induction,
-> strict-positivity checking, definitions, an impredicative `Prop`, a text
-> front-end, and a three-valued "realistic" logic — all covered by 233 tests.
-> The road to Lean-class mathematics (elaboration, tactics, and above all a
-> mathematics library) is mapped honestly in [ROADMAP.md](ROADMAP.md).
+It has three parts:
 
-## Why another proof assistant?
+- **A discovery engine** — hunts for new mathematical patterns (cross-domain
+  transfer, PSLQ closed-form detection with a significance gate, live OEIS
+  prior-art checks), keeping only the surprising and the not-already-known.
+- **A trusted verifier / proof assistant** — a small dependently-typed kernel in
+  the tradition of **Lean, Coq and Agda** (inductive types, recursors,
+  propositional equality, an impredicative `Prop`), plus a three-valued
+  `realistic` logic so conjecture and certainty never get confused.
+- **An MCP substrate** — `pip install "matyos[mcp]"` or install it as a Claude
+  Code plugin, and any model can call MatyOS to verify closed forms, check OEIS,
+  check proofs, and run the discovery loop. See [docs/mcp-server.md](docs/mcp-server.md).
+
+> **Honest status.** Early, but the core is real. The kernel is *sound* (not yet
+> a Lean competitor — no large library); the discovery engine finds genuine
+> closed forms but most finds are *conjectures, not proofs*; the model supplies
+> the intelligence, MatyOS supplies the rigor. 338 tests. The road ahead —
+> elaboration, tactics, a mathematics library, broader object domains — is in
+> [ROADMAP.md](ROADMAP.md).
+
+## Why MatyOS?
 
 Lean/Coq/Agda were designed for humans, decades before LLMs. MatyOS is designed
 from day one around two bets:
