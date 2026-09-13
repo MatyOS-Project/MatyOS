@@ -1,0 +1,136 @@
+<svg viewBox="0 0 1100 1300" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif">
+  <rect x="0" y="0" width="1100" height="1300" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="context-stroke"/>
+    </marker>
+  </defs>
+
+  <text x="550" y="34" text-anchor="middle" font-size="23" font-weight="700" fill="#26261f">MatyOS — an ecosystem for AI-driven math discovery</text>
+  <text x="550" y="58" text-anchor="middle" font-size="14" fill="#5F5E5A">you wire your own LLMs in; MatyOS gives the method, the honesty, the verification loop</text>
+
+  <!-- ecosystem container -->
+  <rect x="34" y="78" width="1032" height="1150" rx="18" fill="#EAF3DE" fill-opacity="0.35" stroke="#97C459" stroke-dasharray="8 6"/>
+  <text x="54" y="104" font-size="14" font-weight="700" fill="#3B6D11">the MatyOS ecosystem</text>
+
+  <!-- INPUT -->
+  <rect x="110" y="120" width="360" height="48" rx="12" fill="#E6F1FB" stroke="#85B7EB"/>
+  <text x="290" y="149" text-anchor="middle" font-size="14" font-weight="700" fill="#0C447C">A phenomenon / unsolved problem</text>
+  <line x1="290" y1="168" x2="290" y2="192" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- FRONT: Situate -->
+  <rect x="110" y="194" width="360" height="50" rx="11" fill="#FBEAF0" stroke="#ED93B1"/>
+  <circle cx="452" cy="219" r="6" fill="#7F77DD"/>
+  <text x="130" y="216" font-size="14" font-weight="700" fill="#72243E">1 · Situate — understand the phenomenon</text>
+  <text x="130" y="234" font-size="11.5" fill="#993556">what is really going on here?</text>
+  <line x1="290" y1="244" x2="290" y2="264" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Question -->
+  <rect x="110" y="266" width="360" height="50" rx="11" fill="#FBEAF0" stroke="#ED93B1"/>
+  <circle cx="452" cy="291" r="6" fill="#7F77DD"/>
+  <text x="130" y="288" font-size="14" font-weight="700" fill="#72243E">2 · Question — ask the sharp question</text>
+  <text x="130" y="306" font-size="11.5" fill="#993556">the right question aims the whole search</text>
+  <line x1="290" y1="316" x2="290" y2="336" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Generator -->
+  <rect x="110" y="338" width="360" height="46" rx="11" fill="#EEEDFE" stroke="#AFA9EC"/>
+  <circle cx="452" cy="361" r="6" fill="#7F77DD"/>
+  <text x="130" y="366" font-size="13.5" font-weight="700" fill="#3C3489">3 · Generate — dig candidates (cross-domain)</text>
+  <line x1="290" y1="384" x2="290" y2="402" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Pattern -->
+  <rect x="110" y="404" width="360" height="42" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
+  <text x="130" y="431" font-size="13.5" font-weight="700" fill="#085041">4 · Pattern found  <tspan font-weight="400" font-size="11.5" font-family="monospace">.hyp</tspan></text>
+  <line x1="290" y1="446" x2="290" y2="462" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Score -->
+  <rect x="110" y="464" width="360" height="40" rx="11" fill="#EEEDFE" stroke="#AFA9EC"/>
+  <text x="130" y="489" font-size="13.5" font-weight="700" fill="#3C3489">5 · Score — keep the surprising</text>
+  <line x1="290" y1="504" x2="290" y2="520" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Test -->
+  <rect x="110" y="522" width="360" height="44" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
+  <rect x="440" y="536" width="22" height="16" rx="3" fill="#FAC775"/>
+  <text x="451" y="548" text-anchor="middle" font-size="10" font-weight="700" fill="#633806">◆</text>
+  <text x="130" y="543" font-size="13.5" font-weight="700" fill="#085041">6 · Test — precision + OEIS  <tspan font-weight="400" font-size="11.5" font-family="monospace">.test</tspan></text>
+  <text x="130" y="560" font-size="11" fill="#0F6E56">already known?</text>
+  <line x1="290" y1="566" x2="290" y2="582" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Explain -->
+  <rect x="110" y="584" width="360" height="42" rx="11" fill="#FBEAF0" stroke="#ED93B1"/>
+  <circle cx="452" cy="605" r="6" fill="#7F77DD"/>
+  <text x="130" y="611" font-size="13.5" font-weight="700" fill="#72243E">7 · Explain / Abduce — why?</text>
+  <line x1="290" y1="626" x2="290" y2="642" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Generalize -->
+  <rect x="110" y="644" width="360" height="42" rx="11" fill="#FBEAF0" stroke="#ED93B1"/>
+  <circle cx="452" cy="665" r="6" fill="#7F77DD"/>
+  <text x="130" y="671" font-size="13.5" font-weight="700" fill="#72243E">8 · Generalize — the insight</text>
+  <line x1="290" y1="686" x2="290" y2="702" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Connect -->
+  <rect x="110" y="704" width="360" height="42" rx="11" fill="#FBEAF0" stroke="#ED93B1"/>
+  <text x="130" y="731" font-size="13.5" font-weight="700" fill="#72243E">9 · Connect — link to other finds</text>
+  <line x1="290" y1="746" x2="290" y2="762" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Proof -->
+  <rect x="110" y="764" width="360" height="44" rx="11" fill="#E1F5EE" stroke="#5DCAA5" stroke-dasharray="6 4"/>
+  <rect x="440" y="778" width="22" height="16" rx="3" fill="#FAC775"/>
+  <text x="451" y="790" text-anchor="middle" font-size="10" font-weight="700" fill="#633806">◆</text>
+  <text x="130" y="785" font-size="13.5" font-weight="700" fill="#085041">10 · Proof (rare)  <tspan font-weight="400" font-size="11.5" font-family="monospace">.prf</tspan></text>
+  <text x="130" y="802" font-size="11" fill="#0F6E56">borrow Lean / kernel</text>
+  <line x1="290" y1="808" x2="290" y2="824" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Theory -->
+  <rect x="110" y="826" width="360" height="40" rx="11" fill="#E1F5EE" stroke="#5DCAA5"/>
+  <text x="130" y="851" font-size="13.5" font-weight="700" fill="#085041">11 · Theory — the surviving body</text>
+  <line x1="290" y1="866" x2="290" y2="882" stroke="#73726c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Breed -->
+  <rect x="110" y="884" width="360" height="44" rx="11" fill="#FAEEDA" stroke="#FAC775"/>
+  <text x="130" y="911" font-size="13.5" font-weight="700" fill="#633806">12 · Breed new questions</text>
+
+  <!-- LOOP back to Situate -->
+  <path d="M110 906 L70 906 L70 219 L110 219" fill="none" stroke="#D4537E" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="70" y="560" text-anchor="middle" font-size="12.5" font-weight="700" fill="#D4537E" transform="rotate(-90 70 560)">the loop — never dead-ends</text>
+
+  <!-- RIGHT column panels -->
+  <!-- Your LLMs -->
+  <rect x="520" y="194" width="522" height="120" rx="12" fill="#EEEDFE" stroke="#AFA9EC"/>
+  <text x="544" y="222" font-size="15" font-weight="700" fill="#3C3489">You wire in — your own LLM(s)</text>
+  <circle cx="556" cy="250" r="6" fill="#7F77DD"/>
+  <text x="572" y="255" font-size="12.5" fill="#534AB7">every step marked ● runs on an LLM you choose</text>
+  <text x="544" y="280" font-size="12.5" fill="#534AB7">DeepSeek, Qwen, Kimi, GLM, Claude — swap freely,</text>
+  <text x="544" y="298" font-size="12.5" fill="#534AB7">on your GPU or an API. MatyOS is not the brain.</text>
+
+  <!-- MatyOS provides -->
+  <rect x="520" y="330" width="522" height="234" rx="12" fill="#E1F5EE" stroke="#5DCAA5"/>
+  <text x="544" y="358" font-size="15" font-weight="700" fill="#085041">MatyOS provides (the ecosystem)</text>
+  <text x="544" y="386" font-size="12.5" fill="#0F6E56">• the discovery loop + harness (this whole diagram)</text>
+  <text x="544" y="410" font-size="12.5" fill="#0F6E56">• the scientific-method layout — <tspan font-family="monospace">.hyp / .test / .prf</tspan></text>
+  <text x="544" y="434" font-size="12.5" fill="#0F6E56">• realistic honesty labels — certified / conditional / guess</text>
+  <text x="544" y="458" font-size="12.5" fill="#0F6E56">• the interestingness scorer + cross-domain transfer</text>
+  <text x="544" y="482" font-size="12.5" fill="#0F6E56">• plug sockets for LLMs and for verifiers</text>
+  <text x="544" y="506" font-size="12.5" fill="#0F6E56">• candidate store + provenance for every find</text>
+  <text x="544" y="530" font-size="12.5" fill="#0F6E56">• a shared registry — people attack unsolved problems</text>
+  <text x="544" y="552" font-size="11.5" font-style="italic" fill="#0F6E56">the parts that are yours, not borrowed</text>
+
+  <!-- You borrow -->
+  <rect x="520" y="580" width="522" height="128" rx="12" fill="#FAEEDA" stroke="#FAC775"/>
+  <text x="544" y="608" font-size="15" font-weight="700" fill="#633806">You borrow  (marked ◆)</text>
+  <text x="544" y="634" font-size="12.5" fill="#854F0B">• Lean 4 + mathlib — the proving muscle (optional, rare)</text>
+  <text x="544" y="658" font-size="12.5" fill="#854F0B">• OEIS / literature — is this pattern already known?</text>
+  <text x="544" y="682" font-size="12.5" fill="#854F0B">• a GPU pod for the LLMs — don't rebuild what exists</text>
+
+  <!-- Human -->
+  <rect x="520" y="724" width="522" height="96" rx="12" fill="#F1EFE8" stroke="#B4B2A9"/>
+  <text x="544" y="752" font-size="15" font-weight="700" fill="#444441">Human</text>
+  <text x="544" y="778" font-size="12.5" fill="#5F5E5A">steers the loop, sharpens the questions, picks winners,</text>
+  <text x="544" y="798" font-size="12.5" fill="#5F5E5A">judges what truly counts as a new insight.</text>
+
+  <!-- honesty strip -->
+  <rect x="520" y="836" width="522" height="92" rx="12" fill="#FAECE7" stroke="#F0997B"/>
+  <text x="544" y="862" font-size="13.5" font-weight="700" fill="#712B13">stay honest in public</text>
+  <text x="544" y="886" font-size="12" fill="#993C1D">most finds stay guesses · the machine hunts, humans judge</text>
+  <text x="544" y="906" font-size="12" fill="#993C1D">asking the right question is not yet automatable — draft many, humans pick</text>
+</svg>
