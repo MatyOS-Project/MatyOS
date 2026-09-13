@@ -1,23 +1,23 @@
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "el-language"
-version = "1.0.0"
-description = "El Programming Language - A modern, easy-to-learn programming language"
+name = "matyos"
+dynamic = ["version"]
+description = "MatyOS — a dependently-typed, LLM-native proof assistant with a discovery engine"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Ahmed Hafdi", email = "58536023+HAFDIAHMED@users.noreply.github.com"}
 ]
 maintainers = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Ahmed Hafdi", email = "58536023+HAFDIAHMED@users.noreply.github.com"}
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "Intended Audience :: Education",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -26,12 +26,10 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Interpreters",
-    "Topic :: Software Development :: Compilers",
-    "Topic :: Education",
+    "Topic :: Scientific/Engineering :: Mathematics",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-keywords = ["programming-language", "compiler", "interpreter", "education", "scripting"]
+keywords = ["proof-assistant", "dependent-types", "theorem-prover", "mathematics", "discovery", "mcp", "llm"]
 requires-python = ">=3.8"
 dependencies = []
 
@@ -65,26 +63,24 @@ mcp = [
 ]
 
 [project.scripts]
-el = "el_cli:main"
 matyos = "matyos.cli:main"
 matyos-mcp = "matyos.mcp_server:run"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/el-language"
-Documentation = "https://github.com/yourusername/el-language/wiki"
-Repository = "https://github.com/yourusername/el-language"
-"Bug Tracker" = "https://github.com/yourusername/el-language/issues"
-Changelog = "https://github.com/yourusername/el-language/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/MatyOS-Project/MatyOS"
+Documentation = "https://github.com/MatyOS-Project/MatyOS/tree/main/docs"
+Repository = "https://github.com/MatyOS-Project/MatyOS"
+"Bug Tracker" = "https://github.com/MatyOS-Project/MatyOS/issues"
 
-[tool.setuptools]
-packages = [
-    "matyos", "matyos.kernel", "matyos.frontend", "matyos.logic",
-    "compiler", "utils", "system",
-]
-include-package-data = true
+[tool.setuptools.dynamic]
+version = {attr = "matyos.__version__"}
 
-[tool.setuptools.package-data]
-"*" = ["*.el", "*.md", "*.txt"]
+# Publish only the MatyOS proof assistant. The legacy "El" language
+# (compiler/ utils/ system/ el_*.py) is not part of this distribution.
+# Note: the stdlib/ .elk files live outside the package and are not bundled yet;
+# `matyos check stdlib/...` works from a checkout, not from a bare pip install.
+[tool.setuptools.packages.find]
+include = ["matyos*"]
 
 [tool.black]
 line-length = 88
