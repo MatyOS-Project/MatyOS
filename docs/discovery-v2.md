@@ -60,9 +60,12 @@ and a rule can become a constant — genuinely crossing domains. Pure geometric
 sequences make the recurrence fit singular, and the code returns no transfer
 rather than a wrong one; that honesty is deliberate.
 
-*Known gap:* a series with **no** closed form is the interesting mystery
-constant, but the scorer currently rewards closed-form-found, so unknown-constant
-mysteries score low and get filtered. Surfacing them needs a mystery-aware score.
+*Mysteries are kept.* A series that converges to a **stable constant with no
+known closed form** is scored by a dedicated `mystery` signal (weighted alongside
+anomaly and resonance), so unknown constants are surfaced rather than filtered —
+that is where new discoveries hide. Stability is required (the value must agree at
+two precisions) so numerical noise is not mistaken for a constant. Such a find is
+labelled *mystery* with novelty *unknown* and truth REALISTIC.
 
 ### 3. Interestingness Scorer — `scorer.py`
 

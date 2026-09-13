@@ -13,14 +13,21 @@ from matyos.logic import realistic
 
 
 def realistic_label(*, has_closed_form: bool, refutation: str,
-                    prior_art: str | None, proven: bool = False) -> dict:
+                    prior_art: str | None, proven: bool = False,
+                    is_mystery: bool = False) -> dict:
     """Return {truth, truth_name, status, novelty} for a candidate.
 
     truth uses matyos.logic.realistic's constants (TRUE / REALISTIC / FALSE).
     - refuted            -> FALSE
     - proven (kernel/Lean) -> TRUE     (not reachable from numeric discovery yet)
-    - otherwise           -> REALISTIC (found, survived tests, but unproven)
+    - mystery            -> REALISTIC  (a real, stable constant we cannot name)
+    - otherwise          -> REALISTIC (found, survived tests, but unproven)
     """
+    if is_mystery and not has_closed_form:
+        return {"truth": realistic.REALISTIC,
+                "truth_name": realistic.name_of(realistic._FROM_CONST[realistic.REALISTIC]),
+                "status": "mystery — stable constant, no known closed form",
+                "novelty": "unknown"}
     if not has_closed_form:
         return {"truth": None, "truth_name": None,
                 "status": "no closed form", "novelty": None}

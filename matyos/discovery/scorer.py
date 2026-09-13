@@ -59,14 +59,22 @@ def score(obj: MathObject) -> Score:
     if anomaly_note:
         notes["numerical_anomaly"] = anomaly_note
 
+    mystery = _mystery(obj)
+    breakdown["mystery"] = mystery
+    if mystery >= 1.0:
+        notes["mystery"] = ("stable constant with no known closed form — "
+                            "the interesting kind; worth a human look")
+
     breakdown["structural_novelty"] = _structural_novelty(obj)
     breakdown["resonance"] = _resonance(obj)
     breakdown["surprise"] = _surprise(obj)
 
-    # Weighted sum. Anomaly and resonance are the signals we trust most in this
-    # scaffold; novelty and surprise are crude and weighted down accordingly.
-    weights = {"numerical_anomaly": 0.4, "resonance": 0.3,
-               "structural_novelty": 0.15, "surprise": 0.15}
+    # Weighted sum. A recognised closed form (anomaly) and cross-domain resonance
+    # are the strongest signals; a *mystery* — a real constant we cannot yet name —
+    # is weighted right alongside them, because unknown constants are exactly where
+    # new discoveries hide. Novelty and surprise stay crude, weighted down.
+    weights = {"numerical_anomaly": 0.35, "resonance": 0.25, "mystery": 0.25,
+               "structural_novelty": 0.1, "surprise": 0.05}
     total = sum(breakdown[k] * w for k, w in weights.items())
     return Score(total=total, breakdown=breakdown, notes=notes)
 
@@ -91,6 +99,28 @@ def _characteristic_ratio_exact(obj: MathObject) -> Fraction | None:
     if hi - lo > Fraction(1, 10 ** 4):
         return None
     return ratios[-1]
+
+
+def _mystery(obj: MathObject) -> float:
+    """1.0 if this is a series that converges to a *stable* constant with NO known
+    closed form — an unexplained constant, the interesting kind. Requires the
+    value to agree at two precisions (so it's a real limit, not numerical noise).
+    """
+    if not isinstance(obj, Series) or not anomaly.HAVE_PSLQ:
+        return 0.0
+    val = obj.value(50)
+    if val is None:
+        return 0.0
+    if anomaly.find_closed_form(val) is not None:
+        return 0.0                       # explained — not a mystery
+    try:
+        import mpmath as mp
+        val2 = obj.value(72)
+        if val2 is not None and abs(val - val2) < mp.mpf(10) ** (-40):
+            return 1.0                   # stable constant, unnamed
+    except Exception:
+        return 0.0
+    return 0.0
 
 
 def _numerical_anomaly(obj: MathObject) -> tuple[float, str]:

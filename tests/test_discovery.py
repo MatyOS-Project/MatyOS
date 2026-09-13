@@ -177,6 +177,26 @@ def test_series_domain_finds_basel_closed_form():
 
 
 @pslq
+def test_mystery_constant_is_kept_and_labelled():
+    # sum 1/(2^n+1): converges, but no closed form in the basis -> a mystery.
+    m = Series(term_fn=lambda n: 1 / (2 ** n + 1), text="sum 1/(2^n+1)", start=1)
+    sc = scorer.score(m)
+    assert sc.breakdown["mystery"] == pytest.approx(1.0)
+    assert sc.breakdown["numerical_anomaly"] == pytest.approx(0.0)
+    assert sc.total >= 0.2                      # kept, not filtered
+    v = verify_mod.verify(m)
+    assert "mystery" in v.label["status"]
+    assert v.label["truth_name"] == "realistic"
+    assert v.label["novelty"] == "unknown"
+
+
+@pslq
+def test_known_series_is_not_a_mystery():
+    b = Series(term_fn=lambda n: 1 / (n * n), text="basel", start=1)
+    assert scorer.score(b).breakdown["mystery"] == pytest.approx(0.0)
+
+
+@pslq
 def test_series_finds_apery_zeta3():
     z = Series(term_fn=lambda n: 1 / (n * n * n), text="sum 1/n^3", start=1)
     sc = scorer.score(z)

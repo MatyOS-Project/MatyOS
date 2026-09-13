@@ -92,7 +92,11 @@ def verify(obj: MathObject) -> Verification:
         notes.append(rnote)
     art = _prior_art(obj, notes)
     has_cf = verdict != "n/a" or confirmed
-    label = realistic_label(has_closed_form=has_cf, refutation=verdict, prior_art=art)
+    is_mystery = scorer.score(obj).breakdown.get("mystery", 0.0) >= 1.0
+    if is_mystery:
+        notes.append("mystery: a stable constant with no known closed form — worth a human look")
+    label = realistic_label(has_closed_form=has_cf, refutation=verdict,
+                            prior_art=art, is_mystery=is_mystery)
     return Verification(confirmed=confirmed, prior_art=art, notes=notes,
                         refutation=verdict, label=label)
 

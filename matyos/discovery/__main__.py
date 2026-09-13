@@ -38,6 +38,7 @@ def toy_seeds() -> list:
         Series(term_fn=lambda n: 1 / (n * n * n), text="sum 1/n^3", start=1),
         Series(term_fn=lambda n: 1 / n ** 4, text="sum 1/n^4", start=1),
         Series(term_fn=lambda n: (-1) ** n / (2 * n + 1), text="sum (-1)^n/(2n+1)", start=0),
+        Series(term_fn=lambda n: 1 / (2 ** n + 1), text="sum 1/(2^n+1)", start=1),  # a mystery
         Sequence.of([0, 0, 1, 1, 2, 4, 7, 13, 24, 44, 81], name="tribonacci"),
     ]
 
