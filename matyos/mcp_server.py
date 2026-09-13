@@ -138,6 +138,24 @@ def explore(seeds: list[list[int]], rounds: int = 3) -> dict[str, Any]:
     return summary
 
 
+@server.tool()
+def graph_conjectures() -> dict[str, Any]:
+    """Conjecture inequalities between graph invariants (the Graffiti move).
+
+    Computes cheap invariants (order, size, degrees, triangles, diameter, radius)
+    over a spread of small connected graphs and returns the tight inequalities
+    A(G) <= B(G) that held on every one — candidate theorems. They hold on the
+    sample; proving them for all graphs is a human/Lean job. This is the discovery
+    domain beyond numbers.
+    """
+    from matyos.discovery import graph as g
+    conj = g.graffiti_search()
+    return {"conjectures": [
+        {"statement": c.text, "held_on": c.support, "tight_on": c.tight}
+        for c in conj
+    ]}
+
+
 def run() -> None:
     """Console entry point (stdio transport)."""
     server.run()  # stdio transport by default

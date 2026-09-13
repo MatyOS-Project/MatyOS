@@ -17,7 +17,14 @@ def test_tools_registered():
     import asyncio
     tools = asyncio.run(srv.server.list_tools())
     names = {t.name for t in tools}
-    assert {"verify_relation", "oeis_lookup", "check_proof", "discover", "explore"} <= names
+    assert {"verify_relation", "oeis_lookup", "check_proof", "discover",
+            "explore", "graph_conjectures"} <= names
+
+
+def test_graph_conjectures_tool():
+    out = srv.graph_conjectures()
+    stmts = {c["statement"] for c in out["conjectures"]}
+    assert "radius <= diameter" in stmts
 
 
 @pytest.mark.skipif(not anomaly.HAVE_PSLQ, reason="PSLQ needs mpmath")

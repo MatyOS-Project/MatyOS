@@ -72,6 +72,15 @@ works with Claude, GPT, or a local model — you supply the function that calls
 yours. Inside Claude Code, a session can also drive it from outside by calling the
 MCP `discover` tool round after round.
 
+**Graphs (`graph.py`) — a domain beyond numbers (the Graffiti move).** Instead of
+a formula for a sequence, the objects of interest are *inequalities between graph
+invariants*. `graffiti_search` computes cheap invariants (order, size, degrees,
+triangles, diameter, radius) over a spread of small connected graphs and returns
+the tight inequalities `A(G) <= B(G)` that held on every one — candidate theorems
+(e.g. it rediscovers `radius <= diameter` and `min_degree <= avg_degree <=
+max_degree`). They hold on the sample; proving them for all graphs is a human/Lean
+job. Pure Python, no dependencies; spectral invariants are future work.
+
 ### 2. Generator / Mutator — `generator.py`
 
 Produces candidates from existing objects. Within-domain moves (compose,
