@@ -98,7 +98,7 @@ class Series(MathObject):
     start: int = 1
     domain: str = field(default="series", init=False)
 
-    def value(self, dps: int = 50):
+    def value(self, dps: int = 80):
         try:
             import mpmath as mp
         except Exception:
@@ -126,7 +126,7 @@ class ContinuedFraction(MathObject):
     text: str = ""
     domain: str = field(default="cf", init=False)
 
-    def value(self, dps: int = 60, terms: int = 400):
+    def value(self, dps: int = 80, terms: int = 400):
         try:
             import mpmath as mp
         except Exception:

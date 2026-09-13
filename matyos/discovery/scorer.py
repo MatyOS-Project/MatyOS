@@ -108,14 +108,14 @@ def _mystery(obj: MathObject) -> float:
     """
     if not isinstance(obj, Series) or not anomaly.HAVE_PSLQ:
         return 0.0
-    val = obj.value(50)
+    val = obj.value(80)
     if val is None:
         return 0.0
-    if anomaly.find_closed_form(val) is not None:
+    if anomaly.find_closed_form(val, dps=80) is not None:
         return 0.0                       # explained — not a mystery
     try:
         import mpmath as mp
-        val2 = obj.value(72)
+        val2 = obj.value(110)
         if val2 is not None and abs(val - val2) < mp.mpf(10) ** (-40):
             return 1.0                   # stable constant, unnamed
     except Exception:
@@ -135,10 +135,10 @@ def _numerical_anomaly(obj: MathObject) -> tuple[float, str]:
     if isinstance(obj, Series):
         if not anomaly.HAVE_PSLQ:
             return 0.0, ""
-        val = obj.value()
+        val = obj.value(80)
         if val is None:
             return 0.0, ""
-        rel = anomaly.find_closed_form(val)
+        rel = anomaly.find_closed_form(val, dps=80)
         if rel is not None:
             return 1.0, f"closed form found (PSLQ): sum = {rel.formula[4:]}"
         return 0.0, f"sum ~{float(val):.10f} (no known closed form — mystery constant)"

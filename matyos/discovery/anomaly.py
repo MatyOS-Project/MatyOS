@@ -54,6 +54,12 @@ def _basis():
 # terms. Capping the number of non-x terms is the strongest guard against it.
 MAX_TERMS = 4
 
+# Working precision must scale with the basis size: with ~20 constants, too little
+# precision lets PSLQ return a dense spurious relation before the true sparse one.
+# 80 digits keeps the genuine sparse identities (phi, pi^4/90, zeta3, ...) findable
+# while dense numerology is rejected by MAX_TERMS.
+DEFAULT_DPS = 80
+
 
 @dataclass(frozen=True)
 class Relation:
@@ -112,8 +118,11 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5,
                     formula=_render(rel, names))
 
 
-def find_closed_form_pm(value, dps: int = 50, maxcoeff: int = 10 ** 5,
+def find_closed_form_pm(value, dps: int = DEFAULT_DPS, maxcoeff: int = 10 ** 5,
                         maxsteps: int = 10 ** 5):
+    # pm (value + reciprocal) is used for constant/CF hunts against the full basis,
+    # so it defaults to the higher DEFAULT_DPS. Ratio-based hunts call
+    # find_closed_form directly at the lower default.
     """Hunt a closed form for ``value`` and for ``1/value``.
 
     Continued fractions often converge to a rational multiple of a constant's

@@ -130,9 +130,9 @@ def _high_precision_confirm(obj: MathObject, notes: list[str]) -> bool:
     """
     from matyos.discovery import anomaly
     if isinstance(obj, Series):
-        val = obj.value(60)
+        val = obj.value(80)
         if val is not None and anomaly.HAVE_PSLQ:
-            rel = anomaly.find_closed_form(val, dps=60)
+            rel = anomaly.find_closed_form(val, dps=80)
             if rel is not None:
                 notes.append(f"high-precision confirm: sum = {rel.formula[4:]} holds at 60 digits")
                 return True
@@ -166,13 +166,13 @@ def refute(obj: MathObject) -> tuple[str, str]:
     """
     from matyos.discovery import anomaly
     if isinstance(obj, Series) and anomaly.HAVE_PSLQ:
-        v1, v2 = obj.value(50), obj.value(72)
+        v1, v2 = obj.value(80), obj.value(110)
         if v1 is None:
             return "n/a", ""
-        r1 = anomaly.find_closed_form(v1, dps=50)
+        r1 = anomaly.find_closed_form(v1, dps=80)
         if r1 is None:
             return "n/a", ""
-        r2 = anomaly.find_closed_form(v2, dps=72)
+        r2 = anomaly.find_closed_form(v2, dps=110)
         if r2 is not None and r2.formula == r1.formula:
             return "survived", f"refutation survived: sum = {r1.formula[4:]} stable to 72 digits"
         return "refuted", "refuted: the closed form did not survive higher precision"
@@ -201,8 +201,8 @@ def _prior_art(obj: MathObject, notes: list[str]) -> str | None:
         # For a constant, matching known constants MEANS it is a known expression;
         # a sum with NO closed form is the interesting mystery (novel frontier).
         from matyos.discovery import anomaly
-        val = obj.value(50) if anomaly.HAVE_PSLQ else None
-        rel = anomaly.find_closed_form(val, dps=50) if val is not None else None
+        val = obj.value(80) if anomaly.HAVE_PSLQ else None
+        rel = anomaly.find_closed_form(val, dps=80) if val is not None else None
         if rel is not None:
             notes.append(f"prior art: expressible in known constants ({rel.formula[4:]})")
             return "known constant"

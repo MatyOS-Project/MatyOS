@@ -220,7 +220,7 @@ def test_continued_fraction_identifies_4_over_pi():
     from matyos.discovery.objects import ContinuedFraction
     c = ContinuedFraction(a_fn=lambda n: n * n,
                           b_fn=lambda n: 1 if n == 0 else 2 * n + 1, text="4/pi")
-    rel, recip = anomaly.find_closed_form_pm(c.value(dps=50), dps=50)
+    rel, recip = anomaly.find_closed_form_pm(c.value(dps=80), dps=80)
     assert rel is not None and recip is True
     assert rel.formula == "x = (pi) / 4"       # value = 4/pi, so 1/value = pi/4
 
@@ -228,7 +228,7 @@ def test_continued_fraction_identifies_4_over_pi():
 @pslq
 def test_cf_search_runs_and_returns_list():
     from matyos.discovery import cf
-    hits = cf.search(coeff_range=1, degree=0, dps=40, max_hits=3, max_scan=3, terms=50)
+    hits = cf.search(coeff_range=1, degree=0, dps=80, max_hits=3, max_scan=3, terms=60)
     assert isinstance(hits, list)
 
 
@@ -263,7 +263,7 @@ def test_series_finds_apery_zeta3():
 @pslq
 def test_series_finds_pi4_over_90():
     z = Series(term_fn=lambda n: 1 / n ** 4, text="sum 1/n^4", start=1)
-    rel = anomaly.find_closed_form(z.value(60), dps=60)
+    rel = anomaly.find_closed_form(z.value(80), dps=80)
     assert rel is not None and rel.formula == "x = (pi^4) / 90"
 
 
@@ -278,7 +278,7 @@ def test_order3_recurrence_detected():
 @pslq
 def test_series_leibniz_is_pi_over_4():
     leib = Series(term_fn=lambda n: (-1) ** n / (2 * n + 1), text="leibniz", start=0)
-    rel = anomaly.find_closed_form(leib.value(50))
+    rel = anomaly.find_closed_form(leib.value(80))
     assert rel is not None and rel.formula == "x = (pi) / 4"
 
 

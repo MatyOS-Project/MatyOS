@@ -33,7 +33,7 @@ def _poly(coeffs):
     return lambda n: sum(c * n ** i for i, c in enumerate(coeffs))
 
 
-def search(coeff_range: int = 2, degree: int = 2, dps: int = 50,
+def search(coeff_range: int = 2, degree: int = 2, dps: int = 80,
            max_hits: int = 25, max_scan: int = 4000, terms: int = 150) -> list[CFHit]:
     """Scan polynomial continued fractions and return the identities found.
 
