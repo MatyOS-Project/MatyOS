@@ -55,6 +55,7 @@ def main():
         "--name", "matyos",
         "--paths", str(ROOT),
         "--collect-submodules", "matyos",
+        "--collect-data", "matyos",   # bundle matyos/stdlib/*.elk so `check stdlib/...` resolves
         "--console",
         "--noconfirm",
         "--clean",
