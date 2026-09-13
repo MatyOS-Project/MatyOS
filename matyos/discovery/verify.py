@@ -49,32 +49,51 @@ _OEIS_URL = "https://oeis.org/search"
 _OEIS_UA = {"User-Agent": "MatyOS-discovery/0.1"}
 
 
+# Below this many terms an OEIS match is not trustworthy — short prefixes collide
+# with thousands of unrelated sequences. Require a real run of terms.
+_OEIS_MIN_TERMS = 8
+
+
+def _contiguous_sublist(sub: list[int], full: list[int]) -> bool:
+    """True if `sub` appears as a contiguous run inside `full`."""
+    n = len(sub)
+    if n == 0 or n > len(full):
+        return False
+    return any(full[i:i + n] == sub for i in range(len(full) - n + 1))
+
+
 def oeis_lookup(ints: tuple[int, ...], timeout: float = 8.0) -> tuple[str | None, bool]:
     """Look a sequence up in OEIS. Returns (identifier_or_None, was_live).
 
-    Tries the live OEIS API first (it returns a JSON list of matches); on any
-    network failure it falls back to the small local table, so the engine still
-    runs offline. ``was_live`` says which path answered.
+    Guards against short-prefix collisions: only accepts a match whose own data
+    actually contains the query terms as a contiguous run, and only trusts a
+    result at all when given at least ``_OEIS_MIN_TERMS`` terms. Tries the live
+    API first, falling back to the small offline table on any network failure.
     """
-    if len(ints) >= 4:
+    if len(ints) >= _OEIS_MIN_TERMS:
         q = ",".join(str(n) for n in ints)
         url = f"{_OEIS_URL}?{urllib.parse.urlencode({'q': q, 'fmt': 'json'})}"
         try:
             req = urllib.request.Request(url, headers=_OEIS_UA)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.load(resp)
-            # OEIS returns a JSON list of matches, or literal `null` for no match.
             if isinstance(data, list):
                 results = data
             elif isinstance(data, dict):
                 results = data.get("results") or []
             else:
                 results = []
-            if results:
-                r = results[0]
-                name = r.get("name", "")
-                return f"A{int(r['number']):06d} ({name[:60]})", True
-            return None, True  # live answer: genuinely not in OEIS
+            query = list(ints)
+            for r in results:
+                seq_data = r.get("data", "")
+                try:
+                    full = [int(x) for x in seq_data.split(",") if x.strip()]
+                except ValueError:
+                    continue
+                if _contiguous_sublist(query, full):   # a real match, not a collision
+                    name = r.get("name", "")
+                    return f"A{int(r['number']):06d} ({name[:60]})", True
+            return None, True  # queried live, no genuine match
         except Exception:
             pass  # fall through to offline table
     for prefix, name in _LOCAL_OEIS.items():
