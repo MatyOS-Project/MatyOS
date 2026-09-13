@@ -49,6 +49,18 @@ implements `Sequence`, `Formula`, and `Series` — a convergent sum whose
 characteristic quantity is a *value* (a constant), not a ratio. Each object
 records a `provenance` trail so the shortlist can explain where it came from.
 
+### Driving the search with a model (`reasoner.py`)
+
+The loop decides what to try next through a **Reasoner**. The default
+(`MutationReasoner`) uses fixed mutations — no model. To let **Claude or any other
+LLM** drive, pass a `CallbackReasoner(fn)`: each round the engine hands `fn` the
+state (seeds tried, closed forms found, mystery constants) and `fn` returns the
+next seeds — as a list, or as free text the engine parses. `prompt_for(context)`
+renders that state into a ready prompt. MatyOS never hardcodes a provider, so it
+works with Claude, GPT, or a local model — you supply the function that calls
+yours. Inside Claude Code, a session can also drive it from outside by calling the
+MCP `discover` tool round after round.
+
 ### 2. Generator / Mutator — `generator.py`
 
 Produces candidates from existing objects. Within-domain moves (compose,

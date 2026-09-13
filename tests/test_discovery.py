@@ -122,6 +122,38 @@ def test_lean_handoff_emits_statement_for_basel():
     assert set(lean.toolchain()) == {"lean", "lake", "ready"}
 
 
+def test_parse_seeds_extracts_int_lists():
+    from matyos.discovery.reasoner import parse_seeds
+    s = parse_seeds("try [1,2,3,4] and junk [5,6,7,8,9]; ignore short [1,2]")
+    assert [1, 2, 3, 4] in s and [5, 6, 7, 8, 9] in s
+    assert [1, 2] not in s          # too short to fit
+
+
+def test_callback_reasoner_accepts_text_and_list():
+    from matyos.discovery.reasoner import CallbackReasoner
+    assert CallbackReasoner(lambda c: "next: [1,2,3,4]").propose({}) == [[1, 2, 3, 4]]
+    assert CallbackReasoner(lambda c: [[1, 2, 3, 4]]).propose({}) == [[1, 2, 3, 4]]
+
+
+def test_mutation_reasoner_proposes_from_frontier():
+    from matyos.discovery.reasoner import MutationReasoner
+    assert MutationReasoner().propose({"frontier": [[1, 2, 3, 4, 5]]})
+
+
+@pslq
+def test_llm_reasoner_drives_the_loop():
+    from matyos.discovery.reasoner import CallbackReasoner
+    seen = []
+    def fake_llm(ctx):
+        seen.append(ctx)
+        return "let's try [0,1,2,5,12,29,70]"
+    summary = DiscoveryEngine(0.2).loop(
+        [Sequence.of(FIB, name="fib")], rounds=2, reasoner=CallbackReasoner(fake_llm))
+    assert seen, "the reasoner (the LLM) was consulted"
+    assert set(seen[0]) == {"frontier", "found", "mysteries"}
+    assert summary["rounds_run"] >= 1
+
+
 def test_formal_handoff_returns_lean_statement():
     out = verify_mod.formal_handoff({"closed_form": "closed form found (PSLQ): sum = (pi^2) / 6",
                                      "display": {"kind": "series", "text": "sum 1/n^2"}})

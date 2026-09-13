@@ -75,19 +75,21 @@ class DiscoveryEngine:
         return [_candidate_record(c, i + 1) for i, c in enumerate(ranked)]
 
     def loop(self, seeds: list[MathObject], rounds: int = 3, breadth: int = 12,
-             store=None) -> dict:
-        """Iterated discovery: run, remember, breed new seeds, repeat.
+             store=None, reasoner=None) -> dict:
+        """Iterated discovery: run, remember, let a reasoner propose the next seeds.
 
-        Each round scores the current seed frontier, records every new candidate
-        in memory (deduplicated by identity), then breeds the next frontier by
-        mutating this round's seeds and dropping any object already seen — the
-        novelty pressure that stops the search collapsing onto the seed. Stops
-        after ``rounds`` or when no unseen seeds remain. Returns a summary with
-        the accumulated, re-ranked shortlist.
+        Each round scores the current frontier, records every new candidate in
+        memory (deduplicated), then asks ``reasoner`` what to try next given the
+        state so far, dropping anything already seen. The default reasoner mutates
+        the current seeds (no model); pass a CallbackReasoner to let Claude or any
+        LLM drive the search instead. Stops after ``rounds`` or when the reasoner
+        proposes nothing new.
         """
         from matyos.discovery.store import CandidateStore
         from matyos.discovery.objects import Sequence
+        from matyos.discovery.reasoner import MutationReasoner
         store = store or CandidateStore()
+        reasoner = reasoner or MutationReasoner()
         frontier = list(seeds)
         seen_seeds: set[str] = set()
         rounds_run = 0
@@ -102,16 +104,34 @@ class DiscoveryEngine:
                 rec = _candidate_record(c, 0)
                 rec["round"] = r
                 store.add(c.object.key(), rec)
+            context = self._reasoner_context(frontier, store)
+            proposals = reasoner.propose(context)
             nxt: list[MathObject] = []
-            for s in frontier:
-                for m in generator.mutate(s):
-                    if isinstance(m, Sequence) and m.key() not in seen_seeds:
-                        nxt.append(m)
+            for seq in proposals:
+                s = Sequence.of(seq)
+                if s.key() not in seen_seeds:
+                    nxt.append(s)
             frontier = nxt[:breadth]
         ranked = sorted(store.all(), key=lambda r: r["score"], reverse=True)
         for i, rec in enumerate(ranked, 1):
             rec["rank"] = i
         return {"rounds_run": rounds_run, "unique": len(store), "candidates": ranked}
+
+    @staticmethod
+    def _reasoner_context(frontier, store) -> dict:
+        """The search state handed to a reasoner: current seeds, closed forms
+        found, and mystery constants — enough for a model to decide where to dig."""
+        from matyos.discovery.objects import Sequence
+        seqs = [[int(t) for t in s.terms] for s in frontier
+                if isinstance(s, Sequence) and all(t.denominator == 1 for t in s.terms)]
+        found, myst = [], []
+        for rec in store.all():
+            cf = rec.get("closed_form", "")
+            if "(PSLQ):" in cf:
+                found.append(cf.split("(PSLQ):", 1)[1].strip())
+            elif (rec.get("label") or {}).get("status", "").startswith("mystery"):
+                myst.append(rec["display"].get("text", "?"))
+        return {"frontier": seqs, "found": found, "mysteries": myst}
 
 
 def _candidate_record(c: Candidate, rank: int) -> dict:
