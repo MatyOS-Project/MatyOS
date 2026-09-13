@@ -84,6 +84,26 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5) -> "Relation
                     formula=_render(rel, names))
 
 
+def value_of(rel: "Relation", dps: int = 50):
+    """Reconstruct the numeric value a relation asserts for x, at precision dps.
+
+    From a0*x + sum(ai*ci) = 0 we have x = -(sum ai*ci)/a0. Returns an mpf, or
+    None if mpmath is unavailable. Used to test a discovered closed form against
+    fresh data (refutation), independently of how it was found.
+    """
+    if not HAVE_PSLQ:
+        return None
+    mp.mp.dps = dps
+    consts = {"1": mp.mpf(1)}
+    consts.update({n: c for n, c in _basis()})
+    a0 = rel.coeffs[0]
+    acc = mp.mpf(0)
+    for c, n in zip(rel.coeffs[1:], rel.names[1:]):
+        if c:
+            acc += mp.mpf(c) * consts[n]
+    return -acc / mp.mpf(a0)
+
+
 def _to_mpf(value):
     if isinstance(value, Fraction):
         return mp.mpf(value.numerator) / mp.mpf(value.denominator)

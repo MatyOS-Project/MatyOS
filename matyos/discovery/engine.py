@@ -91,6 +91,8 @@ def _candidate_record(c: Candidate, rank: int) -> dict:
         "verification": {
             "confirmed": c.verification.confirmed,
             "prior_art": c.verification.prior_art,
+            "refutation": c.verification.refutation,
             "notes": c.verification.notes,
         },
+        "label": c.verification.label,
     }

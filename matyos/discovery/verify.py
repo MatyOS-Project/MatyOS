@@ -29,6 +29,8 @@ class Verification:
     confirmed: bool
     prior_art: str | None
     notes: list[str] = field(default_factory=list)
+    refutation: str = "n/a"          # survived / refuted / n/a
+    label: dict = field(default_factory=dict)
 
 
 import json
@@ -82,10 +84,17 @@ def oeis_lookup(ints: tuple[int, ...], timeout: float = 8.0) -> tuple[str | None
 
 
 def verify(obj: MathObject) -> Verification:
+    from matyos.discovery.label import realistic_label
     notes: list[str] = []
     confirmed = _high_precision_confirm(obj, notes)
+    verdict, rnote = refute(obj)
+    if rnote:
+        notes.append(rnote)
     art = _prior_art(obj, notes)
-    return Verification(confirmed=confirmed, prior_art=art, notes=notes)
+    has_cf = verdict != "n/a" or confirmed
+    label = realistic_label(has_closed_form=has_cf, refutation=verdict, prior_art=art)
+    return Verification(confirmed=confirmed, prior_art=art, notes=notes,
+                        refutation=verdict, label=label)
 
 
 def _high_precision_confirm(obj: MathObject, notes: list[str]) -> bool:
@@ -113,6 +122,35 @@ def _high_precision_confirm(obj: MathObject, notes: list[str]) -> bool:
             notes.append("closed form on given prefix (unconfirmed: cannot extend a bare sequence)")
         return False
     return False
+
+
+def refute(obj: MathObject) -> tuple[str, str]:
+    """Actively try to break a discovered closed form (falsification).
+
+    Derive the closed form from a near window, then predict the invariant far
+    beyond it and check the prediction holds. A short-prefix coincidence fails
+    here; a genuine law survives. Returns (verdict, note) where verdict is one of
+    "survived", "refuted", or "n/a" (nothing falsifiable — no closed form).
+    """
+    from matyos.discovery import anomaly
+    if not (isinstance(obj, Formula) and anomaly.HAVE_PSLQ):
+        return "n/a", ""
+    near = obj.evaluate_prefix(120)
+    near_ratios = [t / s for s, t in zip(near, near[1:]) if s != 0]
+    if len(near_ratios) < 4:
+        return "n/a", ""
+    rel = anomaly.find_closed_form(near_ratios[-1])
+    if rel is None:
+        return "n/a", ""
+    far = obj.evaluate_prefix(400)
+    far_ratio = far[-1] / far[-2]
+    predicted = anomaly.value_of(rel)
+    import mpmath as mp
+    mp.mp.dps = 50
+    actual = mp.mpf(far_ratio.numerator) / mp.mpf(far_ratio.denominator)
+    if abs(actual - predicted) < mp.mpf(10) ** (-30):
+        return "survived", f"refutation survived: {rel.formula} predicts n=400 to 30 digits"
+    return "refuted", f"refuted: {rel.formula} fails at n=400 (predicted vs actual diverge)"
 
 
 def _prior_art(obj: MathObject, notes: list[str]) -> str | None:

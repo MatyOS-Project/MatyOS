@@ -74,9 +74,13 @@ breakdown for a human to read:
 ### 4. Cheap verification + human triage — `verify.py`, `triage.py`
 
 Before anything is surfaced: recompute the anomaly at higher precision (guards
-against short-prefix coincidences), check for prior art (a **live OEIS query**,
+against short-prefix coincidences), **refute** it — derive the closed form from a
+near window and check it still predicts the invariant far beyond it, so a
+short-prefix coincidence dies here — check for prior art (a **live OEIS query**,
 falling back to a small offline table with no network), and optionally hand off
-to a proof assistant (`STUB`). The output is a short **ranked
+to a proof assistant (`STUB`). Every surviving find carries a **`realistic`
+label** from `matyos/logic` — FALSE if refuted, REALISTIC if found but unproven,
+TRUE only if proven — plus a separate novelty flag (known vs new). The output is a short **ranked
 shortlist for a human**, never an autonomous claim.
 
 ## The toy loop

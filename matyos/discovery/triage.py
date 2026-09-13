@@ -26,6 +26,12 @@ def render_shortlist(candidates: list["Candidate"], limit: int = 10) -> str:
     for i, c in enumerate(ranked, 1):
         label = _describe(c)
         lines.append(f"\n[{i}] score {c.score.total:.3f}   {label}")
+        lab = c.verification.label or {}
+        if lab.get("status"):
+            tag = lab["status"]
+            if lab.get("novelty"):
+                tag += f" · {lab['novelty']}"
+            lines.append(f"     label:      [{tag}]")
         lines.append(f"     provenance: {c.object.provenance}")
         parts = "  ".join(f"{k}={v:.2f}" for k, v in c.score.breakdown.items())
         lines.append(f"     proxies:    {parts}")

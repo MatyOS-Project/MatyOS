@@ -110,3 +110,31 @@ def test_engine_end_to_end_ranks_fibonacci_formula_first():
 def test_formal_handoff_is_stub():
     with pytest.raises(NotImplementedError):
         verify_mod.formal_handoff(None)
+
+
+@pslq
+def test_refutation_survives_for_genuine_recurrence():
+    s = Sequence.of(FIB, name="fib")
+    f = next(generator.cross_domain_transfer(s))
+    verdict, note = verify_mod.refute(f)
+    assert verdict == "survived"
+    assert "sqrt5" in note
+
+
+@pslq
+def test_realistic_label_is_realistic_for_unproven_find():
+    from matyos.discovery import label as lbl
+    s = Sequence.of(FIB, name="fib")
+    f = next(generator.cross_domain_transfer(s))
+    v = verify_mod.verify(f)
+    assert v.refutation == "survived"
+    assert v.label["truth_name"] == "realistic"      # not "true": it's unproven
+    assert v.label["status"].startswith("realistic")
+
+
+def test_realistic_label_maps_refuted_to_false():
+    from matyos.discovery import label as lbl
+    out = lbl.realistic_label(has_closed_form=True, refutation="refuted", prior_art=None)
+    assert out["truth_name"] == "false"
+    out2 = lbl.realistic_label(has_closed_form=False, refutation="n/a", prior_art=None)
+    assert out2["status"] == "no closed form"
