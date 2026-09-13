@@ -39,6 +39,20 @@ def test_graffiti_conjectures_are_tight_and_nontrivial():
         assert 1 <= c.tight < c.support        # tight on some, strict on some
 
 
+def test_chromatic_independence_clique_values():
+    k4 = G.complete(4)
+    assert G.chromatic_number(k4) == 4 and G.clique_number(k4) == 4 and G.independence_number(k4) == 1
+    c5 = G.cycle(5)
+    assert G.chromatic_number(c5) == 3 and G.clique_number(c5) == 2 and G.independence_number(c5) == 2
+    assert G.chromatic_number(G.cycle(4)) == 2       # even cycle is 2-colorable
+    assert G.vertex_cover_number(c5) == 5 - G.independence_number(c5)
+
+
+def test_graffiti_rediscovers_clique_le_chromatic():
+    conj = {c.text for c in G.graffiti_search()}
+    assert "clique_number <= chromatic_number" in conj   # omega <= chi, a theorem
+
+
 import pytest
 spectral = pytest.mark.skipif(not G.HAVE_SPECTRAL, reason="spectral needs mpmath")
 

@@ -118,10 +118,63 @@ def radius(g: Graph) -> int:
     return min(max(_bfs_dist(adj, s, g.n).values()) for s in range(g.n))
 
 
+def independence_number(g: Graph) -> int:
+    """Largest set of vertices with no edge between them (brute force; small n)."""
+    adj = g._adj()
+    best = 0
+    for mask in range(1 << g.n):
+        sel = [v for v in range(g.n) if mask >> v & 1]
+        if len(sel) > best and all(b not in adj[a] for a, b in combinations(sel, 2)):
+            best = len(sel)
+    return best
+
+
+def clique_number(g: Graph) -> int:
+    """Largest set of mutually adjacent vertices (brute force; small n)."""
+    adj = g._adj()
+    best = 0
+    for mask in range(1 << g.n):
+        sel = [v for v in range(g.n) if mask >> v & 1]
+        if len(sel) > best and all(b in adj[a] for a, b in combinations(sel, 2)):
+            best = len(sel)
+    return best
+
+
+def chromatic_number(g: Graph) -> int:
+    """Fewest colors for a proper coloring (backtracking; small n)."""
+    if g.n == 0:
+        return 0
+    adj = g._adj()
+    for k in range(1, g.n + 1):
+        color = [0] * g.n
+
+        def bt(v):
+            if v == g.n:
+                return True
+            for c in range(1, k + 1):
+                if all(color[w] != c for w in adj[v]):
+                    color[v] = c
+                    if bt(v + 1):
+                        return True
+                    color[v] = 0
+            return False
+
+        if bt(0):
+            return k
+    return g.n
+
+
+def vertex_cover_number(g: Graph) -> int:
+    """Smallest set of vertices covering every edge (= n - independence number)."""
+    return g.n - independence_number(g)
+
+
 INVARIANTS = {
     "order": order, "size": size, "max_degree": max_degree,
     "min_degree": min_degree, "avg_degree": avg_degree,
     "triangles": triangles, "diameter": diameter, "radius": radius,
+    "independence_number": independence_number, "clique_number": clique_number,
+    "chromatic_number": chromatic_number, "vertex_cover_number": vertex_cover_number,
 }
 
 
