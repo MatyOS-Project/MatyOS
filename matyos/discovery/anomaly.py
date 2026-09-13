@@ -21,9 +21,21 @@ except Exception:  # pragma: no cover - exercised only when mpmath is absent
     HAVE_PSLQ = False
 
 
+# The "core" constants — a small, fast basis for screening. PSLQ over the full
+# basis is ~30x slower, so searches screen against core first and only escalate to
+# the full basis when asked.
+_CORE_NAMES = {"1", "pi", "pi^2", "e", "sqrt2", "sqrt3", "sqrt5", "ln2"}
+
+
 # Basis of constants PSLQ searches against, besides the unknown x itself.
-# Names are used to render the discovered closed form.
-def _basis():
+# Names are used to render the discovered closed form. `core=True` returns only
+# the small fast subset.
+def _basis(core: bool = False):
+    full = _basis_full()
+    return [(n, v) for n, v in full if n in _CORE_NAMES] if core else full
+
+
+def _basis_full():
     return [
         ("1", mp.mpf(1)),
         ("pi", mp.pi),
@@ -70,7 +82,7 @@ class Relation:
 
 
 def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5,
-                     maxsteps: int = 10 ** 5) -> "Relation | None":
+                     maxsteps: int = 10 ** 5, core: bool = False) -> "Relation | None":
     """Return a closed form for ``value``, or None.
 
     ``value`` may be a Fraction (used exactly), an int, or a string/float. PSLQ
@@ -85,7 +97,7 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5,
     x = _to_mpf(value)
     if not mp.isfinite(x) or x == 0:   # PSLQ needs a finite, nonzero value
         return None
-    basis = _basis()
+    basis = _basis(core=core)
     vec = [x] + [c for _, c in basis]
     names = ("x",) + tuple(n for n, _ in basis)
     try:
@@ -119,7 +131,7 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5,
 
 
 def find_closed_form_pm(value, dps: int = DEFAULT_DPS, maxcoeff: int = 10 ** 5,
-                        maxsteps: int = 10 ** 5):
+                        maxsteps: int = 10 ** 5, core: bool = False):
     # pm (value + reciprocal) is used for constant/CF hunts against the full basis,
     # so it defaults to the higher DEFAULT_DPS. Ratio-based hunts call
     # find_closed_form directly at the lower default.
@@ -132,14 +144,14 @@ def find_closed_form_pm(value, dps: int = DEFAULT_DPS, maxcoeff: int = 10 ** 5,
     """
     if not HAVE_PSLQ:
         return None, False
-    rel = find_closed_form(value, dps=dps, maxcoeff=maxcoeff, maxsteps=maxsteps)
+    rel = find_closed_form(value, dps=dps, maxcoeff=maxcoeff, maxsteps=maxsteps, core=core)
     if rel is not None:
         return rel, False
     try:
         inv = mp.mpf(1) / _to_mpf(value)
     except Exception:
         return None, False
-    rel = find_closed_form(inv, dps=dps, maxcoeff=maxcoeff, maxsteps=maxsteps)
+    rel = find_closed_form(inv, dps=dps, maxcoeff=maxcoeff, maxsteps=maxsteps, core=core)
     return (rel, True) if rel is not None else (None, False)
 
 

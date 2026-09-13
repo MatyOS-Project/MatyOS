@@ -34,13 +34,17 @@ def _poly(coeffs):
 
 
 def search(coeff_range: int = 2, degree: int = 2, dps: int = 80,
-           max_hits: int = 25, max_scan: int = 4000, terms: int = 150) -> list[CFHit]:
+           max_hits: int = 25, max_scan: int = 4000, terms: int = 150,
+           core: bool = True) -> list[CFHit]:
     """Scan polynomial continued fractions and return the identities found.
 
     coeff_range: integer coefficients range over -coeff_range..coeff_range.
     degree:      polynomial degree for a(n) and b(n).
-    max_scan:    hard cap on continued fractions examined (this is a heavy search;
-                 each one is a high-precision evaluation plus two PSLQ hunts).
+    max_scan:    hard cap on continued fractions examined.
+    core:        screen against the small fast constant basis (default). ~30x
+                 faster (~0.2s/CF vs ~6s); catches the common pi/e/sqrt identities.
+                 Pass core=False for the full basis (zeta, Catalan, ...) — a much
+                 slower, overnight-scale search.
     Returns at most ``max_hits`` CFHits. Requires mpmath.
     """
     if not anomaly.HAVE_PSLQ:
@@ -71,7 +75,7 @@ def search(coeff_range: int = 2, degree: int = 2, dps: int = 80,
             # search mode: small coefficients + few PSLQ steps, so no-relation
             # cases (the vast majority) bail fast instead of grinding.
             rel, recip = anomaly.find_closed_form_pm(
-                v, dps=dps, maxcoeff=1000, maxsteps=2000)
+                v, dps=dps, maxcoeff=1000, maxsteps=2000, core=core)
             if rel is None:
                 continue
             key = rel.formula + str(recip)
