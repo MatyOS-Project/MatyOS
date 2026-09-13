@@ -77,10 +77,13 @@ version = {attr = "matyos.__version__"}
 
 # Publish only the MatyOS proof assistant. The legacy "El" language
 # (compiler/ utils/ system/ el_*.py) is not part of this distribution.
-# Note: the stdlib/ .elk files live outside the package and are not bundled yet;
-# `matyos check stdlib/...` works from a checkout, not from a bare pip install.
 [tool.setuptools.packages.find]
 include = ["matyos*"]
+
+# The standard library ships inside the package (matyos/stdlib/*.elk) so
+# `matyos check stdlib/...` resolves after a plain pip install too.
+[tool.setuptools.package-data]
+matyos = ["stdlib/*.elk"]
 
 [tool.black]
 line-length = 88

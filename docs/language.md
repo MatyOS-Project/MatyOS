@@ -109,9 +109,9 @@ Without an RHS it simply reports the normal form (`[RAN]`).
 
 ## Worked examples
 
-- [`stdlib/arith.elk`](../stdlib/arith.elk) — `Nat`, `add`, and `n + 0 = n` by induction
-- [`stdlib/bool.elk`](../stdlib/bool.elk) — `Bool`, `not`, `and`, `or` with `eval`
-- [`stdlib/logic.elk`](../stdlib/logic.elk) — `False`, `Not`, `absurd` in `Prop`
+- [`stdlib/arith.elk`](../matyos/stdlib/arith.elk) — `Nat`, `add`, and `n + 0 = n` by induction
+- [`stdlib/bool.elk`](../matyos/stdlib/bool.elk) — `Bool`, `not`, `and`, `or` with `eval`
+- [`stdlib/logic.elk`](../matyos/stdlib/logic.elk) — `False`, `Not`, `absurd` in `Prop`
 - [`examples/proofs/curry_howard.elk`](../examples/proofs/curry_howard.elk) — combinators as logical theorems
 
 ## Notes / limitations (see ROADMAP.md)

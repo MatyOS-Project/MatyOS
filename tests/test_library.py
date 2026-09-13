@@ -19,8 +19,8 @@ def _isolate():
 
 
 @pytest.mark.parametrize("path", [
-    "stdlib/arith.elk", "stdlib/bool.elk", "stdlib/logic.elk", "stdlib/eq.elk",
-    "stdlib/nat.elk",
+    "matyos/stdlib/arith.elk", "matyos/stdlib/bool.elk", "matyos/stdlib/logic.elk", "matyos/stdlib/eq.elk",
+    "matyos/stdlib/nat.elk",
     "examples/proofs/curry_howard.elk", "examples/proofs/tactics.elk",
     "examples/proofs/induction.elk", "examples/proofs/nat_by_tactics.elk",
 ])
@@ -39,7 +39,7 @@ def test_commutativity_provable_by_tactics():
 
 
 def test_nat_library_proves_ring_laws():
-    run_file(os.path.join(ROOT, "stdlib/nat.elk"))
+    run_file(os.path.join(ROOT, "matyos/stdlib/nat.elk"))
     # commutativity, associativity, distributivity of +/* are all certified
     for name in ("add_comm", "add_assoc", "add_zero_l",
                  "mul_comm", "mul_assoc", "mul_distrib_r",
@@ -50,7 +50,7 @@ def test_nat_library_proves_ring_laws():
 
 
 def test_eq_toolkit_defines_symm_trans_cong_subst():
-    run_file(os.path.join(ROOT, "stdlib/eq.elk"))
+    run_file(os.path.join(ROOT, "matyos/stdlib/eq.elk"))
     for name in ("symm", "trans", "cong", "subst"):
         assert name in core._GLOBALS
 

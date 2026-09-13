@@ -93,7 +93,26 @@ def _check_json(path):
     return 1 if out["failures"] else 0
 
 
+def _resolve_stdlib(path):
+    """Let `stdlib/<name>.elk` (or a bare bundled name) resolve to the packaged
+    standard library, so `matyos check stdlib/arith.elk` works from a checkout and
+    after a plain pip install alike. A real path on disk always wins."""
+    if os.path.exists(path):
+        return path
+    base = os.path.basename(path)
+    if base.endswith(".elk"):
+        try:
+            from importlib.resources import files
+            cand = files("matyos").joinpath("stdlib", base)
+            if cand.is_file():
+                return str(cand)
+        except Exception:
+            pass
+    return path
+
+
 def _check(path, as_json=False):
+    path = _resolve_stdlib(path)
     if not os.path.exists(path):
         print(f"matyos: path not found: {path}", file=sys.stderr)
         return 2

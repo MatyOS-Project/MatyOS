@@ -79,7 +79,7 @@ any proof fails, so it drops straight into CI.
 Proofs are written in a small, readable language (`.elk`) and checked by the
 kernel. Here is arithmetic *from scratch* — declaring the natural numbers,
 defining addition, and proving `n + 0 = n` by induction
-([`stdlib/arith.elk`](stdlib/arith.elk)):
+([`stdlib/arith.elk`](matyos/stdlib/arith.elk)):
 
 ```
 inductive Nat : Type :=
@@ -174,8 +174,8 @@ Full details: [docs/projects.md](docs/projects.md).
 A worked theory, [`examples/projects/arithmetic`](examples/projects/arithmetic),
 proves **`m + n = n + m`** (commutativity of addition) by induction — a real,
 kernel-certified theorem, built on the equality toolkit in
-[`stdlib/eq.elk`](stdlib/eq.elk) (`symm`, `trans`, `cong`, `subst`). And
-[`stdlib/nat.elk`](stdlib/nat.elk) proves that **ℕ is a commutative semiring** —
+[`stdlib/eq.elk`](matyos/stdlib/eq.elk) (`symm`, `trans`, `cong`, `subst`). And
+[`stdlib/nat.elk`](matyos/stdlib/nat.elk) proves that **ℕ is a commutative semiring** —
 associativity & commutativity of `+` and `×`, identities `0`/`1`, distributivity
 — plus ordering (`≤`), every law certified by induction.
 
@@ -226,7 +226,7 @@ matyos/             the proof assistant
 ├── logic/          three-valued ("realistic") logic
 └── cli             the `matyos` command
 
-stdlib/             standard library, written in MatyOS itself (.elk)
+matyos/stdlib/      standard library, written in MatyOS itself (.elk)
 examples/           example proofs (.elk)
 docs/               design + language reference
 ROADMAP.md          the honest, phased plan toward a Lean-class system

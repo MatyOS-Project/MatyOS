@@ -294,7 +294,7 @@ class TestRunRealFiles:
         return run_file(os.path.join(REPO_ROOT, rel))
 
     def test_arith_elk(self, capsys):
-        self._run(os.path.join("stdlib", "arith.elk"))
+        self._run(os.path.join("matyos", "stdlib","arith.elk"))
         out = capsys.readouterr().out
         assert "FAIL" not in out
         assert "QED" in out
@@ -302,14 +302,14 @@ class TestRunRealFiles:
         assert "(succ (succ (succ (succ (succ zero)))))" in out
 
     def test_bool_elk(self, capsys):
-        self._run(os.path.join("stdlib", "bool.elk"))
+        self._run(os.path.join("matyos", "stdlib","bool.elk"))
         out = capsys.readouterr().out
         assert "FAIL" not in out
         assert "eval (not true) = false" in out
         assert "eval (not false) = true" in out
 
     def test_logic_elk(self, capsys):
-        self._run(os.path.join("stdlib", "logic.elk"))
+        self._run(os.path.join("matyos", "stdlib","logic.elk"))
         out = capsys.readouterr().out
         assert "FAIL" not in out
         # both examples in logic.elk are proofs that must check
