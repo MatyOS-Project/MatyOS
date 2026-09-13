@@ -17,7 +17,15 @@ def test_tools_registered():
     import asyncio
     tools = asyncio.run(srv.server.list_tools())
     names = {t.name for t in tools}
-    assert {"verify_relation", "oeis_lookup", "check_proof", "discover"} <= names
+    assert {"verify_relation", "oeis_lookup", "check_proof", "discover", "explore"} <= names
+
+
+@pytest.mark.skipif(not anomaly.HAVE_PSLQ, reason="PSLQ needs mpmath")
+def test_explore_runs_multiple_rounds():
+    out = srv.explore([[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]], rounds=2)
+    assert out["rounds_run"] >= 1
+    assert out["unique"] >= 1
+    assert isinstance(out["candidates"], list)
 
 
 @pytest.mark.skipif(not anomaly.HAVE_PSLQ, reason="PSLQ needs mpmath")

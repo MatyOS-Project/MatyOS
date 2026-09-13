@@ -116,6 +116,28 @@ def discover(seeds: list[list[int]], min_score: float = 0.2) -> dict[str, Any]:
     return {"candidates": engine.records(objs)}
 
 
+@server.tool()
+def explore(seeds: list[list[int]], rounds: int = 3) -> dict[str, Any]:
+    """Run several rounds of the discovery loop over integer-sequence seeds.
+
+    Unlike `discover` (one pass), this iterates: each round it scores the current
+    seeds, remembers every find, and breeds the next seeds — returning the whole
+    accumulated, ranked shortlist. Breeding is deterministic (mutation), NOT an
+    LLM. To have a model drive the search, call this (or `discover`) repeatedly,
+    choosing the next `seeds` yourself from what came back — that is how Claude
+    drives: reason over the results, then explore the directions you pick.
+
+    seeds: list of integer-sequence seeds (each a list of ints).
+    rounds: how many loop rounds to run.
+    """
+    from matyos.discovery.objects import Sequence
+    from matyos.discovery.engine import DiscoveryEngine
+    objs = [Sequence.of(s, name=f"seed{i}") for i, s in enumerate(seeds)]
+    summary = DiscoveryEngine(min_score=0.2).loop(objs, rounds=rounds)
+    summary["candidates"] = summary["candidates"][:15]   # keep the response bounded
+    return summary
+
+
 def run() -> None:
     """Console entry point (stdio transport)."""
     server.run()  # stdio transport by default

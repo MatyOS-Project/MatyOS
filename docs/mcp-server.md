@@ -21,6 +21,7 @@ This adds a `matyos-mcp` console script that speaks MCP over stdio.
 | `oeis_lookup` | Is an integer sequence already known? Live OEIS query, offline fallback. |
 | `check_proof` | Run the trusted kernel on a `.elk` file or a project / `.matyos` archive; returns each theorem's status and its certified/conditional label. |
 | `discover` | One pass of the discovery loop over integer-sequence seeds; returns a ranked shortlist with an honesty note per find. |
+| `explore` | Several rounds of the loop (remembers + breeds) in one call. Breeding is deterministic; to have a model drive, call it (or `discover`) repeatedly, choosing the next seeds from what came back. |
 
 Deliberately **not** exposed: a "prove an arbitrary theorem" tool. The kernel is
 sound but its library is small, so that would over-promise. Everything here is
