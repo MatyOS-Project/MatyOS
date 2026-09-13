@@ -108,3 +108,39 @@ class Series(MathObject):
 
     def key(self) -> str:
         return "series:" + self.text
+
+
+@dataclass(frozen=True)
+class ContinuedFraction(MathObject):
+    """A generalized continued fraction  b0 + a1/(b1 + a2/(b2 + ...)).
+
+    ``a_fn(n)`` and ``b_fn(n)`` give the partial numerators/denominators; b0 =
+    ``b_fn(0)``. Its characteristic quantity is the value it converges to — the
+    Ramanujan-Machine object: hunt whether that value (or its reciprocal) is a
+    known constant. ``value`` uses the forward-convergent recurrence; returns None
+    if mpmath is unavailable.
+    """
+
+    a_fn: Callable[[int], object] = None  # type: ignore[assignment]
+    b_fn: Callable[[int], object] = None  # type: ignore[assignment]
+    text: str = ""
+    domain: str = field(default="cf", init=False)
+
+    def value(self, dps: int = 60, terms: int = 400):
+        try:
+            import mpmath as mp
+        except Exception:
+            return None
+        mp.mp.dps = dps
+        hm1, h0 = mp.mpf(1), mp.mpf(self.b_fn(0))
+        km1, k0 = mp.mpf(0), mp.mpf(1)
+        for n in range(1, terms + 1):
+            an, bn = mp.mpf(self.a_fn(n)), mp.mpf(self.b_fn(n))
+            hm1, h0 = h0, bn * h0 + an * hm1
+            km1, k0 = k0, bn * k0 + an * km1
+            if k0 == 0:
+                continue
+        return h0 / k0 if k0 != 0 else None
+
+    def key(self) -> str:
+        return "cf:" + self.text

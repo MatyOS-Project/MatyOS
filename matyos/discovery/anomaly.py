@@ -36,11 +36,16 @@ def _basis():
         ("sqrt5", mp.sqrt(5)),
         ("sqrt6", mp.sqrt(6)),
         ("sqrt7", mp.sqrt(7)),
+        ("sqrt11", mp.sqrt(11)),
+        ("sqrt13", mp.sqrt(13)),
         ("ln2", mp.log(2)),
         ("ln3", mp.log(3)),
+        ("ln5", mp.log(5)),
         ("gamma", mp.euler),          # Euler-Mascheroni
         ("catalan", mp.catalan),      # Catalan's constant G
         ("zeta3", mp.zeta(3)),        # Apery's constant
+        ("zeta5", mp.zeta(5)),        # odd zeta, no known closed form
+        ("zeta7", mp.zeta(7)),
     ]
 
 
@@ -58,7 +63,8 @@ class Relation:
     formula: str              # human-readable  "x = (1 + sqrt5)/2"
 
 
-def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5) -> "Relation | None":
+def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5,
+                     maxsteps: int = 10 ** 5) -> "Relation | None":
     """Return a closed form for ``value``, or None.
 
     ``value`` may be a Fraction (used exactly), an int, or a string/float. PSLQ
@@ -71,10 +77,15 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5) -> "Relation
         return None
     mp.mp.dps = dps
     x = _to_mpf(value)
+    if not mp.isfinite(x) or x == 0:   # PSLQ needs a finite, nonzero value
+        return None
     basis = _basis()
     vec = [x] + [c for _, c in basis]
     names = ("x",) + tuple(n for n, _ in basis)
-    rel = mp.pslq(vec, maxcoeff=maxcoeff, maxsteps=10 ** 5)
+    try:
+        rel = mp.pslq(vec, maxcoeff=maxcoeff, maxsteps=maxsteps)
+    except (ValueError, ZeroDivisionError):
+        return None                    # degenerate vector — no relation
     if not rel or rel[0] == 0:
         return None
     # Reject a pure-rational "closed form": if the only non-x term is the "1"
@@ -99,6 +110,28 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5) -> "Relation
         return None
     return Relation(coeffs=tuple(int(c) for c in rel), names=names,
                     formula=_render(rel, names))
+
+
+def find_closed_form_pm(value, dps: int = 50, maxcoeff: int = 10 ** 5,
+                        maxsteps: int = 10 ** 5):
+    """Hunt a closed form for ``value`` and for ``1/value``.
+
+    Continued fractions often converge to a rational multiple of a constant's
+    *reciprocal* (e.g. 4/pi), which is not a linear combination of the basis —
+    but its reciprocal (pi/4) is. Returns (relation, used_reciprocal) or
+    (None, False).
+    """
+    if not HAVE_PSLQ:
+        return None, False
+    rel = find_closed_form(value, dps=dps, maxcoeff=maxcoeff, maxsteps=maxsteps)
+    if rel is not None:
+        return rel, False
+    try:
+        inv = mp.mpf(1) / _to_mpf(value)
+    except Exception:
+        return None, False
+    rel = find_closed_form(inv, dps=dps, maxcoeff=maxcoeff, maxsteps=maxsteps)
+    return (rel, True) if rel is not None else (None, False)
 
 
 def value_of(rel: "Relation", dps: int = 50):

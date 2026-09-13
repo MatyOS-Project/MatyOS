@@ -44,10 +44,21 @@ The loop is: **seeds → generate → score → verify → shortlist.**
 ### 1. Object Representation Layer — `objects.py`
 
 A generic vocabulary for mathematical *objects* (sequences, formulas, series,
-graphs, operators…), not proof terms. `MathObject` is the base; the engine
-implements `Sequence`, `Formula`, and `Series` — a convergent sum whose
-characteristic quantity is a *value* (a constant), not a ratio. Each object
-records a `provenance` trail so the shortlist can explain where it came from.
+continued fractions, graphs…), not proof terms. `MathObject` is the base; the
+engine implements `Sequence`, `Formula`, `Series` (a convergent sum → a constant),
+and `ContinuedFraction` (b0 + a1/(b1 + a2/(b2 + …)) → a constant). Each records a
+`provenance` trail so the shortlist can explain where it came from.
+
+**Continued-fraction search (`cf.py`) — the Ramanujan-Machine move.** `cf.search`
+enumerates simple polynomial continued fractions, evaluates each to high
+precision, and hunts a closed form for the value *or its reciprocal* (many CFs
+converge to a rational multiple of 1/constant, e.g. 4/π). Hits are CF identities
+for constants — the one part of MatyOS whose output could in principle be new.
+It is a **heavy batch job** (~seconds per CF: a high-precision evaluation plus two
+PSLQ hunts), bounded by `max_scan`/`max_hits`; run it as a background search, not
+interactively. Its PSLQ basis is deliberately broad (π, π²–π⁴, e, √2–√13, ln2/3/5,
+γ, Catalan, ζ(3), ζ(5), ζ(7)), guarded by the sparsity + significance gates so the
+larger basis does not manufacture numerology.
 
 ### Driving the search with a model (`reasoner.py`)
 

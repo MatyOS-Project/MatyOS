@@ -209,6 +209,30 @@ def test_series_domain_finds_basel_closed_form():
 
 
 @pslq
+def test_basis_includes_new_number_theory_constants():
+    names = [n for n, _ in anomaly._basis()]
+    for c in ("zeta3", "zeta5", "catalan", "pi^4", "sqrt13"):
+        assert c in names
+
+
+@pslq
+def test_continued_fraction_identifies_4_over_pi():
+    from matyos.discovery.objects import ContinuedFraction
+    c = ContinuedFraction(a_fn=lambda n: n * n,
+                          b_fn=lambda n: 1 if n == 0 else 2 * n + 1, text="4/pi")
+    rel, recip = anomaly.find_closed_form_pm(c.value(dps=50), dps=50)
+    assert rel is not None and recip is True
+    assert rel.formula == "x = (pi) / 4"       # value = 4/pi, so 1/value = pi/4
+
+
+@pslq
+def test_cf_search_runs_and_returns_list():
+    from matyos.discovery import cf
+    hits = cf.search(coeff_range=1, degree=0, dps=40, max_hits=3, max_scan=3, terms=50)
+    assert isinstance(hits, list)
+
+
+@pslq
 def test_mystery_constant_is_kept_and_labelled():
     # sum 1/(2^n+1): converges, but no closed form in the basis -> a mystery.
     m = Series(term_fn=lambda n: 1 / (2 ** n + 1), text="sum 1/(2^n+1)", start=1)
