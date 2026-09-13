@@ -25,6 +25,7 @@ Commands:
   info <file.matyos>    show a sealed archive's manifest (no re-checking)
   pack <dir> [out]      pack a project directory into a .matyos (no checking)
   unpack <file> [dir]   extract a .matyos archive
+  discover              run the v2 discovery-engine toy loop (experimental)
   version               print the MatyOS version
   help                  show this help
 
@@ -196,6 +197,10 @@ def main(argv=None):
         dest = unpack(rest[0], rest[1] if len(rest) > 1 else None)
         print(f"Unpacked -> {dest}")
         return 0
+    if cmd == "discover":
+        # Experimental v2 discovery engine. Runs the built-in toy loop for now.
+        from matyos.discovery.__main__ import main as discover_main
+        return discover_main()
     # bare path -> check it
     if os.path.exists(cmd) or cmd.endswith((".elk", ".matyos")):
         return _check(cmd)
