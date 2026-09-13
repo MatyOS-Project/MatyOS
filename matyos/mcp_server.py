@@ -1,0 +1,125 @@
+"""MatyOS as an MCP server — the discipline any model can call.
+
+Exposes MatyOS's honest, checkable operations as MCP tools so any MCP client
+(Claude Code, and other hosts) can use MatyOS as a verifier and discovery
+substrate: check a number for a closed form, ask whether a sequence is already
+known, check a MatyOS proof, or run one pass of the discovery loop.
+
+It deliberately does NOT offer a "prove an arbitrary theorem" tool: the kernel is
+sound but its library is small, so that would over-promise. Everything here is
+something MatyOS can actually stand behind.
+
+Run:  matyos-mcp   (stdio transport)
+Needs the `mcp` extra:  pip install "matyos[mcp]"  (Python 3.10+).
+"""
+
+from __future__ import annotations
+
+from fractions import Fraction
+from typing import Any
+
+from mcp.server.mcpserver import MCPServer
+
+server = MCPServer("matyos")
+
+
+@server.tool()
+def verify_relation(value: str, dps: int = 50) -> dict[str, Any]:
+    """Check whether a real number has a closed form (PSLQ integer relation).
+
+    Use this to test if a numeric value (a limit, a ratio, a constant you
+    computed) is secretly a simple combination of known constants such as pi, e,
+    sqrt2, sqrt3, sqrt5, ln2 or the golden ratio — the Ramanujan-Machine move.
+
+    value: the number, as a decimal string (e.g. "1.6180339887498949") or an
+           exact fraction "num/den" (preferred — more precision, better result).
+    dps:   working precision in decimal digits.
+
+    Returns {"found": true, "closed_form": "x = (1 + sqrt5) / 2", ...} on a hit,
+    or {"found": false} when no small relation survives the significance check.
+    """
+    from matyos.discovery import anomaly
+    if not anomaly.HAVE_PSLQ:
+        return {"found": False, "error": "mpmath not installed; PSLQ unavailable"}
+    v: Any
+    if "/" in value:
+        v = Fraction(value)                      # exact — use full requested precision
+    else:
+        v = value                                # decimal string: cap precision to the
+        digits = sum(c.isdigit() for c in value)  # digits actually supplied, so the
+        dps = max(15, min(dps, digits))           # significance gate isn't starved
+    rel = anomaly.find_closed_form(v, dps=dps)
+    if rel is None:
+        return {"found": False,
+                "hint": "no small relation at this precision; give more digits or an exact fraction"}
+    return {"found": True, "closed_form": rel.formula,
+            "coeffs": list(rel.coeffs), "names": list(rel.names)}
+
+
+@server.tool()
+def oeis_lookup(terms: list[int]) -> dict[str, Any]:
+    """Check whether an integer sequence is already known, via OEIS.
+
+    Give at least the first ~6-8 terms. Returns whether OEIS knows it, the
+    A-number and name if so, and whether the answer came from a live query or the
+    offline fallback table. Use it to tell a genuinely new sequence from a
+    well-known one before claiming novelty.
+    """
+    from matyos.discovery import verify
+    ident, live = verify.oeis_lookup(tuple(terms))
+    return {"known": ident is not None, "identifier": ident, "live": live}
+
+
+@server.tool()
+def check_proof(path: str) -> dict[str, Any]:
+    """Check a MatyOS proof file (.elk) or project (directory / .matyos archive).
+
+    Runs the trusted kernel and returns a structured result: for a project, the
+    manifest with each theorem's status and its realistic label (certified /
+    conditional); for a single file, the failure count and events. Use it to get
+    a machine-checked verdict rather than trusting a proof by eye.
+    """
+    import os
+    from matyos.kernel.core import reset_environment
+    reset_environment()
+    if os.path.isdir(path) or path.endswith(".matyos"):
+        from matyos.project.engine import analyze_project
+        _, failures, manifest = analyze_project(path)
+        manifest["failures"] = failures
+        return manifest
+    from matyos.frontend.surface import Checker, ParseError
+    from matyos.kernel.core import TypeError_
+    checker = Checker()
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            checker.run_text(f.read(), echo=False)
+        return {"kind": "file", "path": path, "failures": checker.failures,
+                "events": checker.events}
+    except (ParseError, TypeError_, FileNotFoundError) as e:
+        return {"kind": "file", "path": path, "failures": 1,
+                "error": str(e), "events": checker.events}
+
+
+@server.tool()
+def discover(seeds: list[list[int]], min_score: float = 0.2) -> dict[str, Any]:
+    """Run one pass of the MatyOS discovery loop over integer-sequence seeds.
+
+    Each seed is a list of integers. The engine transfers, scores (PSLQ closed
+    form + cross-domain resonance), and verifies (high-precision confirm + OEIS)
+    each candidate, returning a ranked shortlist with an honesty note per item.
+    Most finds are conjectures, not proofs — read the labels.
+    """
+    from matyos.discovery.objects import Sequence
+    from matyos.discovery.engine import DiscoveryEngine
+    engine = DiscoveryEngine(min_score=min_score)
+    objs = [Sequence.of(s, name=f"seed{i}") for i, s in enumerate(seeds)]
+    return {"candidates": engine.records(objs)}
+
+
+def run() -> None:
+    """Console entry point (stdio transport)."""
+    server.run()  # stdio transport by default
+
+
+if __name__ == "__main__":
+    run()

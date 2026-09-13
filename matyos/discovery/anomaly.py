@@ -73,6 +73,13 @@ def find_closed_form(value, dps: int = 50, maxcoeff: int = 10 ** 5) -> "Relation
     residual = sum(mp.mpf(c) * v for c, v in zip(rel, vec))
     if abs(residual) > mp.mpf(10) ** (-(dps - 8)):
         return None
+    # Significance gate: a relation is only meaningful when the working precision
+    # comfortably exceeds the size of its coefficients — otherwise PSLQ has just
+    # fitted noise with big integers (numerology). Require the total digit-length
+    # of the non-zero coefficients, plus a margin, to fit inside dps.
+    sig_digits = sum(len(str(abs(int(c)))) for c in rel if c != 0)
+    if dps < sig_digits + 12:
+        return None
     return Relation(coeffs=tuple(int(c) for c in rel), names=names,
                     formula=_render(rel, names))
 

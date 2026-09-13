@@ -59,10 +59,15 @@ test = [
 discovery = [
     "mpmath>=1.3",   # PSLQ integer-relation detection for the v2 discovery engine
 ]
+mcp = [
+    "mpmath>=1.3",   # discovery tools rely on PSLQ
+    "mcp>=1.0",      # Model Context Protocol server (Python 3.10+)
+]
 
 [project.scripts]
 el = "el_cli:main"
 matyos = "matyos.cli:main"
+matyos-mcp = "matyos.mcp_server:run"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/el-language"
