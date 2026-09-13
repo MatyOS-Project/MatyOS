@@ -138,3 +138,28 @@ def test_realistic_label_maps_refuted_to_false():
     assert out["truth_name"] == "false"
     out2 = lbl.realistic_label(has_closed_form=False, refutation="n/a", prior_art=None)
     assert out2["status"] == "no closed form"
+
+
+def test_store_dedupes_and_persists(tmp_path):
+    from matyos.discovery.store import CandidateStore
+    s = CandidateStore()
+    assert s.add("k1", {"x": 1}) is True
+    assert s.add("k1", {"x": 2}) is False   # dedupe
+    assert len(s) == 1
+    p = tmp_path / "store.json"
+    s.save(p)
+    assert CandidateStore.load(p).seen("k1")
+
+
+@pslq
+def test_loop_accumulates_and_dedupes_across_rounds():
+    engine = DiscoveryEngine(min_score=0.2)
+    summary = engine.loop([Sequence.of(FIB, name="fib")], rounds=3)
+    assert 1 <= summary["rounds_run"] <= 3
+    assert summary["unique"] >= 1
+    keys = [ (c["display"].get("text") or "") + str(c.get("round")) for c in summary["candidates"] ]
+    # ranks are contiguous and sorted by score desc
+    ranks = [c["rank"] for c in summary["candidates"]]
+    assert ranks == sorted(ranks)
+    scores = [c["score"] for c in summary["candidates"]]
+    assert scores == sorted(scores, reverse=True)

@@ -71,6 +71,45 @@ class DiscoveryEngine:
         ranked = sorted(self.run(seeds), key=lambda c: c.score.total, reverse=True)[:limit]
         return [_candidate_record(c, i + 1) for i, c in enumerate(ranked)]
 
+    def loop(self, seeds: list[MathObject], rounds: int = 3, breadth: int = 12,
+             store=None) -> dict:
+        """Iterated discovery: run, remember, breed new seeds, repeat.
+
+        Each round scores the current seed frontier, records every new candidate
+        in memory (deduplicated by identity), then breeds the next frontier by
+        mutating this round's seeds and dropping any object already seen — the
+        novelty pressure that stops the search collapsing onto the seed. Stops
+        after ``rounds`` or when no unseen seeds remain. Returns a summary with
+        the accumulated, re-ranked shortlist.
+        """
+        from matyos.discovery.store import CandidateStore
+        from matyos.discovery.objects import Sequence
+        store = store or CandidateStore()
+        frontier = list(seeds)
+        seen_seeds: set[str] = set()
+        rounds_run = 0
+        for r in range(rounds):
+            frontier = [s for s in frontier if s.key() not in seen_seeds]
+            if not frontier:
+                break
+            rounds_run += 1
+            for s in frontier:
+                seen_seeds.add(s.key())
+            for c in self.run(frontier):
+                rec = _candidate_record(c, 0)
+                rec["round"] = r
+                store.add(c.object.key(), rec)
+            nxt: list[MathObject] = []
+            for s in frontier:
+                for m in generator.mutate(s):
+                    if isinstance(m, Sequence) and m.key() not in seen_seeds:
+                        nxt.append(m)
+            frontier = nxt[:breadth]
+        ranked = sorted(store.all(), key=lambda r: r["score"], reverse=True)
+        for i, rec in enumerate(ranked, 1):
+            rec["rank"] = i
+        return {"rounds_run": rounds_run, "unique": len(store), "candidates": ranked}
+
 
 def _candidate_record(c: Candidate, rank: int) -> dict:
     from matyos.discovery.objects import Sequence, Formula

@@ -43,6 +43,25 @@ def main(argv: list[str] | None = None) -> int:
     import sys
     argv = sys.argv[1:] if argv is None else argv
     engine = DiscoveryEngine(min_score=0.2)
+    if "--loop" in argv:
+        i = argv.index("--loop")
+        rounds = int(argv[i + 1]) if i + 1 < len(argv) and argv[i + 1].isdigit() else 3
+        summary = engine.loop(toy_seeds(), rounds=rounds)
+        if "--json" in argv:
+            import json
+            print(json.dumps(summary, indent=2))
+            return 0
+        print(f"discovery loop: {summary['rounds_run']} rounds, "
+              f"{summary['unique']} unique candidates in memory\n")
+        for rec in summary["candidates"][:8]:
+            lab = rec.get("label", {})
+            tag = lab.get("status", "?")
+            if lab.get("novelty"):
+                tag += f" · {lab['novelty']}"
+            cf = rec.get("closed_form", "").replace("closed form found (PSLQ): ", "")
+            print(f"  [{rec['rank']}] score {rec['score']:.3f}  [{tag}]  {cf or '(no closed form)'}"
+                  f"  (round {rec.get('round', '?')})")
+        return 0
     if "--json" in argv:
         import json
         print(json.dumps({"candidates": engine.records(toy_seeds())}, indent=2))

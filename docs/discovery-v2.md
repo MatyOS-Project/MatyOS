@@ -99,8 +99,13 @@ geometric → singular fit, no transfer).
 - Solving named open problems (a separate proof-search mission).
 - Literature search beyond OEIS, and the Lean proof handoff — still `STUB`s with
   stable signatures, left for the next iteration.
-- The evolutionary outer loop (feed survivors back as seeds under a budget). The
-  seam for it is `DiscoveryEngine.step`.
+
+The iterated loop **is** built now: `DiscoveryEngine.loop` runs rounds, records
+every find in a `CandidateStore` (deduplicated by identity), and breeds the next
+seed frontier from this round's seeds while dropping anything already seen — the
+novelty pressure that stops the search collapsing onto the seed. Still narrow:
+breeding is by within-domain mutation, so it explores a neighbourhood, not the
+whole space; broader object domains and real cross-domain transfer come next.
 
 ## Map from the old "Discovery Engine" concepts
 
