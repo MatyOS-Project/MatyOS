@@ -107,9 +107,26 @@ def test_engine_end_to_end_ranks_fibonacci_formula_first():
     assert "sqrt5" in top.score.notes.get("numerical_anomaly", "")
 
 
-def test_formal_handoff_is_stub():
-    with pytest.raises(NotImplementedError):
-        verify_mod.formal_handoff(None)
+@pslq
+def test_lean_handoff_emits_statement_for_basel():
+    from matyos.discovery.engine import _candidate_record
+    from matyos.discovery import lean
+    basel = Series(term_fn=lambda n: 1 / (n * n), text="sum 1/n^2", start=1)
+    sc = scorer.score(basel)
+    v = verify_mod.verify(basel)
+    from matyos.discovery.engine import Candidate
+    rec = _candidate_record(Candidate(object=basel, score=sc, verification=v), 1)
+    stmt = rec["lean_statement"]
+    assert stmt is not None
+    assert "import Mathlib" in stmt and "Real.pi^2" in stmt and "sorry" in stmt
+    assert set(lean.toolchain()) == {"lean", "lake", "ready"}
+
+
+def test_formal_handoff_returns_lean_statement():
+    out = verify_mod.formal_handoff({"closed_form": "closed form found (PSLQ): sum = (pi^2) / 6",
+                                     "display": {"kind": "series", "text": "sum 1/n^2"}})
+    assert "sorry" in out["lean_statement"]
+    assert "toolchain" in out
 
 
 @pslq

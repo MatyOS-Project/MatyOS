@@ -123,7 +123,8 @@ def _candidate_record(c: Candidate, rank: int) -> dict:
         display = {"kind": "sequence", "terms": [str(t) for t in obj.terms[:12]]}
     else:
         display = {"kind": "object", "text": obj.key()}
-    return {
+    from matyos.discovery import lean
+    record = {
         "rank": rank,
         "display": display,
         "provenance": obj.provenance,
@@ -138,3 +139,5 @@ def _candidate_record(c: Candidate, rank: int) -> dict:
         },
         "label": c.verification.label,
     }
+    record["lean_statement"] = lean.lean_statement(record)
+    return record

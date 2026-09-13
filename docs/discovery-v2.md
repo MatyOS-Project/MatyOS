@@ -84,8 +84,10 @@ Before anything is surfaced: recompute the anomaly at higher precision (guards
 against short-prefix coincidences), **refute** it — derive the closed form from a
 near window and check it still predicts the invariant far beyond it, so a
 short-prefix coincidence dies here — check for prior art (a **live OEIS query**,
-falling back to a small offline table with no network), and optionally hand off
-to a proof assistant (`STUB`). Every surviving find carries a **`realistic`
+falling back to a small offline table with no network), and **hand off to Lean**
+— emit a Lean 4 theorem statement (with `sorry`) to verify against **mathlib**,
+and report whether a Lean toolchain is present. MatyOS *states* the conjecture;
+proving it is Lean+mathlib's job, never MatyOS's. Every surviving find carries a **`realistic`
 label** from `matyos/logic` — FALSE if refuted, REALISTIC if found but unproven,
 TRUE only if proven — plus a separate novelty flag (known vs new). The output is a short **ranked
 shortlist for a human**, never an autonomous claim.
@@ -104,8 +106,9 @@ geometric → singular fit, no transfer).
 
 - Competing with Lean/mathlib as a proof kernel (v1's job, and a decade-scale one).
 - Solving named open problems (a separate proof-search mission).
-- Literature search beyond OEIS, and the Lean proof handoff — still `STUB`s with
-  stable signatures, left for the next iteration.
+- Literature search beyond OEIS — still a `STUB`. The Lean handoff now emits a
+  statement to check against mathlib, but does not autoformalize the exact term
+  for every domain, nor auto-prove — that (autoformalization) stays hard and human.
 
 The iterated loop **is** built now: `DiscoveryEngine.loop` runs rounds, records
 every find in a `CandidateStore` (deduplicated by identity), and breeds the next

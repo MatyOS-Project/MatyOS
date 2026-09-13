@@ -219,7 +219,13 @@ def _startswith(a: tuple[int, ...], b: tuple[int, ...]) -> bool:
 
 # --- STUB ---
 
-def formal_handoff(_obj: MathObject) -> None:
-    """STUB. Export a candidate to a proof assistant (Lean, or MatyOS's own kernel)
-    for an optional small proof attempt. Not implemented in the scaffold."""
-    raise NotImplementedError("formal proof handoff is a v2 TODO")
+def formal_handoff(record: dict) -> dict:
+    """Hand a discovery record to Lean: emit a theorem statement (with `sorry`)
+    to verify against mathlib, and report whether a Lean toolchain is available.
+    MatyOS states the conjecture; proving it is Lean+mathlib's job."""
+    from matyos.discovery import lean
+    return {
+        "lean_statement": lean.lean_statement(record),
+        "toolchain": lean.toolchain(),
+        "note": "statement only (sorry) — MatyOS states, it does not prove",
+    }
