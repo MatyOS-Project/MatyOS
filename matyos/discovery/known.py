@@ -46,6 +46,12 @@ KNOWN: list[tuple[str, str, str]] = [
     ("laplacian_spectral_radius", "order", "largest Laplacian eigenvalue <= number of vertices"),
     # independence / cover (Gallai): vertex_cover = order - independence
     ("min_degree", "vertex_cover_number", "delta <= tau: a max-independent vertex's neighbours lie in the cover"),
+    # radius vs independence: an old Graffiti theorem (Fajtlowicz-Waller;
+    # Favaron-Maheo-Sacle): radius(G) <= independence number for connected graphs.
+    ("radius", "independence_number", "radius <= alpha (a proven Graffiti theorem)"),
+    # clique vs energy: E(G) = sum|lambda| >= lambda_max + |lambda_min|
+    # >= (omega-1) + 1 = omega (a K_omega subgraph forces lambda_max >= omega-1).
+    ("clique_number", "energy", "omega <= lambda_max + |lambda_min| <= energy"),
     # trivial upper bounds by order (n) — true by definition for connected graphs
     ("clique_number", "order", "a clique is a set of vertices"),
     ("chromatic_number", "order", "at most n colours"),

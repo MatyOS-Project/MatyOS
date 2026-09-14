@@ -61,8 +61,10 @@ def test_novelty_filter_classifies_known_derived_candidate():
     d = known.classify("min_degree <= max_degree")
     assert d["status"] == "derived"
     assert d["chain"] == ["min_degree", "avg_degree", "max_degree"]
+    # a proven Graffiti theorem we added to the DB is 'known'
+    assert known.classify("radius <= independence_number")["status"] == "known"
     # not implied by the DB is 'candidate' (honest: not a novelty claim)
-    assert known.classify("radius <= independence_number")["status"] == "candidate"
+    assert known.classify("radius <= vertex_cover_number")["status"] == "candidate"
 
 
 def test_classified_search_tags_every_conjecture_candidates_first():
