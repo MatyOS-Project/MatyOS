@@ -127,10 +127,11 @@ def frontier(coeff_range: int = 2, degree: int = 2, dps: int = 80,
     """Scan CFs and return the *mysteries*: stable, no closed form, not rational.
 
     A mystery is a CF whose value is stable (agrees at ``dps`` and ``dps+25``
-    digits, so it is not numerical noise) but for which no closed form is found
-    for the value or its reciprocal — and which is not a small rational. These are
-    the leads worth a human's attention: a candidate new constant or a CF the
-    current basis cannot name. Labelled unknown, never a discovery claim.
+    digits, so it is not numerical noise), is not a small rational, is **not a
+    root of a small integer polynomial** (algebraic numbers are known, not leads),
+    and has no closed form for the value or its reciprocal. These are the leads
+    worth a human's attention: a candidate new constant the basis cannot name.
+    Labelled unknown, never a discovery claim.
 
     ``core=False`` by default: mysteries are only meaningful against the *full*
     basis, else a value the small basis can't name (e.g. involving ln3, Catalan)
@@ -148,6 +149,8 @@ def frontier(coeff_range: int = 2, degree: int = 2, dps: int = 80,
             continue                              # a closed form exists → not a mystery
         if _is_small_rational(v, dps):
             continue                              # a plain fraction → not interesting
+        if _is_algebraic(v, dps):
+            continue                              # root of a small polynomial → known, not a lead
         if not _is_stable(cf, v, dps, terms):
             continue                              # numerical noise, not a constant
         key = _fmt(v)
@@ -194,6 +197,29 @@ def _is_small_rational(v, dps: int, max_den: int = 10 ** 6) -> bool:
         except (ValueError, RuntimeError):
             return False
     return rel is not None and rel[0] != 0
+
+
+def _is_algebraic(v, dps: int, max_deg: int = 6, maxcoeff: int = 10 ** 5) -> bool:
+    """True if v is a root of a small integer polynomial (degree <= max_deg).
+
+    PSLQ on [1, v, v^2, ..., v^deg] finds an integer relation = a minimal
+    polynomial. A frontier mystery must clear this: most stable CF values the
+    constant basis can't name are just ordinary algebraic numbers (roots of
+    quadratics/cubics), which are known — not leads. Only a value with *no* such
+    small minimal polynomial is worth a human's time.
+    """
+    import mpmath as mp
+    with mp.workdps(dps):
+        x = mp.mpf(str(v))
+        for deg in range(2, max_deg + 1):
+            try:
+                rel = mp.pslq([x ** i for i in range(deg + 1)],
+                              maxcoeff=maxcoeff, maxsteps=10 ** 4)
+            except (ValueError, RuntimeError):
+                rel = None
+            if rel is not None and any(c != 0 for c in rel[1:]):
+                return True
+    return False
 
 
 def _fmt(v) -> str:

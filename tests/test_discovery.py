@@ -290,6 +290,16 @@ def test_cf_frontier_excludes_known_and_rational():
 
 
 @pslq
+def test_cf_algebraic_screen_rejects_roots_keeps_transcendental():
+    # cube root of 2 is algebraic (root of x^3-2) -> screened out of mysteries.
+    from matyos.discovery import cf
+    import mpmath as mp
+    assert cf._is_algebraic(mp.mpf(2) ** (mp.mpf(1) / 3), dps=60) is True
+    assert cf._is_algebraic(mp.sqrt(2) + mp.sqrt(3), dps=60) is True   # algebraic deg 4
+    assert cf._is_algebraic(mp.pi, dps=60) is False                    # transcendental
+
+
+@pslq
 def test_mystery_constant_is_kept_and_labelled():
     # sum 1/(2^n+1): converges, but no closed form in the basis -> a mystery.
     m = Series(term_fn=lambda n: 1 / (2 ** n + 1), text="sum 1/(2^n+1)", start=1)
