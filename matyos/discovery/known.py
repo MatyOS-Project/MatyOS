@@ -54,6 +54,37 @@ KNOWN: list[tuple[str, str, str]] = [
     # See docs/conjectures/radius-le-vertex-cover.md. Stronger than the folklore
     # radius <= 2*tau; surfaced by MatyOS's loop, then proven.
     ("radius", "vertex_cover_number", "radius <= tau (proven; spanning-tree reduction to trees)"),
+    # matching vs cover: every matching edge needs its own distinct cover vertex
+    ("matching_number", "vertex_cover_number", "nu <= tau: each matching edge needs its own cover vertex"),
+    # Whitney's inequality: vertex-connectivity <= edge-connectivity <= min degree
+    ("vertex_connectivity", "edge_connectivity", "Whitney: kappa <= lambda"),
+    ("edge_connectivity", "min_degree", "Whitney: lambda <= delta"),
+    # domination vs independence: a maximal independent set is dominating
+    ("domination_number", "independence_number", "gamma <= alpha: a maximal independent set dominates"),
+    # degeneracy is at most the maximum degree
+    ("degeneracy", "max_degree", "degeneracy <= Delta (min-degree peeling)"),
+    # --- proven by MatyOS's loop this session (surfaced -> stress-tested -> proven) ---
+    # radius <= matching: radius(G) <= radius(T) <= tau(T) = nu(T) (Koenig, T a tree)
+    # <= nu(G). Stronger than radius <= tau.
+    ("radius", "matching_number", "radius <= nu (proven; via radius<=tau on a spanning tree + Koenig)"),
+    # degeneracy <= tau: every subgraph H has a vertex of degree <= tau (an
+    # independent-set vertex, whose neighbours all lie in the cover; or |H|<=tau).
+    ("degeneracy", "vertex_cover_number", "degeneracy <= tau (every subgraph has a low-degree vertex in the cover)"),
+    # domination <= tau: a vertex cover is a dominating set (isolate-free graphs).
+    ("domination_number", "vertex_cover_number", "gamma <= tau: a vertex cover dominates an isolate-free graph"),
+    # degeneracy <= spectral radius: some subgraph H has min-degree = degeneracy, and
+    # lambda_max(G) >= lambda_max(H) >= avg_degree(H) >= min_degree(H) = degeneracy.
+    ("degeneracy", "spectral_radius", "degeneracy <= lambda_max (subgraph with that min-degree; eigenvalue interlacing)"),
+    # min_degree <= degeneracy: G itself is a subgraph with min-degree delta, so
+    # the max-over-subgraphs min-degree is at least delta. Chains with Whitney to
+    # derive vertex_connectivity <= degeneracy and edge_connectivity <= degeneracy.
+    ("min_degree", "degeneracy", "delta <= degeneracy (G is a subgraph of min-degree delta)"),
+    # domination <= matching: a known theorem for graphs without isolated vertices.
+    ("domination_number", "matching_number", "gamma <= nu (known theorem, isolate-free graphs)"),
+    # chromatic <= energy: Wilf gives chi <= 1 + lambda_max; eigenvalues sum to 0 so
+    # energy = 2*(sum of positive eigenvalues) >= 2*lambda_max, hence chi <= 1 + E/2
+    # <= E for any graph with an edge (E >= 2).
+    ("chromatic_number", "energy", "chi <= 1+lambda_max (Wilf) <= 1+E/2 <= E (graphs with an edge)"),
     # clique vs energy: E(G) = sum|lambda| >= lambda_max + |lambda_min|
     # >= (omega-1) + 1 = omega (a K_omega subgraph forces lambda_max >= omega-1).
     ("clique_number", "energy", "omega <= lambda_max + |lambda_min| <= energy"),

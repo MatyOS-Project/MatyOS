@@ -74,16 +74,31 @@ MCP `discover` tool round after round.
 
 **Graphs (`graph.py`) — a domain beyond numbers (the Graffiti move).** Instead of
 a formula for a sequence, the objects of interest are *inequalities between graph
-invariants*. `graffiti_search` computes cheap invariants (order, size, degrees,
-triangles, diameter, radius) over a spread of small connected graphs and returns
-the tight inequalities `A(G) <= B(G)` that held on every one — candidate theorems
-(e.g. it rediscovers `radius <= diameter` and `min_degree <= avg_degree <=
-max_degree`). They hold on the sample; proving them for all graphs is a human/Lean
-job. Combinatorial invariants are pure Python; **spectral invariants** (spectral
-radius, graph energy, algebraic connectivity / Fiedler value, Laplacian spectral
-radius) use mpmath eigenvalues when available — with these the search rediscovers
-the classic bracket `avg_degree <= spectral_radius <= max_degree` and
+invariants*. `graffiti_search` computes invariants over a spread of small connected
+graphs and returns the tight inequalities `A(G) <= B(G)` that held on every one —
+candidate theorems (e.g. it rediscovers `radius <= diameter` and `min_degree <=
+avg_degree <= max_degree`). They hold on the sample; proving them for all graphs is
+a human/Lean job. The invariant set is broad: combinatorial ones (order, size,
+degrees, triangles, diameter, radius, independence / clique / chromatic /
+vertex-cover numbers, **domination number, matching number, vertex- and
+edge-connectivity, degeneracy, girth**) are pure Python; **spectral invariants**
+(spectral radius, graph energy, algebraic connectivity / Fiedler value, Laplacian
+spectral radius) use mpmath eigenvalues when available — with these the search
+rediscovers the classic bracket `avg_degree <= spectral_radius <= max_degree` and
 `laplacian_spectral_radius <= order`.
+
+**The novelty filter (`known.py`) and the honest loop.** Surfacing a tight bound is
+cheap; knowing whether it is *new* is the hard part. `classified_search` tags each
+inequality `known` (an established theorem in a curated DB), `derived` (implied by
+known bounds through a transitive-closure chain, which is reported), or `candidate`
+(not implied by anything MatyOS knows — a lead, never a novelty *claim*). The
+honest workflow around a candidate is: **stress-test** it on hundreds of random and
+structured graphs (a bound tight on the small sample often breaks — those false
+conjectures are refuted with a witness graph and their witnesses folded back into
+the sample), then **literature-check** and **attempt a proof**; a proven bound is
+added to the DB so the filter sharpens over time. This loop closed once end to end
+on `radius <= vertex_cover_number` (surfaced → stress-tested → proven; see
+`docs/conjectures/radius-le-vertex-cover.md`).
 
 ### 2. Generator / Mutator — `generator.py`
 

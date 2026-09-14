@@ -57,14 +57,39 @@ def test_novelty_filter_classifies_known_derived_candidate():
     from matyos.discovery import known
     # a listed theorem is 'known'
     assert known.classify("clique_number <= chromatic_number")["status"] == "known"
-    # implied by a chain is 'derived', with the chain reported
+    # implied by a chain is 'derived', with a chain from the lhs to the rhs
     d = known.classify("min_degree <= max_degree")
     assert d["status"] == "derived"
-    assert d["chain"] == ["min_degree", "avg_degree", "max_degree"]
+    assert d["chain"][0] == "min_degree" and d["chain"][-1] == "max_degree"
     # a proven Graffiti theorem we added to the DB is 'known'
     assert known.classify("radius <= independence_number")["status"] == "known"
     # not implied by the DB is 'candidate' (honest: not a novelty claim)
-    assert known.classify("chromatic_number <= energy")["status"] == "candidate"
+    assert known.classify("triangles <= girth")["status"] == "candidate"
+
+
+def test_new_invariant_values():
+    # values checked by hand for the six invariants added when widening the engine
+    assert G.domination_number(G.cycle(5)) == 2 and G.domination_number(G.complete(4)) == 1
+    assert G.matching_number(G.complete(4)) == 2 and G.matching_number(G.path(4)) == 2
+    assert G.vertex_connectivity(G.complete(4)) == 3 and G.vertex_connectivity(G.path(5)) == 1
+    assert G.edge_connectivity(G.cycle(5)) == 2 and G.edge_connectivity(G.path(5)) == 1
+    assert G.degeneracy(G.complete(4)) == 3 and G.degeneracy(G.cycle(5)) == 2
+    assert G.girth(G.cycle(5)) == 5 and G.girth(G.complete(4)) == 3
+    assert G.girth(G.path(5)) == G.order(G.path(5)) + 1     # acyclic sentinel
+    # Petersen graph: a good all-round check
+    p = G.petersen()
+    assert G.vertex_connectivity(p) == 3 and G.girth(p) == 5 and G.edge_connectivity(p) == 3
+
+
+def test_new_known_bounds_classified():
+    from matyos.discovery import known
+    # Whitney chain: vertex_connectivity <= edge_connectivity <= min_degree
+    assert known.classify("vertex_connectivity <= edge_connectivity")["status"] == "known"
+    assert known.classify("edge_connectivity <= min_degree")["status"] == "known"
+    assert known.classify("vertex_connectivity <= min_degree")["status"] == "derived"
+    # proven this session
+    assert known.classify("radius <= matching_number")["status"] == "known"
+    assert known.classify("degeneracy <= vertex_cover_number")["status"] == "known"
 
 
 def test_radius_le_vertex_cover_holds(  ):

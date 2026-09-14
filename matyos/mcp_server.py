@@ -142,8 +142,10 @@ def explore(seeds: list[list[int]], rounds: int = 3) -> dict[str, Any]:
 def graph_conjectures() -> dict[str, Any]:
     """Conjecture inequalities between graph invariants (the Graffiti move).
 
-    Computes cheap invariants (order, size, degrees, triangles, diameter, radius)
-    over a spread of small connected graphs and returns the tight inequalities
+    Computes graph invariants (order, size, degrees, triangles, distances,
+    independence/clique/chromatic/vertex-cover, domination, matching, vertex/edge
+    connectivity, degeneracy, girth, and spectral ones) over a spread of small
+    connected graphs and returns the tight inequalities
     A(G) <= B(G) that held on every one. Each is passed through the novelty filter
     and tagged ``novelty``: "known" (an established theorem), "derived" (implied by
     known bounds — the reason gives the chain), or "candidate" (not implied by
