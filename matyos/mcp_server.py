@@ -156,6 +156,24 @@ def graph_conjectures() -> dict[str, Any]:
     ]}
 
 
+@server.tool()
+def prove(statement: str, timeout: int = 120) -> dict[str, Any]:
+    """Try to prove a Lean 4 theorem statement with mathlib automation.
+
+    Give a Lean statement whose body is `by sorry` (the shape MatyOS's discovery
+    handoff emits). MatyOS swaps the `sorry` for each tactic in a ladder (decide,
+    norm_num, nlinarith, polyrith, simp, aesop), runs Lean against mathlib, and
+    returns the first that compiles clean. Honest, never a fabricated proof:
+
+    {"status": "proved", "tactic": "norm_num"} on success; "open" if no tactic
+    closed it; "lean_unavailable" / "mathlib_unavailable" if the toolchain or a
+    mathlib project (env MATYOS_LEAN_PROJECT) is not set up. Closes easy goals
+    only — a hard or general conjecture returns "open" for a human.
+    """
+    from matyos.discovery import lean
+    return lean.try_prove(statement, timeout=timeout)
+
+
 def run() -> None:
     """Console entry point (stdio transport)."""
     server.run()  # stdio transport by default

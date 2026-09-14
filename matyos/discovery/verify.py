@@ -242,13 +242,22 @@ def _startswith(a: tuple[int, ...], b: tuple[int, ...]) -> bool:
 
 # --- STUB ---
 
-def formal_handoff(record: dict) -> dict:
+def formal_handoff(record: dict, attempt_proof: bool = False,
+                   timeout: int = 120) -> dict:
     """Hand a discovery record to Lean: emit a theorem statement (with `sorry`)
-    to verify against mathlib, and report whether a Lean toolchain is available.
-    MatyOS states the conjecture; proving it is Lean+mathlib's job."""
+    to verify against mathlib, report whether a Lean toolchain is available, and
+    — when ``attempt_proof`` is set — try to close it automatically with mathlib
+    tactics. MatyOS states the conjecture; it only reports ``proved`` if Lean
+    itself accepted the proof, and ``open`` otherwise."""
     from matyos.discovery import lean
-    return {
-        "lean_statement": lean.lean_statement(record),
+    stmt = lean.lean_statement(record)
+    out = {
+        "lean_statement": stmt,
         "toolchain": lean.toolchain(),
         "note": "statement only (sorry) — MatyOS states, it does not prove",
     }
+    if attempt_proof and stmt is not None:
+        out["proof"] = lean.try_prove(stmt, timeout=timeout)
+        out["note"] = ("auto-proof attempted — see `proof.status` "
+                       "(proved only if Lean accepted it)")
+    return out

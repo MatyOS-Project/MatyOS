@@ -122,6 +122,38 @@ def test_lean_handoff_emits_statement_for_basel():
     assert set(lean.toolchain()) == {"lean", "lake", "ready"}
 
 
+def test_try_prove_honest_when_no_toolchain():
+    # On a machine with no Lean, proving must degrade honestly, never fake a proof.
+    from matyos.discovery import lean
+    stmt = "import Mathlib\n\ntheorem t : (1 : ℝ) = 1 := by\n  sorry\n"
+    out = lean.try_prove(stmt, timeout=10)
+    assert out["proved"] is False
+    if not lean.toolchain()["lean"]:
+        assert out["status"] == "lean_unavailable"
+    else:
+        # Lean present but a real-number goal needs a configured mathlib project.
+        assert out["status"] in {"mathlib_unavailable", "proved", "open"}
+
+
+def test_try_prove_rejects_statement_without_sorry():
+    from matyos.discovery import lean
+    if not lean.toolchain()["lean"]:
+        import pytest as _pt
+        _pt.skip("needs lean to reach the no-sorry check")
+    out = lean.try_prove("theorem t : True := trivial\n")
+    assert out["status"] == "error" and out["proved"] is False
+
+
+def test_formal_handoff_attempt_proof_is_opt_in_and_honest():
+    from matyos.discovery import verify as vm
+    rec = {"closed_form": "x = (1 + sqrt5) / 2 (PSLQ): x = (1 + sqrt5) / 2",
+           "display": {"kind": "constant"}}
+    base = vm.formal_handoff(rec)
+    assert "proof" not in base                      # opt-in: default stays statement-only
+    withp = vm.formal_handoff(rec, attempt_proof=True, timeout=10)
+    assert "proof" in withp and withp["proof"]["proved"] in (True, False)
+
+
 def test_parse_seeds_extracts_int_lists():
     from matyos.discovery.reasoner import parse_seeds
     s = parse_seeds("try [1,2,3,4] and junk [5,6,7,8,9]; ignore short [1,2]")
@@ -230,6 +262,31 @@ def test_cf_search_runs_and_returns_list():
     from matyos.discovery import cf
     hits = cf.search(coeff_range=1, degree=0, dps=80, max_hits=3, max_scan=3, terms=60)
     assert isinstance(hits, list)
+
+
+@pslq
+def test_cf_frontier_runs_and_returns_mysteries():
+    from matyos.discovery import cf
+    myst = cf.frontier(coeff_range=1, degree=1, dps=60, max_hits=3, max_scan=8,
+                       terms=80, core=True)
+    assert isinstance(myst, list)
+    for m in myst:
+        assert isinstance(m, cf.CFMystery)
+
+
+@pslq
+def test_cf_frontier_excludes_known_and_rational():
+    # a(n)=n^2, b(n)=2n+1 -> 4/pi (a known hit): must NOT be flagged a mystery.
+    from matyos.discovery import cf
+    myst = cf.frontier(coeff_range=2, degree=2, dps=60, max_hits=25, max_scan=200,
+                       terms=120, core=True)
+    for m in myst:
+        assert m.value != "1.273239544735"       # the 4/pi CF, if scanned
+    # a plain convergent rational is a small rational, not a mystery
+    assert not cf._is_small_rational.__doc__ is None  # sanity: helper present
+    import mpmath as mp
+    assert cf._is_small_rational(mp.mpf(3) / 2, dps=40) is True
+    assert cf._is_small_rational(mp.pi, dps=40) is False
 
 
 @pslq

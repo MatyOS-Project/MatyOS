@@ -18,7 +18,13 @@ def test_tools_registered():
     tools = asyncio.run(srv.server.list_tools())
     names = {t.name for t in tools}
     assert {"verify_relation", "oeis_lookup", "check_proof", "discover",
-            "explore", "graph_conjectures"} <= names
+            "explore", "graph_conjectures", "prove"} <= names
+
+
+def test_prove_tool_degrades_honestly():
+    out = srv.prove("import Mathlib\n\ntheorem t : (1:ℝ)=1 := by\n  sorry\n", timeout=10)
+    assert out["proved"] is False
+    assert out["status"] in {"lean_unavailable", "mathlib_unavailable", "open", "proved"}
 
 
 def test_graph_conjectures_tool():
