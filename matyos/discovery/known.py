@@ -49,6 +49,11 @@ KNOWN: list[tuple[str, str, str]] = [
     # radius vs independence: an old Graffiti theorem (Fajtlowicz-Waller;
     # Favaron-Maheo-Sacle): radius(G) <= independence number for connected graphs.
     ("radius", "independence_number", "radius <= alpha (a proven Graffiti theorem)"),
+    # radius vs vertex cover: proven via spanning-tree reduction + Jordan's tree
+    # centre theorem (radius(T)=ceil(diam/2) <= floor((diam+1)/2) <= tau(T)).
+    # See docs/conjectures/radius-le-vertex-cover.md. Stronger than the folklore
+    # radius <= 2*tau; surfaced by MatyOS's loop, then proven.
+    ("radius", "vertex_cover_number", "radius <= tau (proven; spanning-tree reduction to trees)"),
     # clique vs energy: E(G) = sum|lambda| >= lambda_max + |lambda_min|
     # >= (omega-1) + 1 = omega (a K_omega subgraph forces lambda_max >= omega-1).
     ("clique_number", "energy", "omega <= lambda_max + |lambda_min| <= energy"),

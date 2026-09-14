@@ -64,7 +64,18 @@ def test_novelty_filter_classifies_known_derived_candidate():
     # a proven Graffiti theorem we added to the DB is 'known'
     assert known.classify("radius <= independence_number")["status"] == "known"
     # not implied by the DB is 'candidate' (honest: not a novelty claim)
-    assert known.classify("radius <= vertex_cover_number")["status"] == "candidate"
+    assert known.classify("chromatic_number <= energy")["status"] == "candidate"
+
+
+def test_radius_le_vertex_cover_holds(  ):
+    # proven theorem (docs/conjectures/radius-le-vertex-cover.md); check it on the
+    # sample plus paths, where equality radius == tau is attained.
+    graphs = G.sample_graphs() + [G.path(n) for n in range(2, 12)]
+    for g in graphs:
+        assert G.radius(g) <= G.vertex_cover_number(g)
+    for n in range(2, 12):                       # tight on paths: radius == tau
+        p = G.path(n)
+        assert G.radius(p) == G.vertex_cover_number(p)
 
 
 def test_classified_search_tags_every_conjecture_candidates_first():
