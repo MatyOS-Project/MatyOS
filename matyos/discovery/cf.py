@@ -16,10 +16,16 @@ Two outputs:
   the constant basis. Almost always these are known identities — proof the machine
   works, not a discovery.
 - ``frontier`` returns **mysteries**: CFs that converge to a *stable* value that is
-  **not** a small rational and has **no** closed form in the basis. That is the
-  honest frontier — a candidate new constant/identity, labelled unknown, never a
-  claim. Most bounded CFs land on a rational or a known constant, so this list is
-  usually short; a non-empty entry is a lead for a human to chase, not an answer.
+  not a small rational, not a small-degree algebraic number, and has no closed form
+  in the basis. **Empirically this is NOT a useful discovery signal.** A measured
+  scan (600 CFs, full basis, degree 2, coeffs -2..2) produced 0 known-constant hits
+  and flagged 507 of 600 as "mysteries" — because *almost every* polynomial CF
+  converges to a nondescript transcendental with no nice name. "Unnameable" is the
+  generic case, not a rare lead. Keep ``frontier`` as a diagnostic, but do not read
+  its output as candidate discoveries. The real Ramanujan-Machine signal is a
+  ``search`` **hit** to a *known* constant via a non-obvious CF; that is where a new
+  identity can live, and it needs a coefficient family that actually lands on such
+  constants (this negative result says the -2..2 family, as scanned, does not).
 """
 
 from __future__ import annotations
@@ -129,9 +135,10 @@ def frontier(coeff_range: int = 2, degree: int = 2, dps: int = 80,
     A mystery is a CF whose value is stable (agrees at ``dps`` and ``dps+25``
     digits, so it is not numerical noise), is not a small rational, is **not a
     root of a small integer polynomial** (algebraic numbers are known, not leads),
-    and has no closed form for the value or its reciprocal. These are the leads
-    worth a human's attention: a candidate new constant the basis cannot name.
-    Labelled unknown, never a discovery claim.
+    and has no closed form for the value or its reciprocal. NOTE: a measured scan
+    found this flags ~85% of CFs (generic transcendentals), so it is a diagnostic,
+    NOT a discovery signal — see the module docstring. Labelled unknown, never a
+    claim.
 
     ``core=False`` by default: mysteries are only meaningful against the *full*
     basis, else a value the small basis can't name (e.g. involving ln3, Catalan)
