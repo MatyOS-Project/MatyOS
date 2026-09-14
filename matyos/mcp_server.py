@@ -144,16 +144,15 @@ def graph_conjectures() -> dict[str, Any]:
 
     Computes cheap invariants (order, size, degrees, triangles, diameter, radius)
     over a spread of small connected graphs and returns the tight inequalities
-    A(G) <= B(G) that held on every one — candidate theorems. They hold on the
-    sample; proving them for all graphs is a human/Lean job. This is the discovery
-    domain beyond numbers.
+    A(G) <= B(G) that held on every one. Each is passed through the novelty filter
+    and tagged ``novelty``: "known" (an established theorem), "derived" (implied by
+    known bounds — the reason gives the chain), or "candidate" (not implied by
+    MatyOS's known-inequality DB — verify against the literature before treating as
+    new). Candidates are listed first. They hold on the sample; proving them for
+    all graphs is a human/Lean job. MatyOS never claims novelty on its own.
     """
     from matyos.discovery import graph as g
-    conj = g.graffiti_search()
-    return {"conjectures": [
-        {"statement": c.text, "held_on": c.support, "tight_on": c.tight}
-        for c in conj
-    ]}
+    return {"conjectures": g.classified_search()}
 
 
 @server.tool()

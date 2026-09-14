@@ -53,6 +53,27 @@ def test_graffiti_rediscovers_clique_le_chromatic():
     assert "clique_number <= chromatic_number" in conj   # omega <= chi, a theorem
 
 
+def test_novelty_filter_classifies_known_derived_candidate():
+    from matyos.discovery import known
+    # a listed theorem is 'known'
+    assert known.classify("clique_number <= chromatic_number")["status"] == "known"
+    # implied by a chain is 'derived', with the chain reported
+    d = known.classify("min_degree <= max_degree")
+    assert d["status"] == "derived"
+    assert d["chain"] == ["min_degree", "avg_degree", "max_degree"]
+    # not implied by the DB is 'candidate' (honest: not a novelty claim)
+    assert known.classify("radius <= independence_number")["status"] == "candidate"
+
+
+def test_classified_search_tags_every_conjecture_candidates_first():
+    res = G.classified_search()
+    assert res and all(r["novelty"] in {"known", "derived", "candidate"} for r in res)
+    # candidates (if any) are sorted ahead of known/derived
+    order = [r["novelty"] for r in res]
+    if "candidate" in order and "known" in order:
+        assert order.index("candidate") < order.index("known")
+
+
 import pytest
 spectral = pytest.mark.skipif(not G.HAVE_SPECTRAL, reason="spectral needs mpmath")
 

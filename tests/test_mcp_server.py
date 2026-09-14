@@ -31,6 +31,11 @@ def test_graph_conjectures_tool():
     out = srv.graph_conjectures()
     stmts = {c["statement"] for c in out["conjectures"]}
     assert "radius <= diameter" in stmts
+    # every conjecture now carries a novelty tag from the filter
+    for c in out["conjectures"]:
+        assert c["novelty"] in {"known", "derived", "candidate"}
+    known = next(c for c in out["conjectures"] if c["statement"] == "radius <= diameter")
+    assert known["novelty"] == "known"
 
 
 @pytest.mark.skipif(not anomaly.HAVE_PSLQ, reason="PSLQ needs mpmath")

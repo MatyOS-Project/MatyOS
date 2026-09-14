@@ -301,3 +301,21 @@ def graffiti_search(graphs=None, invariants=None) -> list[GraphConjecture]:
                     out.append(GraphConjecture(f"{a} <= {b}", len(graphs), tight))
     out.sort(key=lambda c: c.tight, reverse=True)
     return out
+
+
+def classified_search(graphs=None, invariants=None) -> list[dict]:
+    """Graffiti search + the novelty filter: each inequality tagged known /
+    derived / candidate (see ``matyos.discovery.known``).
+
+    Returns dicts sorted so the ``candidate`` bounds — the only ones MatyOS's
+    knowledge cannot explain — come first; those are what a human should look at.
+    """
+    from matyos.discovery import known
+    rank = {"candidate": 0, "derived": 1, "known": 2}
+    out = []
+    for c in graffiti_search(graphs, invariants):
+        cls = known.classify(c.text)
+        out.append({"statement": c.text, "held_on": c.support, "tight_on": c.tight,
+                    "novelty": cls["status"], "reason": cls["reason"]})
+    out.sort(key=lambda d: (rank[d["novelty"]], -d["tight_on"]))
+    return out
