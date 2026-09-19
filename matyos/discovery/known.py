@@ -102,6 +102,11 @@ KNOWN: list[tuple[str, str, str]] = [
     ("average_distance", "average_eccentricity", "mean distance <= mean eccentricity (per-vertex)"),
     # Chung (1988): average distance <= independence number
     ("average_distance", "independence_number", "Chung 1988: mean distance <= alpha"),
+    # total domination <= energy: gamma_t <= 2*nu (a maximum matching's vertices
+    # totally dominate) and E(G) >= 2*nu (well-known energy-matching bound), so
+    # gamma_t <= 2*nu <= E. Both links are established theorems. The factor-2 keeps
+    # it off the invariant-name chain, so it is listed directly.
+    ("total_domination_number", "energy", "gamma_t <= 2*nu <= E (both known: gamma_t<=2nu and E>=2nu)"),
     # clique vs energy: E(G) = sum|lambda| >= lambda_max + |lambda_min|
     # >= (omega-1) + 1 = omega (a K_omega subgraph forces lambda_max >= omega-1).
     ("clique_number", "energy", "omega <= lambda_max + |lambda_min| <= energy"),
