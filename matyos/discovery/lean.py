@@ -115,7 +115,10 @@ def graph_statement(text: str) -> dict:
     A, B = _GRAPH_LEAN.get(a), _GRAPH_LEAN.get(b)
     header = ("import Mathlib\n\n"
               "-- MatyOS graph conjecture (unproven; holds on the sampled graphs).\n")
-    var = "{V : Type*} [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]"
+    # [Nonempty V] is needed for many mathlib graph-metric lemmas (radius/ediam are
+    # ⊤ on the empty graph); [DecidableEq V] helps decidability-based tactics.
+    var = ("{V : Type*} [Fintype V] [Nonempty V] [DecidableEq V] "
+           "(G : SimpleGraph V) [DecidableRel G.Adj]")
     if A and B and A[1] == B[1]:
         stmt = (f"{header}-- both invariants map to mathlib ({A[1]}).\n"
                 f"theorem matyos_graph_conjecture {var} :\n"
