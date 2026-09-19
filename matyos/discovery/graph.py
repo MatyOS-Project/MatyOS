@@ -561,3 +561,23 @@ def classified_search(graphs=None, invariants=None) -> list[dict]:
                     "novelty": cls["status"], "reason": cls["reason"]})
     out.sort(key=lambda d: (rank[d["novelty"]], -d["tight_on"]))
     return out
+
+
+def classified_conjectures(graphs=None, invariants=None) -> list:
+    """Graph conjectures as first-class `Conjecture` objects, each carrying an
+    auto-emitted Lean statement (checkable when the invariants are in mathlib, an
+    honest skeleton otherwise) and its novelty tag. This is step 3: conjecture
+    generation that emits a formal statement, not just a text inequality."""
+    from matyos.discovery.formal import Conjecture
+    from matyos.discovery import lean
+    out = []
+    for d in classified_search(graphs, invariants):
+        gs = lean.graph_statement(d["statement"])
+        out.append(Conjecture(
+            claim=d["statement"],
+            lean_statement=gs["lean_statement"],
+            label={"novelty": d["novelty"], "reason": d["reason"],
+                   "mathlib_ready": gs["mathlib_ready"]},
+            source="graph",
+        ))
+    return out

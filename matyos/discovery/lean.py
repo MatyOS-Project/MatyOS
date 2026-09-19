@@ -86,6 +86,53 @@ def lean_statement(record: dict) -> str | None:
     return header + f"theorem matyos_discovery : x = {rhs} := by\n  sorry\n"
 
 
+# MatyOS graph invariant -> (mathlib expression over `G`, value type). Only those
+# with a confirmed mathlib definition are listed; everything else has no mathlib
+# counterpart yet and is emitted as an honest placeholder.
+_GRAPH_LEAN = {
+    "radius": ("G.radius", "ℕ∞"),
+    "diameter": ("G.ediam", "ℕ∞"),          # ediam is the ℕ∞-valued diameter
+    "clique_number": ("G.cliqueNum", "ℕ"),
+    "chromatic_number": ("G.chromaticNumber", "ℕ∞"),
+    "order": ("(Fintype.card V)", "ℕ"),
+}
+
+
+def graph_statement(text: str) -> dict:
+    """Emit a Lean 4 statement for a graph-invariant inequality ``"A <= B"``.
+
+    Returns {lean_statement, mathlib_ready, note}. ``mathlib_ready`` is True only
+    when *both* invariants have a mathlib definition of the *same* value type, so
+    the statement can actually be checked/attempted; otherwise a clearly-labelled
+    skeleton is emitted (invariants absent from mathlib appear as `MatyOS.<name> G`
+    placeholders that a human/future work must define). Honest: MatyOS states the
+    conjecture; it does not assert the statement typechecks unless mathlib_ready.
+    """
+    if " <= " not in text:
+        return {"lean_statement": None, "mathlib_ready": False,
+                "note": f"unparseable inequality: {text!r}"}
+    a, b = text.split(" <= ", 1)
+    A, B = _GRAPH_LEAN.get(a), _GRAPH_LEAN.get(b)
+    header = ("import Mathlib\n\n"
+              "-- MatyOS graph conjecture (unproven; holds on the sampled graphs).\n")
+    var = "{V : Type*} [Fintype V] (G : SimpleGraph V) [DecidableRel G.Adj]"
+    if A and B and A[1] == B[1]:
+        stmt = (f"{header}-- both invariants map to mathlib ({A[1]}).\n"
+                f"theorem matyos_graph_conjecture {var} :\n"
+                f"    {A[0]} ≤ {B[0]} := by\n  sorry\n")
+        return {"lean_statement": stmt, "mathlib_ready": True,
+                "note": "both invariants are in mathlib; a candidate for try_prove"}
+    ax = A[0] if A else f"MatyOS.{a} G"
+    bx = B[0] if B else f"MatyOS.{b} G"
+    missing = [n for n, m in ((a, A), (b, B)) if not m]
+    why = ("invariants not in mathlib (need defining): " + ", ".join(missing)) if missing \
+        else "invariants have different mathlib value types (coercion needed)"
+    stmt = (f"{header}-- {why}.\n"
+            f"theorem matyos_graph_conjecture {var} :\n"
+            f"    {ax} ≤ {bx} := by\n  sorry\n")
+    return {"lean_statement": stmt, "mathlib_ready": False, "note": why}
+
+
 # ---- the proving leg: try to close a statement with mathlib automation --------
 
 # Single tactics, cheap→strong. `exact?` is mathlib *lemma search*: it closes the

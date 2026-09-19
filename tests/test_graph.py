@@ -112,6 +112,29 @@ def test_distance_cover_known_bounds():
     assert known.classify("average_distance <= edge_cover_number")["status"] == "derived"
 
 
+def test_graph_statement_emits_lean_and_flags_mathlib_ready():
+    from matyos.discovery import lean
+    # both invariants in mathlib (same type) -> checkable statement
+    ready = lean.graph_statement("radius <= diameter")
+    assert ready["mathlib_ready"] is True
+    assert "G.radius" in ready["lean_statement"] and "G.ediam" in ready["lean_statement"]
+    assert "sorry" in ready["lean_statement"]
+    # an invariant with no mathlib definition -> honest placeholder skeleton
+    skel = lean.graph_statement("domination_number <= vertex_cover_number")
+    assert skel["mathlib_ready"] is False
+    assert "MatyOS.domination_number G" in skel["lean_statement"]
+
+
+def test_classified_conjectures_are_conjecture_objects_with_statements():
+    from matyos.discovery.formal import Conjecture
+    cs = G.classified_conjectures()
+    assert cs and all(isinstance(c, Conjecture) and c.source == "graph" for c in cs)
+    assert all(c.lean_statement and "sorry" in c.lean_statement for c in cs)
+    # radius <= diameter is present, known, and mathlib-ready
+    rd = next(c for c in cs if c.claim == "radius <= diameter")
+    assert rd.label["novelty"] == "known" and rd.label["mathlib_ready"] is True
+
+
 def test_radius_le_vertex_cover_holds(  ):
     # proven theorem (docs/conjectures/radius-le-vertex-cover.md); check it on the
     # sample plus paths, where equality radius == tau is attained.
