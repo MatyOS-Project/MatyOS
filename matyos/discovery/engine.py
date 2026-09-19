@@ -74,6 +74,20 @@ class DiscoveryEngine:
         ranked = sorted(self.run(seeds), key=lambda c: c.score.total, reverse=True)[:limit]
         return [_candidate_record(c, i + 1) for i, c in enumerate(ranked)]
 
+    def conjectures(self, seeds: list[MathObject], limit: int = 20,
+                    prove: bool = False, timeout: int = 120) -> list:
+        """Discoveries as first-class `Conjecture` objects (claim + Lean statement +
+        proof status in one place). With ``prove=True`` each conjecture that carries
+        a Lean statement is run through ``lean.try_prove`` and the result attached —
+        honest: only Lean-accepted proofs count as proved."""
+        from matyos.discovery.formal import Conjecture
+        ranked = sorted(self.run(seeds), key=lambda c: c.score.total, reverse=True)[:limit]
+        out = []
+        for i, c in enumerate(ranked):
+            conj = Conjecture.from_record(_candidate_record(c, i + 1), object=c.object)
+            out.append(conj.attempt_proof(timeout=timeout) if prove else conj)
+        return out
+
     def loop(self, seeds: list[MathObject], rounds: int = 3, breadth: int = 12,
              store=None, reasoner=None) -> dict:
         """Iterated discovery: run, remember, let a reasoner propose the next seeds.

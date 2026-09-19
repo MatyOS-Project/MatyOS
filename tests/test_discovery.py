@@ -144,6 +144,35 @@ def test_try_prove_rejects_statement_without_sorry():
     assert out["status"] == "error" and out["proved"] is False
 
 
+def test_conjecture_bundles_claim_statement_and_status():
+    from matyos.discovery.formal import Conjecture
+    rec = {"closed_form": "x = (1 + sqrt5) / 2 (PSLQ): x = (1 + sqrt5) / 2",
+           "display": {"kind": "constant"},
+           "lean_statement": "import Mathlib\n\ntheorem t : x = 1 := by\n  sorry\n",
+           "label": {"status": "realistic (open)", "truth_name": "REALISTIC"}}
+    c = Conjecture.from_record(rec)
+    assert "sqrt5" in c.claim
+    assert c.proved is False and c.status == "open"          # has statement, unproved
+    d = c.to_dict()
+    assert d["proved"] is False and d["lean_statement"] is not None
+    # no formal statement -> "stated", and attempt_proof is a no-op (no Lean needed)
+    bare = Conjecture(claim="something", lean_statement=None)
+    assert bare.status == "stated"
+    assert bare.attempt_proof() is bare
+
+
+@pslq
+def test_engine_conjectures_are_first_class_objects():
+    from matyos.discovery.engine import DiscoveryEngine
+    from matyos.discovery.formal import Conjecture
+    fib = Sequence.of([0, 1, 1, 2, 3, 5, 8, 13, 21, 34], name="fib")
+    conjs = DiscoveryEngine(min_score=0.2).conjectures([fib], limit=5)  # prove=False
+    assert conjs and all(isinstance(c, Conjecture) for c in conjs)
+    # the golden-ratio find carries a formal statement and reads as open, not proved
+    assert any("sqrt5" in c.claim for c in conjs)
+    assert all(c.proved is False for c in conjs)              # prove=False: nothing claimed proved
+
+
 def test_extract_lemma_parses_try_this():
     from matyos.discovery import lean
     assert lean._extract_lemma("Try this: exact foo") == "exact foo"
