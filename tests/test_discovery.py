@@ -144,6 +144,28 @@ def test_try_prove_rejects_statement_without_sorry():
     assert out["status"] == "error" and out["proved"] is False
 
 
+def test_extract_lemma_parses_try_this():
+    from matyos.discovery import lean
+    assert lean._extract_lemma("Try this: exact foo") == "exact foo"
+    # Lean's actual captured format: suggestion on the next line, with a [apply] tag
+    real = "Try this:\n  [apply] exact Nat.add_comm a b\n"
+    assert lean._extract_lemma(real) == "exact Nat.add_comm a b"
+    assert lean._extract_lemma("no suggestion here") is None
+
+
+def test_proof_cache_key_is_deterministic_and_ladder_sensitive():
+    from matyos.discovery import lean
+    s = "import Mathlib\n\ntheorem t : True := by\n  sorry\n"
+    assert lean._cache_key(s, ["decide"]) == lean._cache_key(s, ["decide"])
+    assert lean._cache_key(s, ["decide"]) != lean._cache_key(s, ["simp"])
+
+
+def test_ladder_includes_lemma_search_and_sequences():
+    from matyos.discovery import lean
+    assert "exact?" in lean._TACTIC_LADDER            # mathlib lemma search present
+    assert any("<;>" in t for t in lean._TACTIC_LADDER)  # multi-step scripts present
+
+
 def test_formal_handoff_attempt_proof_is_opt_in_and_honest():
     from matyos.discovery import verify as vm
     rec = {"closed_form": "x = (1 + sqrt5) / 2 (PSLQ): x = (1 + sqrt5) / 2",
