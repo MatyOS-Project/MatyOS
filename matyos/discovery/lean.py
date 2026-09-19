@@ -7,12 +7,15 @@ against **mathlib** — and, when a Lean toolchain is present, to *try to close 
 automatically* with mathlib's proof automation.
 
 `lean_statement` emits the statement with a `sorry` (matching the honest label:
-REALISTIC / unproven). `try_prove` then swaps the `sorry` for each tactic in a
-ladder (`decide`, `norm_num`, `nlinarith`, `polyrith`, `simp`, `aesop`), runs Lean
-against mathlib, and keeps the first that compiles with no errors and no `sorry`.
-That closes *easy* goals only — simple identities, decidable finite facts. A hard
-or general conjecture returns `open`, honestly, for a human. MatyOS never reports
-`proved` unless Lean itself accepted the proof; it never fabricates one.
+REALISTIC / unproven). `try_prove` then swaps the `sorry` for each entry of a
+ladder — single tactics (`rfl`, `decide`, `norm_num`, `simp_all`, `omega`,
+`positivity`, `linarith`, `nlinarith`, `ring`, `tauto`, `aesop`), then multi-step
+scripts, then `exact?` (mathlib lemma search, which reports the lemma it used) —
+runs Lean against mathlib, and keeps the first that compiles with no errors and no
+`sorry`. Results are cached; the closing tactic and any lemma are recorded. That
+closes *easy* goals only — simple identities, decidable facts, one-lemma hits. A
+hard or general conjecture returns `open`, honestly, for a human. MatyOS never
+reports `proved` unless Lean itself accepted the proof; it never fabricates one.
 """
 
 from __future__ import annotations
