@@ -144,6 +144,38 @@ def test_try_prove_rejects_statement_without_sorry():
     assert out["status"] == "error" and out["proved"] is False
 
 
+def test_guided_prove_search_logic_with_injected_runner():
+    from matyos.discovery import lean
+    stmt = "theorem t : True := by\n  sorry\n"
+    # a fake Lean that only accepts the tactic 'win'
+    def runner(source, timeout):
+        return ("win" in source, "" if "win" in source else "error: unsolved goals")
+    # suggester that only proposes 'win' on round 1, after seeing round 0's error
+    def suggest(ctx):
+        if ctx["round"] == 0:
+            return ["lose_a", "lose_b"]
+        assert ctx["last_errors"] and ctx["last_errors"][0]["error"]   # feedback arrived
+        return ["win"]
+    out = lean.guided_prove(stmt, suggest=suggest, rounds=3, breadth=4, runner=runner)
+    assert out["proved"] is True and out["tactic"] == "win" and out["rounds_used"] == 2
+    # and an honest miss when nothing closes it
+    miss = lean.guided_prove(stmt, suggest=lambda c: ["nope"], rounds=2, runner=runner)
+    assert miss["proved"] is False and miss["status"] == "open"
+
+
+def test_guided_prove_degrades_to_ladder_without_suggester():
+    from matyos.discovery import lean
+    stmt = "theorem t : True := by\n  sorry\n"
+    seen = []
+    def runner(source, timeout):
+        seen.append(source)
+        return (False, "error: no")            # never closes -> exercises the default ladder
+    out = lean.guided_prove(stmt, rounds=1, breadth=99, runner=runner)
+    assert out["proved"] is False
+    # with no suggester it should have tried the fixed ladder's tactics
+    assert any("norm_num" in s for s in seen) and any("exact?" in s for s in seen)
+
+
 def test_conjecture_bundles_claim_statement_and_status():
     from matyos.discovery.formal import Conjecture
     rec = {"closed_form": "x = (1 + sqrt5) / 2 (PSLQ): x = (1 + sqrt5) / 2",

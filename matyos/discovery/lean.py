@@ -308,3 +308,72 @@ def try_prove(statement: str, timeout: int = 120, tactics=None,
     if use_cache:
         _cache_put(key, result)
     return result
+
+
+def _first_error(log: str) -> str | None:
+    """The first Lean error line in a compile log, for feeding back to a suggester."""
+    for line in log.splitlines():
+        if "error:" in line.lower():
+            return line.strip()
+    return None
+
+
+def guided_prove(statement: str, suggest=None, rounds: int = 3, breadth: int = 6,
+                 timeout: int = 120, runner=None) -> dict:
+    """Best-first proof search: a *suggester* proposes candidate tactics, Lean checks
+    them, and the errors from failures feed the next round of suggestions.
+
+    This is the honest, compute-proportionate form of AlphaProof-style search — the
+    model (any model) only *proposes*; Lean is the exact verifier. MatyOS hardcodes
+    no provider, matching the `Reasoner` pattern:
+
+    - ``suggest(context) -> list[str]`` returns candidate tactic scripts (each
+      replaces the `sorry`). ``context`` = {statement, tried, last_errors, round}.
+      Defaults to the fixed ladder (no model), so this degrades to `try_prove`.
+    - ``runner(source, timeout) -> (ok, log)`` runs Lean; defaults to the real
+      compiler. Injectable so the search logic is testable without Lean.
+    - ``rounds`` × ``breadth`` bounds the search; failures carry their first error
+      into the next ``context`` so the suggester can adapt.
+
+    Returns the same honest statuses as `try_prove`, plus ``rounds_used`` and the
+    full ``attempts`` log. Never fabricates a proof — ``proved`` only if Lean agreed.
+    """
+    if runner is None:
+        tc = toolchain()
+        if not tc["lean"]:
+            return {"status": "lean_unavailable", "proved": False,
+                    "note": "no `lean` on PATH; install Lean 4 (elan) to enable proving"}
+        project = _mathlib_project()
+        if "import Mathlib" in statement and project is None:
+            return {"status": "mathlib_unavailable", "proved": False,
+                    "note": "goal needs mathlib; set MATYOS_LEAN_PROJECT"}
+        run = lambda src, to: _run_lean(src, project, to)
+    else:
+        run = runner
+    if "sorry" not in statement:
+        return {"status": "error", "proved": False, "note": "statement has no `sorry`"}
+
+    tried: set[str] = set()
+    attempts: list[dict] = []
+    last_errors: list[dict] = []
+    for rnd in range(rounds):
+        context = {"statement": statement, "tried": sorted(tried),
+                   "last_errors": last_errors, "round": rnd}
+        candidates = list(suggest(context)) if suggest else list(_TACTIC_LADDER)
+        fresh = [c for c in candidates if c not in tried][:breadth]
+        if not fresh:
+            break
+        last_errors = []
+        for tac in fresh:
+            tried.add(tac)
+            ok, log = run(statement.replace("sorry", tac), timeout)
+            attempts.append({"round": rnd, "tactic": tac, "ok": ok})
+            if ok:
+                lemma = _extract_lemma(log) if tac in ("exact?", "apply?") else None
+                return {"status": "proved", "proved": True, "tactic": tac,
+                        "lemma": lemma, "rounds_used": rnd + 1, "attempts": attempts,
+                        "note": f"proved via {lemma}" if lemma else f"proved by `{tac}`"}
+            last_errors.append({"tactic": tac, "error": _first_error(log)})
+    return {"status": "open", "proved": False, "tactic": None,
+            "rounds_used": rounds, "attempts": attempts,
+            "note": "guided search did not close it; a human/real proof is needed"}
