@@ -9,12 +9,24 @@ including those of `S`, has a neighbour in `S`); `radius(G) = min_v ecc(v)`.
 
 ## Evidence
 
-- 0 violations across 900+ graphs: the general stress battery (random +
-  paths/cycles/stars/Petersen/grids) and a targeted hunt over spiders,
-  caterpillars and trees up to n = 15 built specifically to make `radius` large
-  and `γ_t` small.
-- Equality `radius = γ_t` is attained on paths (e.g. `P_4`, `P_8`), so if true the
-  bound is tight.
+- 0 violations across 1000+ graphs: the general stress battery (random +
+  paths/cycles/stars/Petersen/grids), a targeted hunt over spiders, caterpillars
+  and trees up to n = 15, and an exact-`γ_t` check on larger trees up to n = 20.
+- The ratio `radius / γ_t` never exceeds 1.0, and **equality holds only on paths
+  `P_{4m}`** (spiders and all other families tested sit strictly below). The path
+  is the unique extremal family — so if the bound holds, factor-1 is tight and is
+  the true constant (not merely the 1.5 proved below).
+
+## Direct factor-1 proof: attempted, not found
+
+A direct proof of `radius ≤ γ_t` was attempted and **not obtained**. Every approach
+loses a constant factor: the geodesic-covering count (each `S`-vertex is adjacent
+to ≤ 3 consecutive vertices of a shortest path) gives only `≤ 3γ_t−1`, and that
+factor-3 count is tight for general graphs; the spanning-tree reduction that proved
+`radius ≤ vertex_cover` fails because `γ_t`'s monotonicity runs the wrong way under
+edge deletion. The best established constant is 1.5 (below). Closing 1.5 → 1
+appears to need an argument specific to the minimum eccentricity (the centre) that
+we do not have.
 
 ## What is proven / known (partial — factor > 1)
 
