@@ -81,7 +81,8 @@ avg_degree <= max_degree`). They hold on the sample; proving them for all graphs
 a human/Lean job. The invariant set is broad: combinatorial ones (order, size,
 degrees, triangles, diameter, radius, independence / clique / chromatic /
 vertex-cover numbers, **domination number, matching number, vertex- and
-edge-connectivity, degeneracy, girth**) are pure Python; **spectral invariants**
+edge-connectivity, degeneracy, girth, average eccentricity, average distance,
+total domination number, edge cover number**) are pure Python; **spectral invariants**
 (spectral radius, graph energy, algebraic connectivity / Fiedler value, Laplacian
 spectral radius) use mpmath eigenvalues when available — with these the search
 rediscovers the classic bracket `avg_degree <= spectral_radius <= max_degree` and

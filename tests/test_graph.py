@@ -92,6 +92,26 @@ def test_new_known_bounds_classified():
     assert known.classify("degeneracy <= vertex_cover_number")["status"] == "known"
 
 
+def test_distance_and_cover_invariants():
+    from fractions import Fraction
+    c5 = G.cycle(5)
+    assert G.average_eccentricity(c5) == 2 and G.average_distance(c5) == Fraction(3, 2)
+    assert G.total_domination_number(c5) == 3 and G.edge_cover_number(c5) == 3
+    assert G.total_domination_number(G.complete(4)) == 2
+    # radius <= average_eccentricity <= diameter on a path
+    p6 = G.path(6)
+    assert G.radius(p6) <= G.average_eccentricity(p6) <= G.diameter(p6)
+
+
+def test_distance_cover_known_bounds():
+    from matyos.discovery import known
+    assert known.classify("radius <= average_eccentricity")["status"] == "known"
+    assert known.classify("average_distance <= independence_number")["status"] == "known"  # Chung
+    assert known.classify("independence_number <= edge_cover_number")["status"] == "known"
+    # avg_distance <= edge_cover derives via Chung (avg_dist<=alpha) + alpha<=edge_cover
+    assert known.classify("average_distance <= edge_cover_number")["status"] == "derived"
+
+
 def test_radius_le_vertex_cover_holds(  ):
     # proven theorem (docs/conjectures/radius-le-vertex-cover.md); check it on the
     # sample plus paths, where equality radius == tau is attained.

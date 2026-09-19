@@ -312,6 +312,56 @@ def girth(g: Graph) -> int:
     return best if best is not None else g.n + 1
 
 
+def _eccentricities(g: Graph):
+    """List of eccentricities (max distance from each vertex); None if disconnected."""
+    if not is_connected(g):
+        return None
+    adj = g._adj()
+    return [max(_bfs_dist(adj, s, g.n).values()) for s in range(g.n)]
+
+
+def average_eccentricity(g: Graph) -> Fraction:
+    """Mean eccentricity — lies between radius and diameter."""
+    e = _eccentricities(g)
+    return Fraction(sum(e), g.n) if e and g.n else Fraction(0)
+
+
+def average_distance(g: Graph) -> Fraction:
+    """Mean distance over all ordered vertex pairs (0 if trivial/disconnected)."""
+    if g.n < 2 or not is_connected(g):
+        return Fraction(0)
+    adj = g._adj()
+    tot = sum(sum(_bfs_dist(adj, s, g.n).values()) for s in range(g.n))
+    return Fraction(tot, g.n * (g.n - 1))
+
+
+def total_domination_number(g: Graph) -> int:
+    """Smallest set S with every vertex (S included) having a neighbour in S.
+
+    Undefined with an isolated vertex; return the sentinel n for that case."""
+    adj = g._adj()
+    if g.n == 0:
+        return 0
+    if any(len(adj[v]) == 0 for v in range(g.n)):
+        return g.n
+    best = g.n
+    for mask in range(1, 1 << g.n):
+        sel = [v for v in range(g.n) if mask >> v & 1]
+        if len(sel) >= best:
+            continue
+        if all(any(w in sel for w in adj[v]) for v in range(g.n)):
+            best = len(sel)
+    return best
+
+
+def edge_cover_number(g: Graph) -> int:
+    """Fewest edges covering all vertices (= n - matching number, Gallai; needs no
+    isolated vertex, true for connected graphs on >= 2 vertices)."""
+    if g.n < 2:
+        return 0
+    return g.n - matching_number(g)
+
+
 INVARIANTS = {
     "order": order, "size": size, "max_degree": max_degree,
     "min_degree": min_degree, "avg_degree": avg_degree,
@@ -321,6 +371,8 @@ INVARIANTS = {
     "domination_number": domination_number, "matching_number": matching_number,
     "vertex_connectivity": vertex_connectivity, "edge_connectivity": edge_connectivity,
     "degeneracy": degeneracy, "girth": girth,
+    "average_eccentricity": average_eccentricity, "average_distance": average_distance,
+    "total_domination_number": total_domination_number, "edge_cover_number": edge_cover_number,
 }
 
 

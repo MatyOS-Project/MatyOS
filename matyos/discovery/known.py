@@ -85,6 +85,23 @@ KNOWN: list[tuple[str, str, str]] = [
     # energy = 2*(sum of positive eigenvalues) >= 2*lambda_max, hence chi <= 1 + E/2
     # <= E for any graph with an edge (E >= 2).
     ("chromatic_number", "energy", "chi <= 1+lambda_max (Wilf) <= 1+E/2 <= E (graphs with an edge)"),
+    # eccentricity / distance ordering
+    ("radius", "average_eccentricity", "min eccentricity <= mean eccentricity"),
+    ("average_eccentricity", "diameter", "mean eccentricity <= max eccentricity"),
+    ("average_distance", "diameter", "mean distance <= maximum distance"),
+    # total domination dominates ordinary domination
+    ("domination_number", "total_domination_number", "gamma <= gamma_t (a total dominating set dominates)"),
+    # matching vs edge cover: nu <= rho since 2*nu <= n = nu + rho (Gallai)
+    ("matching_number", "edge_cover_number", "nu <= rho: 2*nu <= n = nu + rho (Gallai)"),
+    # independence vs edge cover: alpha <= rho = n - nu  <=>  nu <= tau (Gallai/Koenig)
+    ("independence_number", "edge_cover_number", "alpha <= rho (equivalently nu <= tau)"),
+    # trivial: an edge cover is a set of edges; a (total) dominating set of vertices
+    ("edge_cover_number", "size", "an edge cover is a set of edges"),
+    ("total_domination_number", "order", "a total dominating set is a set of vertices"),
+    # mean distance from a vertex is at most its eccentricity, so on average:
+    ("average_distance", "average_eccentricity", "mean distance <= mean eccentricity (per-vertex)"),
+    # Chung (1988): average distance <= independence number
+    ("average_distance", "independence_number", "Chung 1988: mean distance <= alpha"),
     # clique vs energy: E(G) = sum|lambda| >= lambda_max + |lambda_min|
     # >= (omega-1) + 1 = omega (a K_omega subgraph forces lambda_max >= omega-1).
     ("clique_number", "energy", "omega <= lambda_max + |lambda_min| <= energy"),
