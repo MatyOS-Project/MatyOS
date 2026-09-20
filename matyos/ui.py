@@ -172,6 +172,8 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .step{display:flex;flex-direction:column;align-items:center;gap:7px;border:1px solid var(--line);border-radius:12px;padding:14px 12px;background:#fff;flex:1;min-width:100px}
  .step img{width:40px;height:40px}.step b{font-size:13px}.step span{font-size:11.5px;color:var(--muted);text-align:center}
  .arrow{color:var(--muted);font-size:20px}
+ .flowsvg{width:100%;height:auto;max-width:960px;margin:14px 0 6px;display:block}
+ @media(max-width:720px){.flowsvg{display:none}}
  .wf{margin-top:6px}
  .wfrow{display:flex;gap:16px;align-items:flex-start;padding:16px 2px;border-top:1px solid var(--line)}
  .wfrow:first-child{border-top:0}
@@ -274,7 +276,23 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
          <div class="rl r"><b>REALISTIC</b><span>found and stable, but unproven — a conjecture</span></div>
          <div class="rl f"><b>FALSE</b><span>refuted by a counterexample</span></div></div></div>
      <div class="card"><h2>The scientific method, as files</h2>
-       <p class="lead">MatyOS mirrors real science as a folder of files. <code>matyos check</code> runs them in this order through one trusted kernel and reports how sure each claim is — certain, or merely likely.</p>
+       <p class="lead">MatyOS mirrors real science as a folder of files — and, like science, it’s a loop: a claim that fails a test goes back to be refined; one that passes gets proven and joins the theory. <code>matyos check</code> runs the files in this order through one trusted kernel.</p>
+       <svg class="flowsvg" viewBox="0 0 980 188" role="img" aria-label="The scientific method as a loop">
+        <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#0a0a0a"/></marker></defs>
+        <g stroke="#0a0a0a" stroke-width="2" marker-end="url(#ah)">
+          <line x1="158" y1="58" x2="190" y2="58"/><line x1="346" y1="58" x2="378" y2="58"/>
+          <line x1="534" y1="58" x2="566" y2="58"/><line x1="722" y1="58" x2="756" y2="58"/></g>
+        <text x="741" y="46" font-size="11" fill="#0a0a0a" text-anchor="middle" font-weight="600" font-family="Inter,sans-serif">proven</text>
+        <path d="M459,98 C459,168 83,168 83,98" stroke="#0a0a0a" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+        <text x="271" y="160" font-size="12" fill="#555" text-anchor="middle" font-family="Inter,sans-serif">refuted &#8594; refine the hypothesis</text>
+        <g font-family="Fredoka,Inter,sans-serif">
+         <g transform="translate(8,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">1</text><image href="/assets/icons/hyp.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Assume</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.hyp</text></g>
+         <g transform="translate(196,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">2</text><image href="/assets/icons/thm.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">State</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.thm</text></g>
+         <g transform="translate(384,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">3</text><image href="/assets/icons/test.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Probe</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.test</text></g>
+         <g transform="translate(572,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">4</text><image href="/assets/icons/prf.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Certify</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.prf</text></g>
+         <g transform="translate(760,20)"><rect width="212" height="78" rx="14" fill="#0a0a0a"/><circle cx="24" cy="21" r="11" fill="#fff"/><text x="24" y="25" font-size="12" fill="#0a0a0a" text-anchor="middle" font-weight="700">5</text><image href="/assets/icons/matyos.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#fff">Theory</text><text x="50" y="64" font-size="11" fill="#bbb" font-family="JetBrains Mono,monospace">verified body</text></g>
+        </g>
+       </svg>
        <div class="wf">
          <div class="wfrow"><div class="wfnum">1</div><img src="/assets/icons/hyp.svg" alt="">
            <div><b>Assume</b><span class="ext">.hyp</span><p>Write down what you take as true but haven’t proved. Flagged <b>realistic</b>, so nothing built on it is ever mistaken for certainty.</p></div></div>
