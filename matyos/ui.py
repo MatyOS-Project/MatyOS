@@ -22,6 +22,19 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # ---- cached, deterministic data ------------------------------------------------
 
 _CONJ_CACHE: list | None = None
+_LOGO_CACHE: bytes | None = None
+
+
+def _logo_bytes() -> bytes | None:
+    """The MatyOS mark, from the packaged asset (matyos/assets/logo.png)."""
+    global _LOGO_CACHE
+    if _LOGO_CACHE is None:
+        try:
+            from importlib.resources import files
+            _LOGO_CACHE = (files("matyos") / "assets" / "logo.png").read_bytes()
+        except Exception:
+            _LOGO_CACHE = b""
+    return _LOGO_CACHE or None
 
 
 def _conjectures() -> list:
@@ -62,7 +75,8 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  header{background:linear-gradient(180deg,#fff, #fbfcfe);border-bottom:1px solid var(--line)}
  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
  .top{display:flex;align-items:center;gap:12px;padding:20px 0 6px}
- .logo{width:34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;
+ .logo{width:38px;height:38px;object-fit:contain}
+ .logo.lfallback{width:34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;
    display:grid;place-items:center;font-weight:700;font-size:18px}
  h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em}
  .pill{font-size:11px;font-weight:600;color:var(--brand-d);background:var(--brand-soft);
@@ -132,7 +146,7 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  @media(max-width:600px){.top{flex-wrap:wrap}}
 </style></head><body>
 <header><div class="wrap">
-  <div class="top"><div class="logo">M</div><h1>MatyOS</h1><span class="pill">research console</span></div>
+  <div class="top"><img class="logo" src="/logo.png" alt="MatyOS" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo lfallback',textContent:'M'}))"><h1>MatyOS</h1><span class="pill">research console</span></div>
   <p class="tag">A workbench that finds small true patterns, checks them honestly, and proves the easy ones with a real theorem-checker. It <b>does not</b> solve famous open problems — and it says so.</p>
   <nav>
     <button class="on" data-tab="explore">Explore a sequence</button>
@@ -235,13 +249,12 @@ async function discover(){
   const by=n=>c.filter(x=>x.novelty===n).length;
   $('#stat').innerHTML=[['candidate','candidate'],['derived','derived'],['known','known']]
     .map(([k])=>`<div class="tile"><div class="n" style="color:var(--${k})">${by(k)}</div><div class="l">${k}</div></div>`).join('');
-  let h='<table><tr><th>rule (A ≤ B)</th><th>status</th><th>held / tight</th><th></th></tr>';
+  let h='<table><tr><th>rule (A ≤ B)</th><th>status</th><th>held / tight</th><th>check with Lean</th></tr>';
   for(const r of c){
-    const canProve=r.mathlib_ready;
     h+=`<tr><td class="ineq">${r.statement}</td>`+
        `<td><span class="badge ${r.novelty}">${r.novelty}</span></td>`+
        `<td class="mono">${r.held_on} / ${r.tight_on}</td>`+
-       `<td>${canProve?`<button class="prv" onclick="prove(this,'${r.statement}')">Prove</button><div class="presult"></div>`:''}</td></tr>`;
+       `<td><button class="prv" onclick="prove(this,'${r.statement}',${r.mathlib_ready?1:0})">Prove</button><div class="presult"></div></td></tr>`;
   }
   $('#conj').innerHTML=h+'</table>';
   const p=(await jget('/api/problems')).problems;
@@ -257,8 +270,10 @@ async function discover(){
   }).join('');
 })();
 
-async function prove(btn,stmt){
-  const out=btn.nextElementSibling; btn.disabled=true;
+async function prove(btn,stmt,ready){
+  const out=btn.nextElementSibling;
+  if(!ready){ out.innerHTML='<span style="color:var(--muted)">— can’t check yet: uses an invariant mathlib doesn’t define</span>'; return; }
+  btn.disabled=true;
   out.innerHTML='<span class="spin"></span> proving with Lean… (up to ~2 min)';
   try{
     const r=await jpost('/api/prove',{statement:stmt});
@@ -297,6 +312,11 @@ class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/" or self.path.startswith("/index"):
             return self._send(200, _PAGE, "text/html; charset=utf-8")
+        if self.path == "/logo.png":
+            png = _logo_bytes()
+            if png is None:
+                return self._send(404, b"", "image/png")
+            return self._send(200, png, "image/png")
         if self.path == "/api/conjectures":
             return self._send(200, json.dumps({"conjectures": _conjectures()}))
         if self.path == "/api/problems":

@@ -84,7 +84,7 @@ include = ["matyos*"]
 # The standard library ships inside the package (matyos/stdlib/*.elk) so
 # `matyos check stdlib/...` resolves after a plain pip install too.
 [tool.setuptools.package-data]
-matyos = ["stdlib/*.elk"]
+matyos = ["stdlib/*.elk", "assets/*.png"]
 
 [tool.black]
 line-length = 88
