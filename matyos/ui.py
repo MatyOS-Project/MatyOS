@@ -59,6 +59,8 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
  :root{
    --bg:#f4f6fa;--surface:#fff;--ink:#0f172a;--muted:#64748b;--line:#e6e9ef;
@@ -133,6 +135,8 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .ok{color:var(--ok)}.bad{color:var(--bad)}
  .prob{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px;background:#fbfcfe}
  .prob h3{margin:0 0 2px;font-size:15px}
+ .mathline{margin:8px 0 10px;overflow-x:auto;color:var(--ink)}
+ td.ineq .katex{font-size:1.05em}
  .prob .can{color:var(--known);font-size:13px}.prob .cant{color:var(--bad);font-size:13px}
  details{margin-top:10px}summary{cursor:pointer;color:var(--brand-d);font-size:13px;font-weight:600}
  pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:9px;overflow:auto;
@@ -185,6 +189,8 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
       <span class="lg"><span class="dot" style="background:var(--derived)"></span><b>derived</b> — follows from rules it knows</span>
       <span class="lg"><span class="dot" style="background:var(--known)"></span><b>known</b> — an established theorem</span>
     </div>
+    <details style="margin-top:10px"><summary>Symbol key</summary>
+      <div id="symkey" class="legend" style="margin-top:8px"></div></details>
     <div id="conj" style="margin-top:12px">Loading…</div>
   </div>
 </section>
@@ -221,6 +227,24 @@ $$('nav button').forEach(b=>b.onclick=()=>{
 });
 function setSeq(s){$('#seq').value=s.split(',').join(', ')}
 
+// invariant name -> LaTeX symbol (as a function of the graph G)
+const SYM={order:'n',size:'m',max_degree:'\\Delta',min_degree:'\\delta',avg_degree:'\\bar d',
+ triangles:'t',diameter:'\\operatorname{diam}',radius:'r',independence_number:'\\alpha',
+ clique_number:'\\omega',chromatic_number:'\\chi',vertex_cover_number:'\\tau',
+ domination_number:'\\gamma',matching_number:'\\nu',vertex_connectivity:'\\kappa',
+ edge_connectivity:'\\lambda',degeneracy:'\\operatorname{degen}',girth:'g',
+ average_eccentricity:'\\overline{\\operatorname{ecc}}',average_distance:'\\mu',
+ total_domination_number:'\\gamma_t',edge_cover_number:'\\rho',spectral_radius:'\\lambda_1',
+ energy:'\\mathcal{E}',algebraic_connectivity:'a',laplacian_spectral_radius:'\\mu_1'};
+function symTex(name){const s=SYM[name]||name.replace(/_/g,'\\_');return (name==='order'||name==='size')?s:s+'(G)';}
+function kx(t,disp){try{return katex.renderToString(t,{throwOnError:false,displayMode:!!disp});}catch(e){return t;}}
+function ruleTex(stmt){const p=stmt.split(' <= ');return kx(symTex(p[0])+' \\le '+symTex(p[1]));}
+function cfTex(cf){if(!cf)return '';let s=cf
+   .replace(/sqrt(\d+)/g,'\\sqrt{$1}').replace(/\bpi\b/g,'\\pi').replace(/\^(\d+)/g,'^{$1}')
+   .replace(/\bln(\d+)/g,'\\ln $1').replace(/\bzeta(\d+)/g,'\\zeta($1)')
+   .replace(/\bgamma\b/g,'\\gamma').replace(/\bcatalan\b/g,'\\mathrm{G}');
+ return kx(s);}
+
 async function discover(){
   const btn=$('#discBtn'); btn.disabled=true;
   const seq=$('#seq').value.split(',').map(s=>parseInt(s.trim())).filter(x=>!isNaN(x));
@@ -234,7 +258,7 @@ async function discover(){
         const cf=r.closed_form||''; const lab=(r.label&&r.label.status)||'';
         const known=r.verification&&r.verification.prior_art;
         let cls='none',big='No formula for this one';
-        if(cf){cls='found';big='Formula: '+cf}
+        if(cf){cls='found';big='Formula: '+cfTex(cf)}
         else if(lab.includes('mystery')){cls='mystery';big='Stable “mystery” value (no known formula)'}
         return `<div class="vitem ${cls}"><div class="big">${big}</div>`+
           `<div class="lead" style="margin:2px 0 0">honest label: <b>${lab||'—'}</b>${known?(' · already known: '+known):''}</div></div>`;
@@ -251,16 +275,24 @@ async function discover(){
     .map(([k])=>`<div class="tile"><div class="n" style="color:var(--${k})">${by(k)}</div><div class="l">${k}</div></div>`).join('');
   let h='<table><tr><th>rule (A ≤ B)</th><th>status</th><th>held / tight</th><th>check with Lean</th></tr>';
   for(const r of c){
-    h+=`<tr><td class="ineq">${r.statement}</td>`+
+    h+=`<tr><td class="ineq" title="${r.statement}">${ruleTex(r.statement)}</td>`+
        `<td><span class="badge ${r.novelty}">${r.novelty}</span></td>`+
        `<td class="mono">${r.held_on} / ${r.tight_on}</td>`+
        `<td><button class="prv" onclick="prove(this,'${r.statement}',${r.mathlib_ready?1:0})">Prove</button><div class="presult"></div></td></tr>`;
   }
   $('#conj').innerHTML=h+'</table>';
+  const used=new Set(); c.forEach(r=>r.statement.split(' <= ').forEach(x=>used.add(x)));
+  $('#symkey').innerHTML=[...used].sort().map(n=>
+    `<span class="lg">${kx(symTex(n))}<span style="color:var(--muted)">= ${n.replace(/_/g,' ')}</span></span>`).join('');
   const p=(await jget('/api/problems')).problems;
+  const MATH={goldbach:'\\forall\\,n>2\\ \\text{even},\\ \\exists\\,p,q\\ \\text{prime}:\\ n=p+q',
+    twin_primes:'\\forall\\,N,\\ \\exists\\,p>N:\\ p\\ \\text{and}\\ p+2\\ \\text{prime}',
+    collatz:'\\forall\\,n>0,\\ \\exists\\,k:\\ C^{k}(n)=1\\quad(C:\\text{ }n\\mapsto n/2\\text{ or }3n+1)',
+    riemann:'\\zeta(s)=0,\\ 0<\\Re(s)<1\\ \\Rightarrow\\ \\Re(s)=\\tfrac12'};
   $('#probs').innerHTML=p.map(x=>{
     const fin=x.finite_checkable;
     return `<div class="prob"><h3>${x.name}</h3>`+
+      (MATH[x.key]?`<div class="mathline">${kx(MATH[x.key],true)}</div>`:'')+
       `<div class="can">✓ MatyOS can: ${x.matyos_can.join(', ')}.</div>`+
       `<div class="cant">✗ Cannot: ${x.matyos_cannot}.</div>`+
       (fin?`<div class="row" style="margin-top:10px"><input type="number" id="n_${x.key}" value="1000" min="4" style="max-width:130px">`+
