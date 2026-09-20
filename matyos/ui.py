@@ -232,6 +232,19 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .lstep{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-right:4px}
  .labform select{font:600 13.5px var(--sans);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;min-width:190px;cursor:pointer}
  .labform .le{font-family:var(--mono);font-size:16px;color:var(--muted)}
+ .stepper{display:flex;align-items:center;margin:18px 0 4px}
+ .stp{display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.35;transition:opacity .35s}
+ .stp .dot{width:36px;height:36px;border-radius:50%;border:2px solid #0a0a0a;background:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;transition:background .3s,color .3s,box-shadow .3s}
+ .stp .lb{font-size:11.5px;font-weight:600}
+ .stp.active,.stp.done,.stp.refuted{opacity:1}
+ .stp.active .dot{background:#0a0a0a;color:#fff;animation:pulse 1.1s infinite}
+ .stp.done .dot{background:#0a0a0a;color:#fff}
+ .stp.refuted .dot{background:#fff;border-style:dashed;color:#0a0a0a}
+ .conn{flex:1;height:2px;background:#e4e4e4;margin:0 6px;position:relative;top:-9px;overflow:hidden;min-width:20px}
+ .conn::after{content:"";position:absolute;inset:0;background:#0a0a0a;transform:scaleX(0);transform-origin:left;transition:transform .45s ease}
+ .conn.fill::after{transform:scaleX(1)}
+ @keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(10,10,10,.12)}50%{box-shadow:0 0 0 10px rgba(10,10,10,.02)}}
+ @media (prefers-reduced-motion:reduce){.stp.active .dot{animation:none}.conn::after{transition:none}}
  .labstage{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;background:#fbfcff}
  .labstage .k{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
  .labstage .big{font-size:15px;margin-top:2px}
@@ -323,6 +336,13 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
          <span class="lstep">1 · Pose</span>
          <select id="labA"></select><span class="le">≤</span><select id="labB"></select>
          <button class="go" id="labRun" onclick="labRun()">Run experiment</button>
+       </div>
+       <div class="stepper" id="stepper" hidden>
+         <div class="stp" data-s="pose"><div class="dot">1</div><div class="lb">Pose</div></div><div class="conn"></div>
+         <div class="stp" data-s="state"><div class="dot">2</div><div class="lb">State</div></div><div class="conn"></div>
+         <div class="stp" data-s="probe"><div class="dot">3</div><div class="lb">Probe</div></div><div class="conn"></div>
+         <div class="stp" data-s="certify"><div class="dot">4</div><div class="lb">Certify</div></div><div class="conn"></div>
+         <div class="stp" data-s="theory"><div class="dot">5</div><div class="lb">Theory</div></div>
        </div>
        <div id="labState"></div>
      </div>
@@ -492,34 +512,59 @@ async function labInit(){
   $('#labA').innerHTML=opts; $('#labB').innerHTML=opts;
   $('#labA').value='radius'; $('#labB').value='diameter';
 }
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const _s=(s,c)=>{const el=document.querySelector('.stp[data-s="'+s+'"]');if(!el)return;el.classList.remove('active','done','refuted');if(c)el.classList.add(c);};
+const _conn=i=>{const c=$$('.conn')[i];if(c)c.classList.add('fill');};
 async function labRun(){
   const a=$('#labA').value,b=$('#labB').value;
   if(a===b){$('#labState').innerHTML='<div class="labstage">Pick two different quantities.</div>';return;}
   const btn=$('#labRun');btn.disabled=true;
-  $('#labState').innerHTML='<div class="labstage"><span class="spin"></span> Probing on hundreds of graphs…</div>';
-  let r; try{r=await jpost('/api/lab',{a,b});}catch(e){$('#labState').innerHTML='<div class="labstage">error: '+e+'</div>';btn.disabled=false;return;}
-  btn.disabled=false;
-  if(r.error){$('#labState').innerHTML='<div class="labstage">'+r.error+'</div>';return;}
+  $('#stepper').hidden=false;
+  $$('.stp').forEach(s=>s.classList.remove('active','done','refuted'));
+  $$('.conn').forEach(c=>c.classList.remove('fill'));
+  $('#labState').innerHTML='<div class="labstage" id="ls"></div>';const ls=$('#ls');
+  // 1 · Pose (the two invariants you picked)
+  _s('pose','active'); await wait(360); _s('pose','done'); _conn(0);
+  // 2 · State — the formal claim
+  _s('state','active'); await wait(260);
+  ls.innerHTML='<div class="k">2 · State</div><div class="big">'+ruleTex(a+' <= '+b)+'</div>';
+  await wait(520); _s('state','done'); _conn(1);
+  // 3 · Probe — stress-test on the graph battery (real call)
+  _s('probe','active');
+  ls.innerHTML+='<div class="labrow" id="pr"><span class="k">3 · Probe</span>&nbsp;<span class="spin"></span> stress-testing on the graph battery…</div>';
+  let r; try{r=await jpost('/api/lab',{a,b});}catch(e){$('#pr').innerHTML='error: '+e;btn.disabled=false;return;}
+  if(r.error){$('#pr').innerHTML=r.error;btn.disabled=false;$('#stepper').hidden=true;return;}
   const id='ex'+(LAB.length);
-  const probe=r.holds
-    ? `held on all ${r.tested} graphs (tight on ${r.tight}) &nbsp;<span class="badge ${r.novelty}">${r.novelty}</span>`
-    : `<span class="bad">refuted</span> — counterexample <b>${r.witness.graph}</b>: ${r.a}=${r.witness.a} &gt; ${r.b}=${r.witness.b}`;
-  const certify=(r.holds&&r.mathlib_ready)
-    ? `<button class="prv" id="cert_${id}" onclick="labCertify('${id}','${r.statement}')">Certify with Lean</button><span class="presult" id="cr_${id}"></span>`
-    : (r.holds?`<span style="color:var(--muted)">not expressible in mathlib yet — stays <b>${r.novelty}</b></span>`:'');
-  $('#labState').innerHTML=
-    `<div class="labstage"><div class="k">2 · State</div><div class="big">${ruleTex(r.statement)}</div>`+
-    `<div class="labrow"><span class="k">3 · Probe</span>&nbsp; ${probe}</div>`+
-    (certify?`<div class="labrow"><span class="k">4 · Certify</span>&nbsp; ${certify}</div>`:'')+`</div>`;
+  if(r.holds){
+    _s('probe','done'); _conn(2);
+    $('#pr').innerHTML='<span class="k">3 · Probe</span>&nbsp; held on all '+r.tested+' graphs (tight on '+r.tight+') <span class="badge '+r.novelty+'">'+r.novelty+'</span>';
+    await wait(340);
+    // 4 · Certify — with Lean, when mathlib can express it
+    _s('certify','active');
+    if(r.mathlib_ready){
+      ls.innerHTML+='<div class="labrow"><span class="k">4 · Certify</span>&nbsp;<button class="prv" id="cert_'+id+'" onclick="labCertify(\''+id+'\',\''+r.statement+'\')">Certify with Lean</button><span class="presult" id="cr_'+id+'"></span></div>';
+    }else{
+      _s('certify','done');
+      ls.innerHTML+='<div class="labrow"><span class="k">4 · Certify</span>&nbsp;<span style="color:var(--muted)">not expressible in mathlib yet — stays <b>'+r.novelty+'</b></span></div>';
+    }
+  }else{
+    _s('probe','refuted');
+    $('#pr').innerHTML='<span class="k">3 · Probe</span>&nbsp;<span class="bad">refuted</span> — counterexample <b>'+r.witness.graph+'</b>: '+r.a+'='+r.witness.a+' &gt; '+r.b+'='+r.witness.b;
+    await wait(300); _s('pose','refuted');    // the loop sends it back to be refined
+    ls.innerHTML+='<div class="labrow" style="color:var(--muted)">↩ refuted — the loop returns to <b>Pose</b>: refine the hypothesis.</div>';
+  }
   LAB.unshift({id,statement:r.statement,holds:r.holds,novelty:r.novelty,tested:r.tested,witness:r.witness,mathlib_ready:r.mathlib_ready,proof:null});
-  renderBook();
+  renderBook(); btn.disabled=false;
 }
 async function labCertify(id,stmt){
   const out=$('#cr_'+id),btn=$('#cert_'+id);btn.disabled=true;
+  _s('certify','active');
   out.innerHTML='<span class="spin"></span> proving with Lean… (up to ~2 min)';
   const r=await jpost('/api/prove',{statement:stmt});
-  if(r.status==='proved'){out.innerHTML='<span class="ok">✓ proved'+(r.lemma?(' via '+r.lemma):(' by '+r.tactic))+'</span>';}
-  else if(r.status==='open'){out.innerHTML='<span>— open (needs a human proof)</span>';}
+  if(r.status==='proved'){
+    out.innerHTML='<span class="ok">✓ proved'+(r.lemma?(' via '+r.lemma):(' by '+r.tactic))+'</span>';
+    _s('certify','done'); _conn(3); _s('theory','done'); _conn(4);   // joins the theory
+  }else if(r.status==='open'){out.innerHTML='<span>— open (needs a human proof)</span>';_s('certify','done');}
   else{out.innerHTML='<span>'+(r.note||r.status)+'</span>';}
   const e=LAB.find(x=>x.id===id); if(e){e.proof=(r.status==='proved')?('proved'+(r.lemma?(' · '+r.lemma):'')):r.status;} renderBook();
 }
