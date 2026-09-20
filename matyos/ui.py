@@ -64,12 +64,12 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
- :root{--bg:#f5f7fb;--surface:#fff;--ink:#0e1526;--muted:#64708a;--line:#e7eaf1;
-  --brand:#4f46e5;--brand-d:#4338ca;--brand-soft:#eef2ff;--sidebar:#0d1424;--sidebar-2:#111a2e;
-  --known:#12805c;--known-bg:#e6f6ef;--derived:#2563eb;--derived-bg:#e9f1fe;
-  --candidate:#e0620d;--candidate-bg:#fdefe4;--ok:#12805c;--bad:#dc2626;
+ :root{--bg:#fafafa;--surface:#fff;--ink:#0a0a0a;--muted:#6a6a6a;--line:#e4e4e4;
+  --brand:#0a0a0a;--brand-d:#000;--brand-soft:#f0f0f0;--sidebar:#0a0a0a;--sidebar-2:#161616;
+  --known:#333;--known-bg:#f0f0f0;--derived:#555;--derived-bg:#f7f7f7;
+  --candidate:#0a0a0a;--candidate-bg:#e6e6e6;--ok:#0a0a0a;--bad:#0a0a0a;
   --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--sans:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;
-  --sh:0 1px 2px rgba(14,21,38,.04),0 6px 22px rgba(14,21,38,.07)}
+  --sh:0 1px 2px rgba(0,0,0,.04),0 6px 22px rgba(0,0,0,.06)}
  *{box-sizing:border-box}html,body{margin:0}
  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
  code,.mono{font-family:var(--mono)}
@@ -86,7 +86,7 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .side nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
    font:600 13.5px var(--sans);color:#aeb9d1;background:none;border:0;border-radius:9px;padding:10px 11px;cursor:pointer}
  .side nav button:hover{background:rgba(255,255,255,.06);color:#fff}
- .side nav button.on{background:var(--brand);color:#fff}
+ .side nav button.on{background:#fff;color:#0a0a0a}
  .side nav button .i{width:18px;text-align:center;opacity:.9}
  .side-foot{margin-top:auto;padding:12px 8px 4px;font-size:12px;color:#8896b3;border-top:1px solid rgba(255,255,255,.08)}
  .side-foot a{color:#c3ccdd;text-decoration:none}.side-foot a:hover{color:#fff}
@@ -97,24 +97,25 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
    border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:14px 30px}
  .topbar h2{font-size:16px;margin:0;font-weight:700}
  .pill{font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--brand-soft);color:var(--brand-d)}
- .pill.honest{background:var(--candidate-bg);color:var(--candidate);margin-left:auto}
+ .pill.honest{background:#0a0a0a;color:#fff;margin-left:auto}
  .views{padding:26px 30px 60px;max-width:1080px}
  .view{display:none}.view.on{display:block;animation:f .25s ease}
  @keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
  @media(prefers-reduced-motion){.view.on{animation:none}}
  /* hero */
  .hero{display:grid;grid-template-columns:1.25fr .75fr;gap:28px;align-items:center;
-   background:linear-gradient(135deg,#111a2e,#1f2b4d);color:#eaeefb;border-radius:20px;padding:38px 36px;box-shadow:var(--sh)}
- .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:#8fa0d8}
+   background:#0a0a0a;color:#fff;border-radius:20px;padding:38px 36px;box-shadow:var(--sh)}
+ .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.16em;color:#9a9a9a}
  .hero h1{font-size:38px;line-height:1.08;margin:10px 0 12px;font-weight:800;letter-spacing:-.02em;color:#fff;text-wrap:balance}
- .hero p{color:#c3cbe6;font-size:14.5px;max-width:52ch;margin:0 0 20px}
+ .hero p{color:#c7c7c7;font-size:14.5px;max-width:52ch;margin:0 0 20px}
  .cta{display:flex;gap:10px;flex-wrap:wrap}
  .go{font:600 14px var(--sans);background:var(--brand);color:#fff;border:0;border-radius:10px;padding:11px 20px;cursor:pointer;text-decoration:none;display:inline-block}
- .go:hover{background:#5b52ff}.go.ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18)}
- .go.sm{padding:6px 12px;font-size:12.5px}
+ .go:hover{background:#2a2a2a}.go.sm{padding:6px 12px;font-size:12.5px}
+ .hero .go{background:#fff;color:#0a0a0a}.hero .go:hover{background:#e6e6e6}
+ .hero .go.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
  .hero-art{display:grid;place-items:center}
- .orb{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#3a4a86,#0d1424 72%);
-   display:grid;place-items:center;box-shadow:inset 0 0 40px rgba(120,140,220,.35),0 12px 40px rgba(0,0,0,.35)}
+ .orb{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#3a3a3a,#0a0a0a 72%);
+   display:grid;place-items:center;box-shadow:inset 0 0 40px rgba(255,255,255,.12),0 12px 40px rgba(0,0,0,.4);border:1px solid #262626}
  .orb img{width:104px;height:104px;filter:invert(1)}
  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}
  .stat{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px 18px;box-shadow:var(--sh)}
@@ -144,8 +145,9 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  th{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
  td.ineq .katex{font-size:1.06em}
  .badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
- .badge.known{color:var(--known);background:var(--known-bg)}.badge.derived{color:var(--derived);background:var(--derived-bg)}
- .badge.candidate{color:var(--candidate);background:var(--candidate-bg)}
+ .badge.known{color:#555;background:#efefef}
+ .badge.derived{color:#555;background:#fff;border:1px solid #cfcfcf}
+ .badge.candidate{color:#fff;background:#0a0a0a}
  .prv{font:600 12px var(--sans);padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--brand-d);cursor:pointer}
  .prv:hover{background:var(--brand-soft)}.prv:disabled{opacity:.5}
  .presult{font-size:12px;margin-top:4px;font-family:var(--mono)}.ok{color:var(--ok)}.bad{color:var(--bad)}
@@ -156,11 +158,19 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  pre{background:#0d1424;color:#e2e8f0;padding:13px 15px;border-radius:10px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.5}
  .real{display:flex;gap:10px;flex-wrap:wrap}.rl{flex:1;min-width:150px;border-radius:11px;padding:13px 15px;border:1px solid var(--line)}
  .rl b{font-size:13.5px}.rl span{font-size:12.5px;color:var(--muted);display:block;margin-top:3px}
- .rl.t{background:var(--known-bg)}.rl.r{background:var(--candidate-bg)}.rl.f{background:#fdeaea}
+ .rl.t{background:#0a0a0a;color:#fff}.rl.t span{color:#b8b8b8}
+ .rl.r{background:#ececec}.rl.f{background:#fff;border:1px dashed #9a9a9a}
  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
  .step{display:flex;flex-direction:column;align-items:center;gap:7px;border:1px solid var(--line);border-radius:12px;padding:14px 12px;background:#fff;flex:1;min-width:100px}
  .step img{width:40px;height:40px}.step b{font-size:13px}.step span{font-size:11.5px;color:var(--muted);text-align:center}
  .arrow{color:var(--muted);font-size:20px}
+ .wf{margin-top:6px}
+ .wfrow{display:flex;gap:16px;align-items:flex-start;padding:16px 2px;border-top:1px solid var(--line)}
+ .wfrow:first-child{border-top:0}
+ .wfnum{flex:none;width:26px;height:26px;border-radius:50%;background:#0a0a0a;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;margin-top:2px}
+ .wfrow>img{width:34px;height:34px;flex:none;margin-top:1px}
+ .wfrow b{font-size:14.5px}.wfrow .ext{margin-left:8px;background:#f0f0f0;padding:1px 7px;border-radius:5px;font-size:12px;font-family:var(--mono)}
+ .wfrow p{margin:3px 0 0;color:var(--muted);font-size:13px;max-width:70ch}
  .spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
  @keyframes sp{to{transform:rotate(360deg)}}
  .help dt{font-weight:600;margin-top:12px}.help dd{margin:2px 0 0;color:var(--muted)}
@@ -255,13 +265,20 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
        <div class="real"><div class="rl t"><b>TRUE</b><span>proven — the kernel checked a term</span></div>
          <div class="rl r"><b>REALISTIC</b><span>found and stable, but unproven — a conjecture</span></div>
          <div class="rl f"><b>FALSE</b><span>refuted by a counterexample</span></div></div></div>
-     <div class="card"><h2>The scientific-method workflow</h2>
-       <p class="lead">A MatyOS project moves a claim from a guess to a checked result — each stage its own file type.</p>
-       <div class="flow">
-         <div class="step"><img src="/assets/icons/hyp.svg" alt=""><b>.hyp</b><span>hypothesis</span></div><span class="arrow">→</span>
-         <div class="step"><img src="/assets/icons/thm.svg" alt=""><b>.thm</b><span>theorem stated</span></div><span class="arrow">→</span>
-         <div class="step"><img src="/assets/icons/test.svg" alt=""><b>.test</b><span>tested / refuted</span></div><span class="arrow">→</span>
-         <div class="step"><img src="/assets/icons/prf.svg" alt=""><b>.prf</b><span>proof, kernel-checked</span></div></div></div>
+     <div class="card"><h2>The scientific method, as files</h2>
+       <p class="lead">MatyOS mirrors real science as a folder of files. <code>matyos check</code> runs them in this order through one trusted kernel and reports how sure each claim is — certain, or merely likely.</p>
+       <div class="wf">
+         <div class="wfrow"><div class="wfnum">1</div><img src="/assets/icons/hyp.svg" alt="">
+           <div><b>Assume</b><span class="ext">.hyp</span><p>Write down what you take as true but haven’t proved. Flagged <b>realistic</b>, so nothing built on it is ever mistaken for certainty.</p></div></div>
+         <div class="wfrow"><div class="wfnum">2</div><img src="/assets/icons/thm.svg" alt="">
+           <div><b>State</b><span class="ext">.thm</span><p>Write the claim you intend to establish. On its own it is just an open goal — it carries no proof yet.</p></div></div>
+         <div class="wfrow"><div class="wfnum">3</div><img src="/assets/icons/test.svg" alt="">
+           <div><b>Probe</b><span class="ext">.test</span><p>Run computational experiments. The kernel checks the claim on real inputs — the way a scientist tests before committing to a proof.</p></div></div>
+         <div class="wfrow"><div class="wfnum">4</div><img src="/assets/icons/prf.svg" alt="">
+           <div><b>Certify</b><span class="ext">.prf</span><p>Supply a proof term; the <b>trusted kernel</b> checks it against the stated theorem. If it passes, the claim is proven — <b>TRUE</b>, not just realistic.</p></div></div>
+         <div class="wfrow"><div class="wfnum">5</div><img src="/assets/icons/matyos.svg" alt="">
+           <div><b>Theory</b><span class="ext">folder</span><p>The verified body — definitions, theorems and proofs grouped together, every claim labelled certain or conjectural. Packs into one <code>.matyos</code> archive.</p></div></div>
+       </div></div>
    </section>
 
    <section class="view" id="help">
