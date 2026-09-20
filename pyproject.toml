@@ -65,6 +65,7 @@ mcp = [
 [project.scripts]
 matyos = "matyos.cli:main"
 matyos-mcp = "matyos.mcp_server:run"
+matyos-ui = "matyos.ui:main"
 
 [project.urls]
 Homepage = "https://github.com/MatyOS-Project/MatyOS"
