@@ -22,19 +22,27 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # ---- cached, deterministic data ------------------------------------------------
 
 _CONJ_CACHE: list | None = None
-_LOGO_CACHE: bytes | None = None
+_ASSET_CACHE: dict = {}
+
+
+def _asset(rel: str) -> bytes | None:
+    """Read a packaged asset under matyos/assets/ (e.g. 'logo.png', 'icons/hyp.svg')."""
+    if rel not in _ASSET_CACHE:
+        try:
+            from importlib.resources import files
+            base = files("matyos") / "assets"
+            target = base
+            for part in rel.split("/"):
+                target = target / part
+            _ASSET_CACHE[rel] = target.read_bytes()
+        except Exception:
+            _ASSET_CACHE[rel] = b""
+    return _ASSET_CACHE[rel] or None
 
 
 def _logo_bytes() -> bytes | None:
-    """The MatyOS mark, from the packaged asset (matyos/assets/logo.png)."""
-    global _LOGO_CACHE
-    if _LOGO_CACHE is None:
-        try:
-            from importlib.resources import files
-            _LOGO_CACHE = (files("matyos") / "assets" / "logo.png").read_bytes()
-        except Exception:
-            _LOGO_CACHE = b""
-    return _LOGO_CACHE or None
+    """The MatyOS mark (kept for backward compatibility)."""
+    return _asset("logo.png")
 
 
 def _conjectures() -> list:
@@ -147,15 +155,50 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
    border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
  @keyframes sp{to{transform:rotate(360deg)}}
  .help dt{font-weight:600;margin-top:12px}.help dd{margin:2px 0 0;color:var(--muted)}
- @media(max-width:600px){.top{flex-wrap:wrap}}
+ .hero{padding:26px 0 6px}
+ .htag{font-size:16px;color:var(--ink);max-width:60ch;margin:10px 0 2px;font-weight:500;line-height:1.5}
+ .badges{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 4px;align-items:center}
+ .bdg{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:#fff}
+ .bdg.v{color:var(--brand-d);background:var(--brand-soft);border-color:transparent}
+ .bdg.warn{color:var(--candidate);background:var(--candidate-bg);border-color:transparent}
+ .links{display:flex;gap:14px;font-size:13px;font-weight:600}
+ .links a{color:var(--brand-d);text-decoration:none}.links a:hover{text-decoration:underline}
+ .parts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:4px 0 18px}
+ .part{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fbfcfe}
+ .part h3{margin:0 0 4px;font-size:14.5px}.part p{margin:0;font-size:13px;color:var(--muted)}
+ .real{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+ .rl{flex:1;min-width:150px;border-radius:10px;padding:12px 14px;border:1px solid var(--line)}
+ .rl b{font-size:13.5px}.rl span{font-size:12.5px;color:var(--muted);display:block;margin-top:2px}
+ .rl.t{background:var(--known-bg)}.rl.r{background:var(--candidate-bg)}.rl.f{background:#fdeaea}
+ .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+ .step{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:96px;
+   border:1px solid var(--line);border-radius:11px;padding:12px 10px;background:#fff;flex:1}
+ .step img{width:38px;height:38px}.step b{font-size:13px}.step span{font-size:11.5px;color:var(--muted);text-align:center}
+ .arrow{color:var(--muted);font-size:20px}
+ footer{border-top:1px solid var(--line);margin-top:10px;background:#fff}
+ footer .wrap{padding:18px 24px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+   color:var(--muted);font-size:12.5px}
+ footer a{color:var(--brand-d);text-decoration:none}
+ @media(max-width:640px){.top{flex-wrap:wrap}.parts{grid-template-columns:1fr}.flow{flex-direction:column}.arrow{transform:rotate(90deg)}}
 </style></head><body>
 <header><div class="wrap">
-  <div class="top"><img class="logo" src="/logo.png" alt="MatyOS" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo lfallback',textContent:'M'}))"><h1>MatyOS</h1><span class="pill">research console</span></div>
-  <p class="tag">A workbench that finds small true patterns, checks them honestly, and proves the easy ones with a real theorem-checker. It <b>does not</b> solve famous open problems — and it says so.</p>
+  <div class="top hero"><img class="logo" src="/logo.png" alt="MatyOS" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'logo lfallback',textContent:'M'}))"><h1>MatyOS</h1><span class="pill">research console</span></div>
+  <p class="htag">The scientific method as software — a trusted substrate any AI model plugs into to do science honestly. It finds small true patterns, checks them, and proves the easy ones; it <b>does not</b> solve famous open problems, and it says so.</p>
+  <div class="badges">
+    <span class="bdg v">v{{VERSION}}</span>
+    <span class="bdg">sound kernel</span>
+    <span class="bdg warn">early · honest</span>
+    <span class="bdg">MIT</span>
+    <span class="links" style="margin-left:auto">
+      <a href="https://github.com/MatyOS-Project/MatyOS" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://pypi.org/project/matyos/" target="_blank" rel="noopener">PyPI</a>
+    </span>
+  </div>
   <nav>
     <button class="on" data-tab="explore">Explore a sequence</button>
     <button data-tab="graph">Graph patterns</button>
     <button data-tab="problems">Hard problems</button>
+    <button data-tab="how">How it works</button>
     <button data-tab="help">What is this?</button>
   </nav>
 </div></header>
@@ -203,6 +246,40 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
   </div>
 </section>
 
+<section class="panel" id="how">
+  <div class="card">
+    <h2>Three parts</h2>
+    <p class="lead">MatyOS lends any model the discipline of the scientific method: the model brings the ideas, MatyOS brings the rigour.</p>
+    <div class="parts">
+      <div class="part"><h3>Discovery engine</h3><p>Hunts for new patterns — cross-domain transfer, PSLQ closed-form detection with a significance gate, live OEIS prior-art checks — keeping only the surprising and not-already-known.</p></div>
+      <div class="part"><h3>Trusted verifier</h3><p>A small dependently-typed kernel in the tradition of Lean, Coq and Agda. Every proof, however produced, reduces to a term the tiny trusted kernel checks. Nothing is “assumed proven”.</p></div>
+      <div class="part"><h3>MCP substrate</h3><p><code>pip install "matyos[mcp]"</code> and any model can call MatyOS to verify closed forms, check OEIS, check proofs, and run the discovery loop.</p></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>The <code>realistic</code> idea — uncertainty is first-class</h2>
+    <p class="lead">Real work (especially an LLM’s) is full of plausible-but-unproven steps. MatyOS uses a three-valued logic so conjecture and certainty never get confused.</p>
+    <div class="real">
+      <div class="rl t"><b>TRUE</b><span>proven — the kernel checked a term</span></div>
+      <div class="rl r"><b>REALISTIC</b><span>found and stable, but unproven — a conjecture</span></div>
+      <div class="rl f"><b>FALSE</b><span>refuted by a counterexample</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>The scientific-method workflow</h2>
+    <p class="lead">A MatyOS project moves a claim from a guess to a checked result — each stage its own file type.</p>
+    <div class="flow">
+      <div class="step"><img src="/assets/icons/hyp.svg" alt=""><b>.hyp</b><span>hypothesis</span></div>
+      <span class="arrow">→</span>
+      <div class="step"><img src="/assets/icons/thm.svg" alt=""><b>.thm</b><span>theorem stated</span></div>
+      <span class="arrow">→</span>
+      <div class="step"><img src="/assets/icons/test.svg" alt=""><b>.test</b><span>tested / tried to refute</span></div>
+      <span class="arrow">→</span>
+      <div class="step"><img src="/assets/icons/prf.svg" alt=""><b>.prf</b><span>proof, kernel-checked</span></div>
+    </div>
+  </div>
+</section>
+
 <section class="panel" id="help">
   <div class="card">
     <h2>What is MatyOS, in plain words?</h2>
@@ -217,6 +294,10 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 </section>
 
 </main>
+<footer><div class="wrap">
+  <span>MatyOS v{{VERSION}} · the scientific method as software · sound kernel, honest labels</span>
+  <span><a href="https://github.com/MatyOS-Project/MatyOS" target="_blank" rel="noopener">GitHub</a> · <a href="https://pypi.org/project/matyos/" target="_blank" rel="noopener">PyPI</a> · <code>pip install "matyos[mcp]"</code></span>
+</div></footer>
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 async function jget(u){return (await fetch(u)).json()}
@@ -343,12 +424,19 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/" or self.path.startswith("/index"):
-            return self._send(200, _PAGE, "text/html; charset=utf-8")
+            import matyos
+            page = _PAGE.replace("{{VERSION}}", matyos.__version__)
+            return self._send(200, page, "text/html; charset=utf-8")
         if self.path == "/logo.png":
-            png = _logo_bytes()
-            if png is None:
-                return self._send(404, b"", "image/png")
-            return self._send(200, png, "image/png")
+            png = _asset("logo.png")
+            return self._send(200 if png else 404, png or b"", "image/png")
+        if self.path.startswith("/assets/"):
+            rel = self.path[len("/assets/"):].split("?")[0]
+            if ".." in rel or rel.startswith("/"):
+                return self._send(404, json.dumps({"error": "bad path"}))
+            data = _asset(rel)
+            ct = "image/svg+xml" if rel.endswith(".svg") else "image/png"
+            return self._send(200 if data else 404, data or b"", ct)
         if self.path == "/api/conjectures":
             return self._send(200, json.dumps({"conjectures": _conjectures()}))
         if self.path == "/api/problems":
