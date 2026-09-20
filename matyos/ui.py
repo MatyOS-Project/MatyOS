@@ -60,7 +60,7 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MatyOS — research console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
@@ -69,7 +69,9 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
   --known:#333;--known-bg:#f0f0f0;--derived:#555;--derived-bg:#f7f7f7;
   --candidate:#0a0a0a;--candidate-bg:#e6e6e6;--ok:#0a0a0a;--bad:#0a0a0a;
   --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--sans:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;
+  --display:'Fredoka','Inter',-apple-system,sans-serif;
   --sh:0 1px 2px rgba(0,0,0,.04),0 6px 22px rgba(0,0,0,.06)}
+ .brand b,.hero h1,.card h2,.fcard h3,.topbar h2,.stat .n,.eyebrow{font-family:var(--display)}
  *{box-sizing:border-box}html,body{margin:0}
  body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
  code,.mono{font-family:var(--mono)}
@@ -114,9 +116,9 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .hero .go{background:#fff;color:#0a0a0a}.hero .go:hover{background:#e6e6e6}
  .hero .go.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
  .hero-art{display:grid;place-items:center}
- .orb{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#3a3a3a,#0a0a0a 72%);
-   display:grid;place-items:center;box-shadow:inset 0 0 40px rgba(255,255,255,.12),0 12px 40px rgba(0,0,0,.4);border:1px solid #262626}
- .orb img{width:104px;height:104px;filter:invert(1)}
+ .orb{width:196px;height:196px;border-radius:50%;background:#fff;
+   display:grid;place-items:center;box-shadow:0 14px 44px rgba(0,0,0,.45)}
+ .orb img{width:120px;height:120px;filter:none}
  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}
  .stat{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px 18px;box-shadow:var(--sh)}
  .stat .n{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
