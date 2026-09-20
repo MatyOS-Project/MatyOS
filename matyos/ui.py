@@ -106,9 +106,12 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  @media(prefers-reduced-motion){.view.on{animation:none}}
  /* hero */
  .hero{display:grid;grid-template-columns:1.25fr .75fr;gap:28px;align-items:center;
-   background:#0a0a0a;color:#fff;border-radius:20px;padding:38px 36px;box-shadow:var(--sh)}
+   background:#0a0a0a;color:#fff;border-radius:20px;padding:42px 40px;box-shadow:var(--sh);position:relative;overflow:hidden}
+ .hero::before{content:"";position:absolute;inset:0;opacity:.9;pointer-events:none;
+   background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px);background-size:22px 22px}
+ .hero>*{position:relative;z-index:1}
  .eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.16em;color:#9a9a9a}
- .hero h1{font-size:38px;line-height:1.08;margin:10px 0 12px;font-weight:800;letter-spacing:-.02em;color:#fff;text-wrap:balance}
+ .hero h1{font-size:42px;line-height:1.04;margin:12px 0 14px;font-weight:700;letter-spacing:-.015em;color:#fff;text-wrap:balance}
  .hero p{color:#c7c7c7;font-size:14.5px;max-width:52ch;margin:0 0 20px}
  .cta{display:flex;gap:10px;flex-wrap:wrap}
  .go{font:600 14px var(--sans);background:var(--brand);color:#fff;border:0;border-radius:10px;padding:11px 20px;cursor:pointer;text-decoration:none;display:inline-block}
@@ -121,7 +124,10 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .orb img{width:120px;height:120px;filter:none}
  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}
  .stat{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px 18px;box-shadow:var(--sh)}
- .stat .n{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+ .stat{transition:transform .18s ease,box-shadow .18s ease}
+ .stat:hover,.fcard:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.09)}
+ .fcard{transition:transform .18s ease,box-shadow .18s ease}
+ .stat .n{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
  .feat{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
  .fcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--sh)}
