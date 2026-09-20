@@ -184,6 +184,19 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
  @keyframes sp{to{transform:rotate(360deg)}}
  .help dt{font-weight:600;margin-top:12px}.help dd{margin:2px 0 0;color:var(--muted)}
+ @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+ @keyframes march{to{stroke-dashoffset:-20}}
+ @media (prefers-reduced-motion:no-preference){
+  .hero-txt>*{animation:rise .55s cubic-bezier(.2,.7,.2,1) both}
+  .hero-txt>*:nth-child(2){animation-delay:.06s}.hero-txt>*:nth-child(3){animation-delay:.12s}.hero-txt>*:nth-child(4){animation-delay:.18s}
+  .hero-art{animation:rise .6s .12s cubic-bezier(.2,.7,.2,1) both}
+  .stats .stat{animation:rise .5s both}
+  .stats .stat:nth-child(1){animation-delay:.05s}.stats .stat:nth-child(2){animation-delay:.11s}.stats .stat:nth-child(3){animation-delay:.17s}.stats .stat:nth-child(4){animation-delay:.23s}
+  .feat .fcard{animation:rise .5s both}
+  .feat .fcard:nth-child(1){animation-delay:.1s}.feat .fcard:nth-child(2){animation-delay:.17s}.feat .fcard:nth-child(3){animation-delay:.24s}
+  .flowsvg .fwd line{stroke-dasharray:6 7;animation:march 1s linear infinite}
+  .flowsvg .fb{animation:march 1.2s linear infinite}}
+ @media (prefers-reduced-motion:reduce){.flowsvg .fbdot{display:none}}
  @media(max-width:860px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center}
    .side nav{flex-direction:row;flex-wrap:wrap;margin:0}.side-foot{display:none}.brand{padding:6px}
    .hero{grid-template-columns:1fr}.hero-art{display:none}.stats,.feat{grid-template-columns:1fr 1fr}}
@@ -279,11 +292,12 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
        <p class="lead">MatyOS mirrors real science as a folder of files — and, like science, it’s a loop: a claim that fails a test goes back to be refined; one that passes gets proven and joins the theory. <code>matyos check</code> runs the files in this order through one trusted kernel.</p>
        <svg class="flowsvg" viewBox="0 0 980 188" role="img" aria-label="The scientific method as a loop">
         <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#0a0a0a"/></marker></defs>
-        <g stroke="#0a0a0a" stroke-width="2" marker-end="url(#ah)">
+        <g class="fwd" stroke="#0a0a0a" stroke-width="2" marker-end="url(#ah)">
           <line x1="158" y1="58" x2="190" y2="58"/><line x1="346" y1="58" x2="378" y2="58"/>
           <line x1="534" y1="58" x2="566" y2="58"/><line x1="722" y1="58" x2="756" y2="58"/></g>
         <text x="741" y="46" font-size="11" fill="#0a0a0a" text-anchor="middle" font-weight="600" font-family="Inter,sans-serif">proven</text>
-        <path d="M459,98 C459,168 83,168 83,98" stroke="#0a0a0a" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+        <path class="fb" d="M459,98 C459,168 83,168 83,98" stroke="#0a0a0a" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+        <circle class="fbdot" r="4.5" fill="#0a0a0a"><animateMotion dur="2.4s" repeatCount="indefinite" path="M459,98 C459,168 83,168 83,98"/></circle>
         <text x="271" y="160" font-size="12" fill="#555" text-anchor="middle" font-family="Inter,sans-serif">refuted &#8594; refine the hypothesis</text>
         <g font-family="Fredoka,Inter,sans-serif">
          <g transform="translate(8,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">1</text><image href="/assets/icons/hyp.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Assume</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.hyp</text></g>
