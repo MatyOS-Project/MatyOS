@@ -1,2 +1,2 @@
 """MatyOS — a dependently-typed proof assistant, built to be LLM-native."""
-__version__ = "0.35.0"
+__version__ = "0.36.0"
