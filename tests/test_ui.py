@@ -32,10 +32,10 @@ def _post(path, obj):
 
 
 def test_page_and_light_endpoints():
-    assert "researcher console" in ui._PAGE and "does not solve famous" in ui._PAGE
+    assert "research console" in ui._PAGE and "solve famous open problems" in ui._PAGE
     srv = _server()
     try:
-        assert b"researcher console" in _get("/")
+        assert b"research console" in _get("/")
         probs = json.loads(_get("/api/problems"))["problems"]
         assert {p["name"] for p in probs} >= {"Riemann Hypothesis", "Collatz (3n+1) conjecture"}
         assert all(p["provable_by_matyos"] is False for p in probs)   # honesty carried to the UI
