@@ -44,3 +44,17 @@ def test_page_and_light_endpoints():
         assert out["candidates"] == [] and "at least 4" in out["note"]
     finally:
         srv.shutdown()
+
+
+def test_lab_endpoints():
+    srv = _server()
+    try:
+        inv = json.loads(_get("/api/invariants"))["invariants"]
+        assert "radius" in inv and "diameter" in inv and "total_domination_number" in inv
+        # a probe that holds, with a novelty label
+        r = json.loads(_post("/api/lab", {"a": "radius", "b": "diameter"}))
+        assert r["holds"] is True and r["tested"] > 50 and r["novelty"] == "known"
+        # same invariant twice is rejected
+        assert "error" in json.loads(_post("/api/lab", {"a": "radius", "b": "radius"}))
+    finally:
+        srv.shutdown()

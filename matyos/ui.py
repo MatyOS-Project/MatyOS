@@ -54,6 +54,61 @@ def _conjectures() -> list:
     return _CONJ_CACHE
 
 
+_LAB_BATTERY = None
+
+
+def _lab_battery():
+    """A fixed, diverse battery of connected graphs the Lab probes a hypothesis on:
+    the canonical sample plus seeded random graphs. Deterministic → reproducible."""
+    global _LAB_BATTERY
+    if _LAB_BATTERY is None:
+        import random
+        from matyos.discovery import graph as g
+        random.seed(17)
+        bat = list(g.sample_graphs())
+
+        def rc(n):
+            v = list(range(n)); random.shuffle(v); e = set()
+            for i in range(1, n):
+                e.add((v[i], v[random.randrange(i)]))
+            for _ in range(random.randint(0, n)):
+                a, b = random.sample(range(n), 2); e.add((a, b))
+            return g.Graph.of(n, list(e), f"rand{n}")
+
+        for n in range(4, 11):
+            bat += [rc(n) for _ in range(14)]
+        _LAB_BATTERY = [x for x in bat if g.is_connected(x)]
+    return _LAB_BATTERY
+
+
+def _lab_probe(a: str, b: str) -> dict:
+    """Run the hypothesis  a(G) <= b(G)  over the battery: does it hold, is it tight,
+    a counterexample if not, and its novelty label. This is the Lab's 'Probe' stage."""
+    from matyos.discovery import graph as g, known, lean
+    inv = g.all_invariants()
+    if a not in inv or b not in inv or a == b:
+        return {"error": "pick two different invariants"}
+    fa, fb = inv[a], inv[b]
+    viol = 0; witness = None; tight = 0
+    for gr in _lab_battery():
+        va, vb = float(fa(gr)), float(fb(gr))
+        if va > vb + 1e-9:
+            viol += 1
+            if witness is None:
+                witness = {"graph": gr.name, "a": round(va, 3), "b": round(vb, 3)}
+        elif abs(va - vb) <= 1e-9:
+            tight += 1
+    holds = viol == 0
+    stmt = f"{a} <= {b}"
+    nov = known.classify(stmt) if holds else {"status": "refuted",
+                                              "reason": "a counterexample exists"}
+    ready = lean.graph_statement(stmt)["mathlib_ready"] if holds else False
+    return {"statement": stmt, "a": a, "b": b, "tested": len(_lab_battery()),
+            "holds": holds, "violations": viol, "witness": witness, "tight": tight,
+            "novelty": nov.get("status"), "reason": nov.get("reason"),
+            "mathlib_ready": ready}
+
+
 # ---- the page ------------------------------------------------------------------
 
 _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -156,6 +211,7 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .badge.known{color:#555;background:#efefef}
  .badge.derived{color:#555;background:#fff;border:1px solid #cfcfcf}
  .badge.candidate{color:#fff;background:#0a0a0a}
+ .badge.refuted{color:#0a0a0a;background:#fff;border:1px dashed #9a9a9a}
  .prv{font:600 12px var(--sans);padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--brand-d);cursor:pointer}
  .prv:hover{background:var(--brand-soft)}.prv:disabled{opacity:.5}
  .presult{font-size:12px;margin-top:4px;font-family:var(--mono)}.ok{color:var(--ok)}.bad{color:var(--bad)}
@@ -172,6 +228,19 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .step{display:flex;flex-direction:column;align-items:center;gap:7px;border:1px solid var(--line);border-radius:12px;padding:14px 12px;background:#fff;flex:1;min-width:100px}
  .step img{width:40px;height:40px}.step b{font-size:13px}.step span{font-size:11.5px;color:var(--muted);text-align:center}
  .arrow{color:var(--muted);font-size:20px}
+ .labform{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 2px}
+ .lstep{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+ .labform select{font:600 13.5px var(--sans);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;min-width:190px;cursor:pointer}
+ .labform .le{font-family:var(--mono);font-size:16px;color:var(--muted)}
+ .labstage{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;background:#fbfcff}
+ .labstage .k{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+ .labstage .big{font-size:15px;margin-top:2px}
+ .labrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+ .nb{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--sh)}
+ .nb .hyp{font-size:15px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+ .nb .stages{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+ .nb .st{font-size:11.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted)}
+ .nb .st b{color:var(--ink)}
  .flowsvg{width:100%;height:auto;max-width:960px;margin:14px 0 6px;display:block}
  @media(max-width:720px){.flowsvg{display:none}}
  .wf{margin-top:6px}
@@ -207,6 +276,7 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
      <div><b>MatyOS</b><small>research console</small></div></div>
    <nav>
      <button class="on" data-view="overview"><span class="i">◇</span> Overview</button>
+     <button data-view="lab"><span class="i">⚗</span> Lab</button>
      <button data-view="explore"><span class="i">∿</span> Explore a sequence</button>
      <button data-view="graph"><span class="i">▦</span> Graph patterns</button>
      <button data-view="problems"><span class="i">★</span> Hard problems</button>
@@ -243,6 +313,22 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
        <div class="fcard"><div class="ic">✓</div><h3>Trusted verifier</h3><p>A small dependently-typed kernel in the Lean/Coq/Agda tradition. Every proof reduces to a term the tiny trusted kernel checks. Nothing is “assumed proven”.</p></div>
        <div class="fcard"><div class="ic">⧉</div><h3>MCP substrate</h3><p><code>pip install "matyos[mcp]"</code> and any model can call MatyOS to verify closed forms, check OEIS, check proofs, and run the discovery loop.</p></div>
      </div>
+   </section>
+
+   <section class="view" id="lab">
+     <div class="card">
+       <h2>The Lab — run the scientific method on a claim</h2>
+       <p class="lead">Pose a hypothesis about two graph quantities (“A is never bigger than B”), <b>probe</b> it on hundreds of graphs, and — if it holds and mathlib can express it — <b>certify</b> it with Lean. Every run lands in your notebook below, labelled honestly.</p>
+       <div class="labform">
+         <span class="lstep">1 · Pose</span>
+         <select id="labA"></select><span class="le">≤</span><select id="labB"></select>
+         <button class="go" id="labRun" onclick="labRun()">Run experiment</button>
+       </div>
+       <div id="labState"></div>
+     </div>
+     <div class="card"><h2>Lab notebook</h2>
+       <p class="lead" id="labempty">No experiments yet — pose a hypothesis above and run it.</p>
+       <div id="labbook"></div></div>
    </section>
 
    <section class="view" id="explore">
@@ -338,7 +424,7 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 async function jget(u){return (await fetch(u)).json()}
 async function jpost(u,o){return (await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)})).json()}
-const CRUMB={overview:'Overview',explore:'Explore a sequence',graph:'Graph patterns',problems:'Hard problems',how:'How it works',help:'What is this?'};
+const CRUMB={overview:'Overview',lab:'Lab',explore:'Explore a sequence',graph:'Graph patterns',problems:'Hard problems',how:'How it works',help:'What is this?'};
 function showView(v){$$('.side nav button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   $$('.view').forEach(p=>p.classList.toggle('on',p.id===v));$('#crumb').textContent=CRUMB[v]||'';window.scrollTo(0,0);}
 $$('.side nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
@@ -399,6 +485,53 @@ async function discover(){
     `<details><summary>Formal Lean statement</summary><pre>${x.lean_statement.replace(/</g,'&lt;')}</pre></details></div>`).join('');
 })();
 
+const LAB=[];
+async function labInit(){
+  const inv=(await jget('/api/invariants')).invariants;
+  const opts=inv.map(n=>`<option value="${n}">${n.replace(/_/g,' ')}</option>`).join('');
+  $('#labA').innerHTML=opts; $('#labB').innerHTML=opts;
+  $('#labA').value='radius'; $('#labB').value='diameter';
+}
+async function labRun(){
+  const a=$('#labA').value,b=$('#labB').value;
+  if(a===b){$('#labState').innerHTML='<div class="labstage">Pick two different quantities.</div>';return;}
+  const btn=$('#labRun');btn.disabled=true;
+  $('#labState').innerHTML='<div class="labstage"><span class="spin"></span> Probing on hundreds of graphs…</div>';
+  let r; try{r=await jpost('/api/lab',{a,b});}catch(e){$('#labState').innerHTML='<div class="labstage">error: '+e+'</div>';btn.disabled=false;return;}
+  btn.disabled=false;
+  if(r.error){$('#labState').innerHTML='<div class="labstage">'+r.error+'</div>';return;}
+  const id='ex'+(LAB.length);
+  const probe=r.holds
+    ? `held on all ${r.tested} graphs (tight on ${r.tight}) &nbsp;<span class="badge ${r.novelty}">${r.novelty}</span>`
+    : `<span class="bad">refuted</span> — counterexample <b>${r.witness.graph}</b>: ${r.a}=${r.witness.a} &gt; ${r.b}=${r.witness.b}`;
+  const certify=(r.holds&&r.mathlib_ready)
+    ? `<button class="prv" id="cert_${id}" onclick="labCertify('${id}','${r.statement}')">Certify with Lean</button><span class="presult" id="cr_${id}"></span>`
+    : (r.holds?`<span style="color:var(--muted)">not expressible in mathlib yet — stays <b>${r.novelty}</b></span>`:'');
+  $('#labState').innerHTML=
+    `<div class="labstage"><div class="k">2 · State</div><div class="big">${ruleTex(r.statement)}</div>`+
+    `<div class="labrow"><span class="k">3 · Probe</span>&nbsp; ${probe}</div>`+
+    (certify?`<div class="labrow"><span class="k">4 · Certify</span>&nbsp; ${certify}</div>`:'')+`</div>`;
+  LAB.unshift({id,statement:r.statement,holds:r.holds,novelty:r.novelty,tested:r.tested,witness:r.witness,mathlib_ready:r.mathlib_ready,proof:null});
+  renderBook();
+}
+async function labCertify(id,stmt){
+  const out=$('#cr_'+id),btn=$('#cert_'+id);btn.disabled=true;
+  out.innerHTML='<span class="spin"></span> proving with Lean… (up to ~2 min)';
+  const r=await jpost('/api/prove',{statement:stmt});
+  if(r.status==='proved'){out.innerHTML='<span class="ok">✓ proved'+(r.lemma?(' via '+r.lemma):(' by '+r.tactic))+'</span>';}
+  else if(r.status==='open'){out.innerHTML='<span>— open (needs a human proof)</span>';}
+  else{out.innerHTML='<span>'+(r.note||r.status)+'</span>';}
+  const e=LAB.find(x=>x.id===id); if(e){e.proof=(r.status==='proved')?('proved'+(r.lemma?(' · '+r.lemma):'')):r.status;} renderBook();
+}
+function renderBook(){
+  $('#labempty').style.display=LAB.length?'none':'block';
+  $('#labbook').innerHTML=LAB.map(e=>
+    `<div class="nb"><div class="hyp">${ruleTex(e.statement)} <span class="badge ${e.holds?e.novelty:'refuted'}">${e.holds?e.novelty:'refuted'}</span></div>`+
+    `<div class="stages"><span class="st"><b>Probe:</b> ${e.holds?('held '+e.tested+' graphs'):('refuted @ '+e.witness.graph)}</span>`+
+    `<span class="st"><b>Certify:</b> ${e.proof?e.proof:(e.holds&&e.mathlib_ready?'available':'n/a')}</span></div></div>`).join('');
+}
+labInit();
+
 async function prove(btn,stmt,ready){
   const out=btn.nextElementSibling;
   if(!ready){out.innerHTML='<span style="color:var(--muted)">— can’t check yet: uses an invariant mathlib doesn’t define</span>';return;}
@@ -450,6 +583,9 @@ class _Handler(BaseHTTPRequestHandler):
             return self._send(200 if data else 404, data or b"", ct)
         if self.path == "/api/conjectures":
             return self._send(200, json.dumps({"conjectures": _conjectures()}))
+        if self.path == "/api/invariants":
+            from matyos.discovery import graph as g
+            return self._send(200, json.dumps({"invariants": sorted(g.all_invariants().keys())}))
         if self.path == "/api/problems":
             from matyos.problems import famous as F
             probs = []
@@ -475,6 +611,9 @@ class _Handler(BaseHTTPRequestHandler):
                 from matyos.discovery.engine import DiscoveryEngine
                 recs = DiscoveryEngine(min_score=0.0).records([Sequence.of(seq, name="ui")])
                 return self._send(200, json.dumps({"candidates": recs[:5]}))
+            if self.path == "/api/lab":
+                p = self._body()
+                return self._send(200, json.dumps(_lab_probe(p.get("a", ""), p.get("b", ""))))
             if self.path == "/api/prove":
                 from matyos.discovery import lean
                 gs = lean.graph_statement(self._body().get("statement", ""))
