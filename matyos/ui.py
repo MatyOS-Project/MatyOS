@@ -228,6 +228,11 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
  .step{display:flex;flex-direction:column;align-items:center;gap:7px;border:1px solid var(--line);border-radius:12px;padding:14px 12px;background:#fff;flex:1;min-width:100px}
  .step img{width:40px;height:40px}.step b{font-size:13px}.step span{font-size:11.5px;color:var(--muted);text-align:center}
  .arrow{color:var(--muted);font-size:20px}
+ .segwrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 12px}
+ .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+ .seg button{font:600 13px var(--sans);border:0;background:#fff;color:var(--muted);padding:9px 15px;cursor:pointer;border-right:1px solid var(--line)}
+ .seg button:last-child{border-right:0}
+ .seg button.on{background:#0a0a0a;color:#fff}
  .labform{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 2px}
  .lstep{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-right:4px}
  .labform select{font:600 13.5px var(--sans);padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;min-width:190px;cursor:pointer}
@@ -331,24 +336,25 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
    <section class="view" id="lab">
      <div class="card">
        <h2>The Lab — run the scientific method on a claim</h2>
-       <p class="lead">Pose a hypothesis about two graph quantities (“A is never bigger than B”), <b>probe</b> it on hundreds of graphs, and — if it holds and mathlib can express it — <b>certify</b> it with Lean. Every run lands in your notebook below, labelled honestly.</p>
+       <p class="lead">Form a <b>hypothesis</b> about two graph quantities (“A is never bigger than B”), <b>experiment</b> on hundreds of graphs, and — if it survives and mathlib can express it — <b>prove</b> it with Lean. Refuted? The method loops back to the hypothesis. Every run lands in your notebook below, labelled honestly.</p>
+       <div class="segwrap"><span class="lstep">Experiment type</span>
+         <span class="seg" id="labType">
+           <button class="on" data-t="graph" onclick="labType('graph')">Graph inequality</button>
+           <button data-t="sequence" onclick="labType('sequence')">Number sequence</button>
+           <button data-t="finite" onclick="labType('finite')">Hard problem</button>
+         </span></div>
        <div class="labform">
-         <span class="lstep">1 · Pose</span>
-         <select id="labType" onchange="labSwitch()">
-           <option value="graph">Graph inequality</option>
-           <option value="sequence">Number sequence</option>
-           <option value="finite">Finite conjecture</option>
-         </select>
+         <span class="lstep">1 · Hypothesis</span>
          <span class="posegrp" id="pose-graph"><select id="labA"></select><span class="le">≤</span><select id="labB"></select></span>
          <span class="posegrp" id="pose-sequence" hidden><input type="text" id="labSeq" value="0, 1, 1, 2, 3, 5, 8, 13, 21, 34" style="min-width:280px"></span>
-         <span class="posegrp" id="pose-finite" hidden><select id="labProb"></select> <span class="le" style="font-family:var(--sans)">up to</span> <input type="number" id="labN" value="1000" min="4" style="max-width:110px"></span>
+         <span class="posegrp" id="pose-finite" hidden><select id="labProb" onchange="labProbSwitch()"></select><span id="labNwrap"> <span class="le" style="font-family:var(--sans)">up to</span> <input type="number" id="labN" value="1000" min="4" style="max-width:110px"></span></span>
          <button class="go" id="labRun" onclick="labRun()">Run experiment</button>
        </div>
        <div class="stepper" id="stepper" hidden>
-         <div class="stp" data-s="pose"><div class="dot">1</div><div class="lb">Pose</div></div><div class="conn"></div>
-         <div class="stp" data-s="state"><div class="dot">2</div><div class="lb">State</div></div><div class="conn"></div>
-         <div class="stp" data-s="probe"><div class="dot">3</div><div class="lb">Probe</div></div><div class="conn"></div>
-         <div class="stp" data-s="certify"><div class="dot">4</div><div class="lb">Certify</div></div><div class="conn"></div>
+         <div class="stp" data-s="pose"><div class="dot">1</div><div class="lb">Hypothesis</div></div><div class="conn"></div>
+         <div class="stp" data-s="state"><div class="dot">2</div><div class="lb">Prediction</div></div><div class="conn"></div>
+         <div class="stp" data-s="probe"><div class="dot">3</div><div class="lb">Experiment</div></div><div class="conn"></div>
+         <div class="stp" data-s="certify"><div class="dot">4</div><div class="lb">Proof</div></div><div class="conn"></div>
          <div class="stp" data-s="theory"><div class="dot">5</div><div class="lb">Theory</div></div>
        </div>
        <div id="labState"></div>
@@ -370,6 +376,13 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
          <span class="chip" onclick="setSeq('2,3,5,7,11,13,17,19,23,29')">Primes</span>
          <span class="chip" onclick="setSeq('1,4,9,16,25,36,49')">Squares</span>
          <span class="chip" onclick="setSeq('1,3,4,7,11,18,29,47')">Lucas</span></div>
+       <div class="stepper" id="stepper-e" hidden>
+         <div class="stp" data-s="pose"><div class="dot">1</div><div class="lb">Hypothesis</div></div><div class="conn"></div>
+         <div class="stp" data-s="state"><div class="dot">2</div><div class="lb">Prediction</div></div><div class="conn"></div>
+         <div class="stp" data-s="probe"><div class="dot">3</div><div class="lb">Experiment</div></div><div class="conn"></div>
+         <div class="stp" data-s="certify"><div class="dot">4</div><div class="lb">Proof</div></div><div class="conn"></div>
+         <div class="stp" data-s="theory"><div class="dot">5</div><div class="lb">Theory</div></div>
+       </div>
        <div class="verdict" id="disc"></div>
      </div>
    </section>
@@ -414,22 +427,22 @@ _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
         <circle class="fbdot" r="4.5" fill="#0a0a0a"><animateMotion dur="2.4s" repeatCount="indefinite" path="M459,98 C459,168 83,168 83,98"/></circle>
         <text x="271" y="160" font-size="12" fill="#555" text-anchor="middle" font-family="Inter,sans-serif">refuted &#8594; refine the hypothesis</text>
         <g font-family="Fredoka,Inter,sans-serif">
-         <g transform="translate(8,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">1</text><image href="/assets/icons/hyp.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Assume</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.hyp</text></g>
-         <g transform="translate(196,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">2</text><image href="/assets/icons/thm.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">State</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.thm</text></g>
-         <g transform="translate(384,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">3</text><image href="/assets/icons/test.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Probe</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.test</text></g>
-         <g transform="translate(572,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">4</text><image href="/assets/icons/prf.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Certify</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.prf</text></g>
+         <g transform="translate(8,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">1</text><image href="/assets/icons/hyp.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Hypothesis</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.hyp</text></g>
+         <g transform="translate(196,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">2</text><image href="/assets/icons/thm.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Prediction</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.thm</text></g>
+         <g transform="translate(384,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">3</text><image href="/assets/icons/test.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Experiment</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.test</text></g>
+         <g transform="translate(572,20)"><rect width="150" height="78" rx="14" fill="#fff" stroke="#0a0a0a" stroke-width="2"/><circle cx="24" cy="21" r="11" fill="#0a0a0a"/><text x="24" y="25" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">4</text><image href="/assets/icons/prf.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#0a0a0a">Proof</text><text x="50" y="64" font-size="11" fill="#666" font-family="JetBrains Mono,monospace">.prf</text></g>
          <g transform="translate(760,20)"><rect width="212" height="78" rx="14" fill="#0a0a0a"/><circle cx="24" cy="21" r="11" fill="#fff"/><text x="24" y="25" font-size="12" fill="#0a0a0a" text-anchor="middle" font-weight="700">5</text><image href="/assets/icons/matyos.svg" x="12" y="40" width="28" height="28"/><text x="50" y="46" font-size="15" font-weight="700" fill="#fff">Theory</text><text x="50" y="64" font-size="11" fill="#bbb" font-family="JetBrains Mono,monospace">verified body</text></g>
         </g>
        </svg>
        <div class="wf">
          <div class="wfrow"><div class="wfnum">1</div><img src="/assets/icons/hyp.svg" alt="">
-           <div><b>Assume</b><span class="ext">.hyp</span><p>Write down what you take as true but haven’t proved. Flagged <b>realistic</b>, so nothing built on it is ever mistaken for certainty.</p></div></div>
+           <div><b>Hypothesis</b><span class="ext">.hyp</span><p>Form a testable claim — a guess you haven’t proved. Flagged <b>realistic</b>, so nothing built on it is ever mistaken for certainty.</p></div></div>
          <div class="wfrow"><div class="wfnum">2</div><img src="/assets/icons/thm.svg" alt="">
-           <div><b>State</b><span class="ext">.thm</span><p>Write the claim you intend to establish. On its own it is just an open goal — it carries no proof yet.</p></div></div>
+           <div><b>Prediction</b><span class="ext">.thm</span><p>Turn the hypothesis into a precise, checkable statement — what must hold if it is true. On its own it is an open goal, no proof yet.</p></div></div>
          <div class="wfrow"><div class="wfnum">3</div><img src="/assets/icons/test.svg" alt="">
-           <div><b>Probe</b><span class="ext">.test</span><p>Run computational experiments. The kernel checks the claim on real inputs — the way a scientist tests before committing to a proof.</p></div></div>
+           <div><b>Experiment</b><span class="ext">.test</span><p>Test the prediction on real inputs and hunt for a counterexample — the way a scientist tests before committing to a proof. Refuted → back to the hypothesis.</p></div></div>
          <div class="wfrow"><div class="wfnum">4</div><img src="/assets/icons/prf.svg" alt="">
-           <div><b>Certify</b><span class="ext">.prf</span><p>Supply a proof term; the <b>trusted kernel</b> checks it against the stated theorem. If it passes, the claim is proven — <b>TRUE</b>, not just realistic.</p></div></div>
+           <div><b>Proof</b><span class="ext">.prf</span><p>Only in mathematics can an experiment become certainty: supply a proof term and the <b>trusted kernel</b> checks it against the prediction. If it passes, the claim is <b>TRUE</b>, not just realistic.</p></div></div>
          <div class="wfrow"><div class="wfnum">5</div><img src="/assets/icons/matyos.svg" alt="">
            <div><b>Theory</b><span class="ext">folder</span><p>The verified body — definitions, theorems and proofs grouped together, every claim labelled certain or conjectural. Packs into one <code>.matyos</code> archive.</p></div></div>
        </div></div>
@@ -467,21 +480,35 @@ const SYM={order:'n',size:'m',max_degree:'\\Delta',min_degree:'\\delta',avg_degr
 function symTex(n){const s=SYM[n]||n.replace(/_/g,'\\_');return (n==='order'||n==='size')?s:s+'(G)';}
 function kx(t,d){try{return katex.renderToString(t,{throwOnError:false,displayMode:!!d});}catch(e){return t;}}
 function ruleTex(st){const p=st.split(' <= ');return kx(symTex(p[0])+' \\le '+symTex(p[1]));}
-function cfTex(cf){if(!cf)return '';let s=cf.replace(/sqrt(\d+)/g,'\\sqrt{$1}').replace(/\bpi\b/g,'\\pi')
+function cfTex(cf){if(!cf)return '';let s=cf.replace(/closed[ _]form[ _]found\s*\(PSLQ\):\s*/i,'')
+  .replace(/sqrt(\d+)/g,'\\sqrt{$1}').replace(/\bpi\b/g,'\\pi')
   .replace(/\^(\d+)/g,'^{$1}').replace(/\bln(\d+)/g,'\\ln $1').replace(/\bzeta(\d+)/g,'\\zeta($1)')
   .replace(/\bgamma\b/g,'\\gamma').replace(/\bcatalan\b/g,'\\mathrm{G}');return kx(s);}
 
 async function discover(){
   const btn=$('#discBtn');btn.disabled=true;
+  const R=$('#stepper-e');
   const seq=$('#seq').value.split(',').map(s=>parseInt(s.trim())).filter(x=>!isNaN(x));
-  $('#disc').innerHTML='<div class="lead"><span class="spin"></span> Searching…</div>';
+  R.hidden=false;
+  R.querySelectorAll('.stp').forEach(s=>s.classList.remove('active','done','refuted'));
+  R.querySelectorAll('.conn').forEach(c=>c.classList.remove('fill'));
+  $('#disc').innerHTML='';
+  // Hypothesis → Prediction → Experiment → Proof → Theory — the same five steps the Lab runs, shown live
+  _s('pose','active',R); await wait(340); _s('pose','done',R); _conn(0,R);
+  _s('state','active',R);
+  $('#disc').innerHTML='<div class="vitem"><div class="k">2 · Prediction</div><div class="big mono">'+seq.slice(0,12).join(', ')+(seq.length>12?', …':'')+'</div></div>';
+  await wait(420); _s('state','done',R); _conn(1,R); _s('probe','active',R);
+  $('#disc').innerHTML+='<div class="vitem" id="dprobe">'+_pk+'<span class="spin"></span> searching for a pattern (PSLQ + OEIS)…</div>';
   try{const d=await jpost('/api/discover',{seq});
-    if(!d.candidates||!d.candidates.length){$('#disc').innerHTML='<div class="vitem"><div class="big">No formula found</div><div class="lead" style="margin:0">Often the honest answer — many sequences have no closed form.</div></div>';}
-    else{$('#disc').innerHTML=d.candidates.map(r=>{const cf=r.closed_form||'';const lab=(r.label&&r.label.status)||'';
-      const known=r.verification&&r.verification.prior_art;let cls='',big='No formula for this one';
-      if(cf){cls='found';big='Formula: '+cfTex(cf)}else if(lab.includes('mystery')){cls='mystery';big='Stable “mystery” value (no known formula)'}
-      return `<div class="vitem ${cls}"><div class="big">${big}</div><div class="lead" style="margin:2px 0 0">honest label: <b>${lab||'—'}</b>${known?(' · already known: '+known):''}</div></div>`;}).join('');}
-  }catch(e){$('#disc').innerHTML='<div class="vitem bad">error: '+e+'</div>'}
+    const c=(d.candidates&&d.candidates[0])||null;
+    const cf=c&&c.closed_form, lab=(c&&c.label&&c.label.status)||'', known=c&&c.verification&&c.verification.prior_art;
+    _s('probe','done',R); _conn(2,R);
+    let pv=cf?('found a closed form: '+cfTex(cf)):(lab.includes('mystery')?'stable “mystery” value — no known formula':'no formula found — often the honest answer');
+    if(known) pv+=' <span class="badge known">known: '+known+'</span>';
+    $('#dprobe').innerHTML=_pk+pv;
+    await wait(320); _s('certify','done',R);
+    $('#disc').innerHTML+='<div class="vitem"><span class="k">4 · Proof</span>&nbsp;<span style="color:var(--muted)">'+(cf?'<b>REALISTIC</b> — a conjecture; a closed form is not machine-proven here':(known?'prior art in OEIS':'nothing to prove'))+'</span></div>';
+  }catch(e){_s('probe','refuted',R);$('#disc').innerHTML+='<div class="vitem bad">error: '+e+'</div>'}
   btn.disabled=false;
 }
 
@@ -515,24 +542,29 @@ async function discover(){
 
 const LAB=[];
 const LAB_MATH={goldbach:'\\forall\\,n>2\\ \\text{even},\\ \\exists\\,p,q\\ \\text{prime}:\\ n=p+q',
-  collatz:'\\forall\\,n>0,\\ \\exists\\,k:\\ C^{k}(n)=1'};
-let LAB_PROBS=[];
+  collatz:'\\forall\\,n>0,\\ \\exists\\,k:\\ C^{k}(n)=1',
+  twin_primes:'\\forall\\,N,\\ \\exists\\,p>N:\\ p,\\,p+2\\ \\text{prime}',
+  riemann:'\\zeta(s)=0,\\ 0<\\Re(s)<1\\ \\Rightarrow\\ \\Re(s)=\\tfrac12'};
+let LAB_PROBS=[], LAB_T='graph';
 async function labInit(){
   const inv=(await jget('/api/invariants')).invariants;
   const opts=inv.map(n=>`<option value="${n}">${n.replace(/_/g,' ')}</option>`).join('');
   $('#labA').innerHTML=opts; $('#labB').innerHTML=opts; $('#labA').value='radius'; $('#labB').value='diameter';
-  LAB_PROBS=(await jget('/api/problems')).problems.filter(p=>p.finite_checkable);
+  LAB_PROBS=(await jget('/api/problems')).problems;   // ALL four famous problems
   $('#labProb').innerHTML=LAB_PROBS.map(p=>`<option value="${p.key}">${p.name}</option>`).join('');
+  labProbSwitch();
 }
-function labSwitch(){const t=$('#labType').value;['graph','sequence','finite'].forEach(k=>$('#pose-'+k).hidden=(k!==t));}
+function labType(t){LAB_T=t;$$('#labType button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  ['graph','sequence','finite'].forEach(k=>$('#pose-'+k).hidden=(k!==t));}
+function labProbSwitch(){const p=LAB_PROBS.find(x=>x.key===$('#labProb').value);$('#labNwrap').hidden=!(p&&p.finite_checkable);}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
-const _s=(s,c)=>{const el=document.querySelector('.stp[data-s="'+s+'"]');if(!el)return;el.classList.remove('active','done','refuted');if(c)el.classList.add(c);};
-const _conn=i=>{const c=$$('.conn')[i];if(c)c.classList.add('fill');};
-const _pk='<span class="k">3 · Probe</span>&nbsp;';
-const _cr=h=>'<div class="labrow"><span class="k">4 · Certify</span>&nbsp;'+h+'</div>';
+const _s=(s,c,root)=>{const el=(root||$('#stepper')).querySelector('.stp[data-s="'+s+'"]');if(!el)return;el.classList.remove('active','done','refuted');if(c)el.classList.add(c);};
+const _conn=(i,root)=>{const c=[...(root||$('#stepper')).querySelectorAll('.conn')][i];if(c)c.classList.add('fill');};
+const _pk='<span class="k">3 · Experiment</span>&nbsp;';
+const _cr=h=>'<div class="labrow"><span class="k">4 · Proof</span>&nbsp;'+h+'</div>';
 const _bcls=l=>({known:'known',derived:'derived',candidate:'candidate',refuted:'refuted',realistic:'candidate',open:'refuted',none:'refuted'}[l]||'candidate');
 async function labRun(){
-  const t=$('#labType').value, btn=$('#labRun'); btn.disabled=true;
+  const t=LAB_T, btn=$('#labRun'); btn.disabled=true;
   $('#stepper').hidden=false;
   $$('.stp').forEach(s=>s.classList.remove('active','done','refuted'));
   $$('.conn').forEach(c=>c.classList.remove('fill'));
@@ -544,7 +576,7 @@ async function labRun(){
    if(t==='graph'){
     const a=$('#labA').value,b=$('#labB').value;
     if(a===b){ls.innerHTML='Pick two different quantities.';btn.disabled=false;return;}
-    ls.innerHTML='<div class="k">2 · State</div><div class="big">'+ruleTex(a+' <= '+b)+'</div>';
+    ls.innerHTML='<div class="k">2 · Prediction</div><div class="big">'+ruleTex(a+' <= '+b)+'</div>';
     await wait(480); _s('state','done'); _conn(1); _s('probe','active');
     ls.innerHTML+='<div class="labrow" id="pr">'+_pk+'<span class="spin"></span> stress-testing on the graph battery…</div>';
     const r=await jpost('/api/lab',{a,b});
@@ -552,16 +584,16 @@ async function labRun(){
     if(r.holds){_s('probe','done');_conn(2);
       $('#pr').innerHTML=_pk+'held on all '+r.tested+' graphs (tight on '+r.tight+') <span class="badge '+r.novelty+'">'+r.novelty+'</span>';
       await wait(320); _s('certify','active');
-      if(r.mathlib_ready){ls.innerHTML+='<div class="labrow"><span class="k">4 · Certify</span>&nbsp;<button class="prv" id="cert_'+id+'" onclick="labCertify(\''+id+'\',\''+r.statement+'\')">Certify with Lean</button><span class="presult" id="cr_'+id+'"></span></div>';}
+      if(r.mathlib_ready){ls.innerHTML+='<div class="labrow"><span class="k">4 · Proof</span>&nbsp;<button class="prv" id="cert_'+id+'" onclick="labCertify(\''+id+'\',\''+r.statement+'\')">Certify with Lean</button><span class="presult" id="cr_'+id+'"></span></div>';}
       else{_s('certify','done');ls.innerHTML+=_cr('<span style="color:var(--muted)">not expressible in mathlib yet — stays <b>'+r.novelty+'</b></span>');}
     }else{_s('probe','refuted');
       $('#pr').innerHTML=_pk+'<span class="bad">refuted</span> — counterexample <b>'+r.witness.graph+'</b>: '+r.a+'='+r.witness.a+' &gt; '+r.b+'='+r.witness.b;
       await wait(300); _s('pose','refuted');
-      ls.innerHTML+='<div class="labrow" style="color:var(--muted)">↩ refuted — the loop returns to <b>Pose</b>: refine the hypothesis.</div>';}
+      ls.innerHTML+='<div class="labrow" style="color:var(--muted)">↩ refuted — the method loops back to the <b>Hypothesis</b>: revise it and test again. (That loop is the scientific method.)</div>';}
     entry={id,type:'graph',tex:ruleTex(r.statement),title:r.statement,verdict:r.holds?('held '+r.tested+' graphs'):('refuted @ '+r.witness.graph),label:r.holds?r.novelty:'refuted',mathlib_ready:r.mathlib_ready,proof:null};
    }else if(t==='sequence'){
     const seq=$('#labSeq').value.split(',').map(s=>parseInt(s.trim())).filter(x=>!isNaN(x));
-    ls.innerHTML='<div class="k">2 · State</div><div class="big mono">'+seq.slice(0,12).join(', ')+(seq.length>12?', …':'')+'</div>';
+    ls.innerHTML='<div class="k">2 · Prediction</div><div class="big mono">'+seq.slice(0,12).join(', ')+(seq.length>12?', …':'')+'</div>';
     await wait(480); _s('state','done'); _conn(1); _s('probe','active');
     ls.innerHTML+='<div class="labrow" id="pr">'+_pk+'<span class="spin"></span> searching for a pattern (PSLQ + OEIS)…</div>';
     const d=await jpost('/api/discover',{seq});
@@ -575,18 +607,27 @@ async function labRun(){
     ls.innerHTML+=_cr('<span style="color:var(--muted)">'+(cf?'<b>REALISTIC</b> — a conjecture, not machine-proven here':(known?'prior art in OEIS':'nothing to certify'))+'</span>');
     entry={id,type:'sequence',tex:cf?cfTex(cf):'',title:seq.slice(0,12).join(','),verdict:cf?('formula found'):(lab.includes('mystery')?'mystery value':'no formula'),label:cf?'realistic':(known?'known':'none'),mathlib_ready:false,proof:cf?'conjecture (not certifiable here)':'n/a'};
    }else{
-    const prob=$('#labProb').value, N=parseInt($('#labN').value)||1000;
-    const pname=(LAB_PROBS.find(p=>p.key===prob)||{}).name||prob;
-    ls.innerHTML='<div class="k">2 · State</div><div class="big">'+(LAB_MATH[prob]?kx(LAB_MATH[prob],true):pname)+'</div>';
+    const prob=$('#labProb').value, P=LAB_PROBS.find(p=>p.key===prob)||{}, pname=P.name||prob;
+    ls.innerHTML='<div class="k">2 · Prediction</div><div class="big">'+(LAB_MATH[prob]?kx(LAB_MATH[prob],true):pname)+'</div>';
     await wait(480); _s('state','done'); _conn(1); _s('probe','active');
-    ls.innerHTML+='<div class="labrow" id="pr">'+_pk+'<span class="spin"></span> checking every n up to '+N+'…</div>';
-    const v=await jpost('/api/verify_finite',{problem:prob,upto:N});
-    if(v.error){$('#pr').innerHTML=v.error;btn.disabled=false;return;}
-    if(v.holds){_s('probe','done');_conn(2);$('#pr').innerHTML=_pk+'holds for all n &le; '+v.checked_up_to+' <span class="badge derived">evidence</span>';}
-    else{_s('probe','refuted');$('#pr').innerHTML=_pk+'<span class="bad">counterexample at '+v.counterexample+'!</span>';}
+    let verdict;
+    if(P.finite_checkable){
+      const N=parseInt($('#labN').value)||1000;
+      ls.innerHTML+='<div class="labrow" id="pr">'+_pk+'<span class="spin"></span> checking every n up to '+N+'…</div>';
+      const v=await jpost('/api/verify_finite',{problem:prob,upto:N});
+      if(v.error){$('#pr').innerHTML=v.error;btn.disabled=false;return;}
+      if(v.holds){_s('probe','done');_conn(2);$('#pr').innerHTML=_pk+'holds for all n &le; '+v.checked_up_to+' <span class="badge derived">evidence</span>';verdict='holds &le; '+v.checked_up_to;}
+      else{_s('probe','refuted');$('#pr').innerHTML=_pk+'<span class="bad">counterexample at '+v.counterexample+'!</span>';verdict='counterexample '+v.counterexample;}
+    }else{
+      ls.innerHTML+='<div class="labrow" id="pr">'+_pk+'<span class="spin"></span> …</div>';
+      await wait(420); _s('probe','done'); _conn(2);
+      const why=prob==='riemann'?'no finite check — needs the zeta function':'no finite check — the claim asserts infinitely many cases';
+      $('#pr').innerHTML=_pk+why;
+      verdict=prob==='riemann'?'no finite check (ζ)':'no finite check (infinitude)';
+    }
     await wait(320); _s('certify','refuted');
-    ls.innerHTML+=_cr('<span class="bad">cannot be certified</span> — a famous open problem; a finite check is evidence, not a proof');
-    entry={id,type:'finite',tex:LAB_MATH[prob]?kx(LAB_MATH[prob]):'',title:pname,verdict:v.holds?('holds &le; '+v.checked_up_to):('counterexample '+v.counterexample),label:'open',mathlib_ready:false,proof:'cannot certify (open problem)'};
+    ls.innerHTML+=_cr('<span class="bad">cannot be certified</span> — a famous open problem; MatyOS states it, never claims to prove it');
+    entry={id,type:'hard problem',tex:LAB_MATH[prob]?kx(LAB_MATH[prob]):'',title:pname,verdict:verdict,label:'open',mathlib_ready:false,proof:'cannot certify (open problem)'};
    }
   }catch(e){$('#labState').innerHTML='<div class="labstage">error: '+e+'</div>';btn.disabled=false;return;}
   if(entry){LAB.unshift(entry);renderBook();}
@@ -608,8 +649,8 @@ function renderBook(){
   $('#labbook').innerHTML=LAB.map(e=>{
     const head=e.tex?e.tex:('<span class="mono">'+e.title+'</span>');
     return '<div class="nb"><div class="hyp">'+head+' <span class="badge '+_bcls(e.label)+'">'+e.label+'</span> <span class="st" style="opacity:.65">'+e.type+'</span></div>'+
-      '<div class="stages"><span class="st"><b>Probe:</b> '+e.verdict+'</span>'+
-      '<span class="st"><b>Certify:</b> '+(e.proof?e.proof:(e.mathlib_ready?'available':'n/a'))+'</span></div></div>';
+      '<div class="stages"><span class="st"><b>Experiment:</b> '+e.verdict+'</span>'+
+      '<span class="st"><b>Proof:</b> '+(e.proof?e.proof:(e.mathlib_ready?'available':'n/a'))+'</span></div></div>';
   }).join('');
 }
 function labExport(){
