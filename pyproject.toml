@@ -61,11 +61,15 @@ mcp = [
     "mpmath>=1.3",   # discovery tools rely on PSLQ
     "mcp>=1.0",      # Model Context Protocol server (Python 3.10+)
 ]
+desktop = [
+    "pywebview>=4.0",   # native window for the research console (matyos-desktop)
+]
 
 [project.scripts]
 matyos = "matyos.cli:main"
 matyos-mcp = "matyos.mcp_server:run"
 matyos-ui = "matyos.ui:main"
+matyos-desktop = "matyos.desktop:main"
 
 [project.urls]
 Homepage = "https://github.com/MatyOS-Project/MatyOS"
