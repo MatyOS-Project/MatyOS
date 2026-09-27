@@ -27,6 +27,7 @@ Commands:
   unpack <file> [dir]   extract a .matyos archive
   realistic <claim>     judge a bound "a <= b" with Stoqos (three-valued logic)
                         [--domain <name>] judge in a domain (e.g. triangles)
+                        [--batch <file>]  judge every claim in a file (one/line)
                         [--json] emit a machine-readable Judgement
   discover              run the v2 discovery-engine toy loop (experimental)
   version               print the MatyOS version
@@ -177,6 +178,37 @@ def _realistic(claim, as_json=False, domain=None):
     return 0
 
 
+def _realistic_batch(path, as_json=False, domain=None):
+    """Judge every claim in a file (one `a <= b` per line; blanks and #comments
+    skipped) and print a compact TRUE/FALSE/REALISTIC/UNKNOWN table."""
+    from matyos.discovery import stoqos
+    try:
+        with open(path, encoding="utf-8") as f:
+            claims = [ln.strip() for ln in f
+                      if ln.strip() and not ln.lstrip().startswith("#")]
+    except OSError as e:
+        print(f"matyos: cannot read {path}: {e}", file=sys.stderr)
+        return 2
+    if not claims:
+        print(f"matyos: no claims in {path}", file=sys.stderr)
+        return 2
+    dom = None if not domain or domain == "graphs" else domain
+    results = stoqos.judge_many(claims, domain=dom)
+    if as_json:
+        import json
+        print(json.dumps([{"claim": c, "truth": stoqos.truth3(j), "value": j.value}
+                          for c, j in zip(claims, results)], indent=2))
+        return 0
+    width = min(max((len(c) for c in claims), default=10), 48)
+    for c, j in zip(claims, results):
+        t = stoqos.truth3(j)
+        tag = t.upper()
+        if t == "realistic" and j.value is not None:
+            tag += f"  {j.value:.2f}"
+        print(f"{c[:width]:<{width}}  {tag}")
+    return 0
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv:
@@ -273,16 +305,21 @@ def main(argv=None):
     if cmd == "realistic":
         as_json = "--json" in rest
         rest = [a for a in rest if a != "--json"]
-        domain = None
-        for i, a in enumerate(rest):
+        domain = batch = None
+        i = 0
+        while i < len(rest):
+            a = rest[i]
             if a == "--domain" and i + 1 < len(rest):
-                domain = rest[i + 1]
-                rest = rest[:i] + rest[i + 2:]
-                break
+                domain = rest[i + 1]; rest = rest[:i] + rest[i + 2:]; continue
             if a.startswith("--domain="):
-                domain = a.split("=", 1)[1]
-                rest = rest[:i] + rest[i + 1:]
-                break
+                domain = a.split("=", 1)[1]; rest = rest[:i] + rest[i + 1:]; continue
+            if a == "--batch" and i + 1 < len(rest):
+                batch = rest[i + 1]; rest = rest[:i] + rest[i + 2:]; continue
+            if a.startswith("--batch="):
+                batch = a.split("=", 1)[1]; rest = rest[:i] + rest[i + 1:]; continue
+            i += 1
+        if batch:
+            return _realistic_batch(batch, as_json=as_json, domain=domain)
         if not rest:
             print('matyos: \'realistic\' needs a claim, e.g. '
                   'matyos realistic "radius <= diameter"', file=sys.stderr)

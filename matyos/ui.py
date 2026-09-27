@@ -109,6 +109,209 @@ def _lab_probe(a: str, b: str) -> dict:
             "mathlib_ready": ready}
 
 
+# ---- the Stoqos judge page (served at /stoqos) ---------------------------------
+
+_STOQOS_PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stoqos — Judge a statement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fafafa;--surface:#fff;--ink:#0a0a0a;--muted:#6a6a6a;--line:#e4e4e4;--soft:#f0f0f0;--radius:12px;
+--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+--sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+--display:'Fredoka','Inter',sans-serif;}
+@media(prefers-color-scheme:dark){:root{--bg:#0b0b0c;--surface:#161617;--ink:#f4f4f5;
+--muted:#9a9a9e;--line:#2a2a2c;--soft:#202022;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:720px;margin:0 auto;padding:34px 16px 64px;}
+.brandbar{display:flex;align-items:center;gap:14px;margin:0 0 20px;}
+.mark{width:54px;height:54px;border-radius:14px;background:#fff;border:1px solid var(--line);
+display:grid;place-items:center;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.mark img{width:40px;height:40px;}
+.brandbar h1{font-family:var(--display);font-size:28px;font-weight:600;margin:0;letter-spacing:-.01em;}
+.brandbar .tag2{font-size:13px;color:var(--muted);margin:2px 0 0;}
+.sub{color:var(--muted);margin:0 0 22px;font-size:14px;}
+.sub b{color:var(--ink);font-weight:600;font-family:var(--mono);font-size:13px;}
+code{font-family:var(--mono);font-size:.92em;}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;
+box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,0,0,.05);}
+label{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;}
+.grow{flex:1 1 260px;}
+input,select{width:100%;padding:11px 12px;font-size:15px;border:1px solid var(--line);
+border-radius:9px;background:var(--bg);color:var(--ink);font-family:var(--mono);}
+input:focus,select:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink);}
+button{padding:11px 22px;font-size:14px;font-weight:600;border:1px solid var(--ink);border-radius:9px;
+background:var(--ink);color:var(--surface);cursor:pointer;font-family:var(--sans);}
+button:hover{opacity:.88;}button:disabled{opacity:.5;cursor:default;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;}
+.chip{font-size:12px;padding:4px 9px;border:1px solid var(--line);border-radius:7px;
+background:var(--bg);color:var(--muted);cursor:pointer;font-family:var(--mono);}
+.chip:hover{border-color:var(--ink);color:var(--ink);}
+.hint{font-size:12px;color:var(--muted);margin:9px 0 0;}
+.ex{margin:14px 0 0;font-size:13px;color:var(--muted);}
+.ex a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);margin-left:10px;cursor:pointer;}
+.ex a:hover{border-color:var(--ink);}
+.result{margin-top:22px;border-radius:var(--radius);padding:20px;border:1px solid var(--line);
+border-left:4px solid var(--ink);display:none;background:var(--bg);}
+.result.show{display:block;}
+.claim{font-family:var(--mono);font-size:13px;color:var(--muted);}
+.verdict{font-family:var(--display);font-size:30px;font-weight:600;letter-spacing:.01em;margin-top:8px;}
+.t-unknown.result{border-left-color:var(--muted);}
+.t-unknown .verdict{color:var(--muted);}
+.rmeta{margin-top:10px;font-size:14px;color:var(--muted);}
+.bar{height:9px;border-radius:999px;background:var(--soft);margin-top:14px;overflow:hidden;border:1px solid var(--line);}
+.bar>i{display:block;height:100%;background:var(--ink);}
+.legend{margin-top:26px;font-size:13px;color:var(--muted);}
+.legend b{color:var(--ink);font-weight:600;font-family:var(--mono);}
+.legend div{margin-top:6px;padding-left:12px;border-left:2px solid var(--line);}
+.err{color:var(--ink);font-size:14px;margin-top:14px;display:none;font-weight:600;}
+.batch{margin-top:18px;border-top:1px solid var(--line);padding-top:14px;}
+.batch summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600;}
+textarea{width:100%;margin-top:10px;padding:11px 12px;font:13px/1.5 var(--mono);
+border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);resize:vertical;}
+#bout{margin-top:12px;}
+.brow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 11px;
+border:1px solid var(--line);border-radius:9px;margin-top:6px;font-size:13px;font-family:var(--mono);background:var(--bg);}
+.tag{font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:.05em;padding:2px 9px;border-radius:6px;
+white-space:nowrap;border:1.5px solid var(--ink);}
+.tag.true{background:var(--ink);color:var(--surface);}
+.tag.false{background:var(--surface);color:var(--ink);}
+.tag.realistic{background:var(--soft);color:var(--ink);border-color:var(--line);}
+.tag.unknown{background:var(--surface);color:var(--muted);border-style:dashed;border-color:var(--muted);}
+.foot{margin-top:28px;font-size:12px;color:var(--muted);}
+.foot a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);}
+</style></head><body><div class="wrap">
+<div class="brandbar"><span class="mark"><img src="/assets/stoqos.svg" alt="Stoqos"></span>
+  <div><h1>Stoqos</h1><p class="tag2">a calibrated judge for the REALISTIC level</p></div></div>
+<p class="sub">Type a bound <code>a &le; b</code>, pick its domain, and get the verdict in the
+three-valued logic: <b>TRUE / FALSE / REALISTIC</b>.</p>
+<div class="card">
+  <div class="row">
+    <div class="grow"><label for="claim">Statement</label>
+      <input id="claim" placeholder="radius <= diameter" autocomplete="off" spellcheck="false"></div>
+    <div style="flex:0 0 200px"><label for="domain">Domain</label>
+      <select id="domain"></select></div>
+    <div><button id="go">Judge</button></div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <p class="hint" id="hint">Use two names joined by <code>&lt;=</code> &mdash; the chips are the available quantities.</p>
+  <p class="ex">Try:
+    <a data-c="radius <= diameter" data-d="graphs">radius &le; diameter</a>
+    <a data-c="diameter <= radius" data-d="graphs">diameter &le; radius</a>
+    <a data-c="tworadius <= circumradius" data-d="triangles">Euler 2r &le; R</a>
+  </p>
+  <div class="err" id="err"></div>
+  <div class="result" id="result">
+    <div class="claim" id="rclaim"></div>
+    <div class="verdict" id="rverdict"></div>
+    <div class="rmeta" id="rnote"></div>
+    <div class="bar" id="rbar" style="display:none"><i id="rbari"></i></div>
+  </div>
+  <details class="batch"><summary>Judge many at once</summary>
+    <textarea id="blines" rows="4" spellcheck="false" placeholder="one claim per line, e.g.
+radius <= diameter
+girth <= diameter"></textarea>
+    <div style="margin-top:8px"><button id="bgo">Judge all</button>
+      <span class="hint" style="margin-left:8px">uses the domain selected above</span></div>
+    <div id="bout"></div>
+  </details>
+</div>
+<div class="legend">
+  <div><b>TRUE</b> &mdash; proven (a known theorem). Only the kernel asserts TRUE, never the score.</div>
+  <div><b>FALSE</b> &mdash; a counterexample exists in the evidence.</div>
+  <div><b>REALISTIC</b> &mdash; holds on the evidence but unproven; carries Stoqos's calibrated probability.</div>
+  <div><b>UNKNOWN</b> &mdash; cannot be judged (out of domain or unparseable).</div>
+</div>
+<p class="foot">MatyOS {{VERSION}} &middot; Stoqos scores the middle; the kernel owns TRUE &middot;
+<a href="/">research console</a> &middot; <span id="corpus">0</span> submissions collected</p>
+<script>
+const $=s=>document.querySelector(s);
+let DOMS={};
+const LINE={true:"✓ TRUE",false:"✗ FALSE",realistic:"◐ REALISTIC",unknown:"? UNKNOWN"};
+async function loadDomains(){
+  try{const r=await fetch("/api/domains");DOMS=(await r.json()).domains||{};}
+  catch(e){DOMS={graphs:[]};}
+  const sel=$("#domain");sel.innerHTML="";
+  for(const name of Object.keys(DOMS)){
+    const o=document.createElement("option");o.value=name;o.textContent=name;sel.appendChild(o);}
+  sel.value=DOMS.graphs?"graphs":Object.keys(DOMS)[0];
+  renderChips();
+}
+function renderChips(){
+  const d=$("#domain").value,c=$("#chips");c.innerHTML="";
+  (DOMS[d]||[]).slice(0,24).forEach(name=>{
+    const b=document.createElement("span");b.className="chip";b.textContent=name;
+    b.onclick=()=>insertName(name);c.appendChild(b);});
+}
+function insertName(name){
+  const inp=$("#claim"),v=inp.value;
+  inp.value = v.includes("<=") ? v.replace(/\s*$/,"")+" "+name : (v?v+" <= "+name:name);
+  inp.focus();
+}
+async function judge(){
+  const claim=$("#claim").value.trim(),domain=$("#domain").value;
+  $("#err").style.display="none";$("#result").className="result";
+  if(!claim){showErr("enter a statement like:  radius <= diameter");return;}
+  $("#go").disabled=true;$("#go").textContent="Judging…";
+  try{
+    const r=await fetch("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({claim,domain})});
+    const j=await r.json();
+    if(j.error){showErr(j.error);return;}
+    show(j);
+  }catch(e){showErr("could not reach the model: "+e);}
+  finally{$("#go").disabled=false;$("#go").textContent="Judge";}
+}
+function showErr(m){$("#err").textContent=m;$("#err").style.display="block";}
+function show(j){
+  const t=j.truth;const res=$("#result");
+  res.className="result show t-"+t;
+  $("#rclaim").textContent=j.claim+"   ·   "+j.domain;
+  $("#rverdict").textContent=LINE[t]||t.toUpperCase();
+  $("#rnote").textContent=j.note||"";
+  const bar=$("#rbar");
+  if(t==="realistic"&&typeof j.value==="number"){
+    bar.style.display="block";$("#rbari").style.width=Math.round(j.value*100)+"%";
+    $("#rnote").textContent="P(true) = "+j.value.toFixed(2)+
+      "  (calibrated, confidence "+(j.confidence||0).toFixed(2)+") — "+(j.note||"");
+  }else{bar.style.display="none";}
+}
+async function refreshCorpus(){
+  try{const r=await fetch("/api/corpus");$("#corpus").textContent=(await r.json()).count;}catch(e){}
+}
+async function judgeAll(){
+  const claims=$("#blines").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  const domain=$("#domain").value,out=$("#bout");
+  if(!claims.length){out.innerHTML='<p class="hint">enter one claim per line</p>';return;}
+  $("#bgo").disabled=true;$("#bgo").textContent="Judging…";
+  try{
+    const r=await fetch("/api/judge_batch",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({claims,domain})});
+    const j=await r.json();
+    if(j.error){out.innerHTML='<p class="hint">'+j.error+'</p>';return;}
+    out.innerHTML=j.results.map(x=>{
+      const v=(x.truth==="realistic"&&typeof x.value==="number")?(" "+x.value.toFixed(2)):"";
+      return '<div class="brow"><span>'+esc(x.claim)+'</span>'+
+             '<span class="tag '+x.truth+'">'+(LINE[x.truth]||x.truth)+v+'</span></div>';}).join("");
+    refreshCorpus();
+  }catch(e){out.innerHTML='<p class="hint">error: '+e+'</p>';}
+  finally{$("#bgo").disabled=false;$("#bgo").textContent="Judge all";}
+}
+function esc(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+$("#go").onclick=()=>{judge().then(refreshCorpus);};
+$("#claim").addEventListener("keydown",e=>{if(e.key==="Enter")$("#go").click();});
+$("#domain").addEventListener("change",renderChips);
+$("#bgo").onclick=judgeAll;
+document.querySelectorAll(".ex a").forEach(a=>a.onclick=()=>{
+  $("#claim").value=a.dataset.c;$("#domain").value=a.dataset.d;renderChips();$("#go").click();});
+loadDomains();refreshCorpus();
+</script></div></body></html>"""
+
+
 # ---- the page ------------------------------------------------------------------
 
 _PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -711,6 +914,17 @@ class _Handler(BaseHTTPRequestHandler):
             data = _asset(rel)
             ct = "image/svg+xml" if rel.endswith(".svg") else "image/png"
             return self._send(200 if data else 404, data or b"", ct)
+        if self.path == "/stoqos" or self.path.startswith("/stoqos?"):
+            import matyos
+            return self._send(200, _STOQOS_PAGE.replace("{{VERSION}}", matyos.__version__),
+                              "text/html; charset=utf-8")
+        if self.path == "/api/domains":
+            from matyos.discovery import domains as D
+            out = {d.name: list(d.functionals.keys()) for d in D.all_domains()}
+            return self._send(200, json.dumps({"domains": out}))
+        if self.path == "/api/corpus":
+            from matyos.discovery import stoqos
+            return self._send(200, json.dumps({"count": stoqos.corpus_size()}))
         if self.path == "/api/conjectures":
             return self._send(200, json.dumps({"conjectures": _conjectures()}))
         if self.path == "/api/invariants":
@@ -741,6 +955,42 @@ class _Handler(BaseHTTPRequestHandler):
                 from matyos.discovery.engine import DiscoveryEngine
                 recs = DiscoveryEngine(min_score=0.0).records([Sequence.of(seq, name="ui")])
                 return self._send(200, json.dumps({"candidates": recs[:5]}))
+            if self.path == "/api/judge":
+                from matyos.discovery import stoqos
+                p = self._body()
+                claim = (p.get("claim") or "").strip()
+                domain = (p.get("domain") or "graphs").strip()
+                if not claim:
+                    return self._send(200, json.dumps(
+                        {"error": "enter a claim like:  radius <= diameter"}))
+                if domain and domain != "graphs":
+                    from matyos.discovery import domains as D
+                    doms = {d.name: d for d in D.all_domains()}
+                    if domain not in doms:
+                        return self._send(200, json.dumps(
+                            {"error": f"unknown domain '{domain}'"}))
+                    j = stoqos.judge_domain(doms[domain], claim)
+                else:
+                    j = stoqos.judge(claim)
+                stoqos.record_submission(claim, domain, j)   # feedback corpus
+                return self._send(200, json.dumps({
+                    "claim": claim, "domain": domain, "truth": stoqos.truth3(j),
+                    "verdict": j.verdict, "value": j.value,
+                    "confidence": j.confidence, "known": j.known, "note": j.note}))
+            if self.path == "/api/judge_batch":
+                from matyos.discovery import stoqos
+                p = self._body()
+                claims = [str(c).strip() for c in (p.get("claims") or []) if str(c).strip()]
+                domain = (p.get("domain") or "graphs").strip()
+                if not claims:
+                    return self._send(200, json.dumps({"error": "give a list of claims"}))
+                dom = None if domain == "graphs" else domain
+                out = []
+                for c, j in zip(claims, stoqos.judge_many(claims, domain=dom)):
+                    stoqos.record_submission(c, domain, j)
+                    out.append({"claim": c, "truth": stoqos.truth3(j),
+                                "value": j.value, "note": j.note})
+                return self._send(200, json.dumps({"results": out, "domain": domain}))
             if self.path == "/api/lab":
                 p = self._body()
                 return self._send(200, json.dumps(_lab_probe(p.get("a", ""), p.get("b", ""))))

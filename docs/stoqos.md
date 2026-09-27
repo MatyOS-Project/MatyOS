@@ -71,7 +71,29 @@ $ matyos realistic --domain triangles "longest <= shortest"
 verdict:  FALSE       a counterexample exists in the evidence
 ```
 
-Add `--json` for a machine-readable `Judgement`.
+Add `--json` for a machine-readable `Judgement`, or `--batch <file>` to judge many
+claims at once (one `a <= b` per line):
+
+```console
+$ matyos realistic --batch claims.txt --domain triangles
+tworadius <= circumradius   REALISTIC  0.60
+longest <= shortest         FALSE
+```
+
+## Try it in a browser (the product surface)
+
+Run the local console and open the Stoqos page — type a statement, pick a domain,
+get the three-valued verdict, or paste a list to judge in bulk:
+
+```console
+$ matyos-ui         # then open http://localhost:8000/stoqos
+```
+
+Every judgement made through the page is appended to a **local feedback corpus**
+(`~/.matyos/stoqos_submissions.jsonl`, override with `MATYOS_STOQOS_LOG`) — the raw
+material for later retraining. Only the claim and Stoqos's own verdict are stored;
+truth labels always come from the kernel, never from user opinion. The batch API is
+`POST /api/judge_batch {claims, domain}`; single is `POST /api/judge`.
 
 ## Using it
 

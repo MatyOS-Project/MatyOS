@@ -125,6 +125,23 @@ def test_domains_have_both_classes():
         assert len(set(pairs)) > 1
 
 
+def test_judge_many_and_corpus(tmp_path):
+    # batch judging returns one Judgement per claim, across a domain too
+    js = stoqos.judge_many(["radius <= diameter", "diameter <= radius", "foo <= bar"])
+    assert [stoqos.truth3(x) for x in js] == ["true", "false", "unknown"]
+    tri = stoqos.judge_many(["tworadius <= circumradius", "longest <= shortest"],
+                            domain="triangles")
+    assert stoqos.truth3(tri[1]) == "false"
+    assert all(stoqos.truth3(x) == "unknown" for x in
+               stoqos.judge_many(["a <= b"], domain="no_such_domain"))
+    # the feedback corpus appends and counts, and never raises
+    p = str(tmp_path / "c.jsonl")
+    assert stoqos.record_submission("radius <= diameter", "graphs",
+                                    stoqos.judge("radius <= diameter"), path=p) is True
+    assert stoqos.corpus_size(path=p) == 1
+    assert stoqos.corpus_size(path=str(tmp_path / "missing.jsonl")) == 0
+
+
 def test_truth3_three_valued():
     # the paper's logic: TRUE (proven) / FALSE / REALISTIC (held, unproven) / UNKNOWN
     J = stoqos.Judgement

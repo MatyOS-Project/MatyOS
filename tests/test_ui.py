@@ -58,3 +58,27 @@ def test_lab_endpoints():
         assert "error" in json.loads(_post("/api/lab", {"a": "radius", "b": "radius"}))
     finally:
         srv.shutdown()
+
+
+def test_stoqos_endpoints(tmp_path, monkeypatch):
+    # keep the feedback corpus out of the real home dir
+    monkeypatch.setenv("MATYOS_STOQOS_LOG", str(tmp_path / "corpus.jsonl"))
+    assert "Stoqos" in ui._STOQOS_PAGE and "three-valued logic" in ui._STOQOS_PAGE
+    srv = _server()
+    try:
+        assert b"three-valued logic" in _get("/stoqos")
+        doms = json.loads(_get("/api/domains"))["domains"]
+        assert "triangles" in doms and "graphs" in doms
+        # single judge: a known theorem reads TRUE, a counterexample FALSE
+        r = json.loads(_post("/api/judge", {"claim": "radius <= diameter", "domain": "graphs"}))
+        assert r["truth"] == "true"
+        assert json.loads(_post("/api/judge", {"claim": "diameter <= radius",
+                                               "domain": "graphs"}))["truth"] == "false"
+        # batch endpoint returns one row per claim
+        b = json.loads(_post("/api/judge_batch",
+                             {"claims": ["radius <= diameter", "foo <= bar"], "domain": "graphs"}))
+        assert [x["truth"] for x in b["results"]] == ["true", "unknown"]
+        # every judgement was logged to the corpus
+        assert json.loads(_get("/api/corpus"))["count"] >= 3
+    finally:
+        srv.shutdown()

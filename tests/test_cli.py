@@ -121,3 +121,16 @@ def test_realistic_domain_triangles(capsys):
 def test_realistic_unknown_domain(capsys):
     assert main(["realistic", "--domain", "nope", "a <= b"]) == 2
     assert "unknown domain" in capsys.readouterr().err
+
+
+def test_realistic_batch(tmp_path, capsys):
+    f = tmp_path / "claims.txt"
+    f.write_text("# a comment, skipped\nradius <= diameter\ndiameter <= radius\nfoo <= bar\n",
+                 encoding="utf-8")
+    assert main(["realistic", "--batch", str(f)]) == 0
+    out = capsys.readouterr().out
+    assert "radius <= diameter" in out and "TRUE" in out
+    assert "FALSE" in out and "UNKNOWN" in out
+
+    assert main(["realistic", "--batch", str(tmp_path / "nope.txt")]) == 2
+    assert "cannot read" in capsys.readouterr().err

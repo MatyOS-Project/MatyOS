@@ -992,6 +992,66 @@ def truth3(j: "Judgement") -> str:
     return "unknown"
 
 
+# --------------------------------------------------------------------------- #
+# Product surface: batch judging + a local usage corpus (the feedback loop).
+# --------------------------------------------------------------------------- #
+def judge_many(claims, domain=None, model=None) -> list:
+    """Judge a batch of claims, one :class:`Judgement` each. With ``domain`` they
+    are all judged in that :class:`~matyos.discovery.domains.Domain`; without it,
+    as graph invariants. The model is loaded once and reused across the batch."""
+    if domain:
+        from matyos.discovery import domains as D
+        dom = {d.name: d for d in D.all_domains()}.get(domain)
+        if dom is None:
+            return [Judgement("unknown", None, 0.0, False, "none",
+                              f"unknown domain '{domain}'") for _ in claims]
+        model = model or evidence_model()
+        return [judge_domain(dom, c, model=model) for c in claims]
+    model = model or StoqosNet.default_mlp() or Stoqos.default()
+    return [judge(c, model=model) for c in claims]
+
+
+def submissions_path() -> str:
+    """Where the local Stoqos usage corpus is written (override with the
+    ``MATYOS_STOQOS_LOG`` environment variable). This corpus is the feedback
+    loop's raw material: the real statements people submit, to be **kernel**-
+    labelled later and retrained on — never labelled by user opinion."""
+    p = os.environ.get("MATYOS_STOQOS_LOG")
+    if p:
+        return p
+    base = os.environ.get("XDG_DATA_HOME") or os.path.join(
+        os.path.expanduser("~"), ".matyos")
+    return os.path.join(base, "stoqos_submissions.jsonl")
+
+
+def record_submission(claim, domain, j, path=None) -> bool:
+    """Append one judged submission to the local corpus (JSONL). Never raises;
+    returns True if written. Stores the claim and Stoqos's own verdict only — no
+    user-supplied truth label, so training labels stay kernel-grounded."""
+    import datetime
+    path = path or submissions_path()
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        row = {"ts": datetime.datetime.now(datetime.timezone.utc)
+                        .isoformat(timespec="seconds"),
+               "claim": claim, "domain": domain or "graphs",
+               "truth": truth3(j), "verdict": j.verdict, "value": j.value}
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row) + "\n")
+        return True
+    except Exception:
+        return False
+
+
+def corpus_size(path=None) -> int:
+    """How many submissions the local corpus holds (0 if none yet)."""
+    try:
+        with open(path or submissions_path(), encoding="utf-8") as f:
+            return sum(1 for _ in f)
+    except OSError:
+        return 0
+
+
 def judge_domain(domain, claim: str, model=None, samples: int = 6) -> Judgement:
     """Judge a bound ``a <= b`` over any :class:`~matyos.discovery.domains.Domain`
     (``a``, ``b`` are functionals of that domain), with the same four-valued
