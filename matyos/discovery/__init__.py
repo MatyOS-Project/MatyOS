@@ -20,6 +20,8 @@ no real implementation yet. Nothing here should be mistaken for working discover
 
 from matyos.discovery.objects import MathObject, Sequence, Formula, Series
 from matyos.discovery.engine import DiscoveryEngine, Candidate
+from matyos.discovery import jev, stoqos
+from matyos.discovery.stoqos import judge, realistic_score, score_evidence, Judgement
 
 __all__ = [
     "MathObject",
@@ -28,4 +30,11 @@ __all__ = [
     "Series",
     "DiscoveryEngine",
     "Candidate",
+    # scorers for the REALISTIC level (see docs/stoqos.md)
+    "jev",              # Jev-backed promise scorer for ranking candidates
+    "stoqos",           # calibrated REALISTIC-level model (Stoqos)
+    "judge",            # typed verdict for one claim (realistic/uncertain/false/unknown)
+    "realistic_score",  # calibrated P(true) for a graph-inequality bound
+    "score_evidence",   # domain-general REALISTIC score from evidence alone
+    "Judgement",
 ]
