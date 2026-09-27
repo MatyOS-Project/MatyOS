@@ -92,6 +92,25 @@ def test_judge_typed_api():
     assert len(batch) == 2 and batch[0].verdict == "realistic"
 
 
+def test_domains_have_both_classes():
+    from matyos.discovery import domains as D
+    for dom in (D._sequence_domain(), D._number_theory_domain(), D._number_means_domain()):
+        X, y, pairs = stoqos.build_domain_dataset(dom, n_batteries=10, seed=3)
+        assert len(X) > 0 and set(y) <= {0, 1}
+        assert 0 < sum(y) < len(y)              # genuine label variation
+        assert len(set(pairs)) > 1
+
+
+def test_benchmark_structure():
+    from matyos.discovery import domains as D
+    fast = [D._sequence_domain(), D._number_theory_domain(), D._number_means_domain()]
+    bm = stoqos.benchmark(domains=fast, n_batteries=6)
+    assert set(bm) == {"per_domain", "transfer", "joint"}
+    for name in ("sequences", "number_theory", "means"):
+        assert name in bm["per_domain"] and name in bm["joint"]
+        assert "pair_disjoint_auc" in bm["per_domain"][name]
+
+
 def test_score_evidence_domain_agnostic():
     X = [_rich(corr_ab=1.0, mean_margin=0.5)] * 6 + [_rich(corr_ab=-1.0, mean_margin=-0.5)] * 6
     net = stoqos.StoqosNet().fit(X, [1]*6 + [0]*6, features=stoqos.FEATURES_RICH,

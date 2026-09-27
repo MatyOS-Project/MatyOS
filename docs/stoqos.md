@@ -47,11 +47,40 @@ calibrated value), **uncertain** (too close to call — abstains), **false**
 | 2 | + invariant metadata (family, monotonicity, known-facts) | fixes known-theorem misses (κ≤δ 0.02→0.85) |
 | 3 | Typed API (`judge`) with abstention | realistic/uncertain/false/unknown |
 | 4 | Selective prediction | accuracy rises 0.985→0.998 as it abstains |
-| 5 | Multi-domain (graphs + number sequences) | one model: graphs **0.886**, sequences **0.853** AUC |
+| 5 | Multi-domain (graphs + number sequences) | one model: graphs 0.886, sequences 0.853 AUC |
+| 6 | Four domains + leakage-free benchmark | one model over graphs / sequences / number-theory / means — see table |
 
 Training labels are **kernel-grounded**: a bound is labelled *true* when it holds on
 a hard verification battery and *false* when a counterexample is found. No human
 opinion is injected.
+
+## Multi-domain benchmark (leakage-free)
+
+Four domains, each with its own functionals over its own evidence points
+(`matyos/discovery/domains.py`): **graphs** (invariants over graphs), **sequences**
+(functionals over sequence terms), **number_theory** (arithmetic functions over
+integers), **means** (the AM–GM family over positive vectors). Reproduce with
+`stoqos.benchmark()`.
+
+Every number is measured on a **pair-disjoint split** — whole functional pairs are
+held out, so the model is tested on bounds it has never seen (no pair-identity
+leakage):
+
+| domain | pair-disjoint AUC | one joint model (AUC) |
+|---|---|---|
+| graphs | 0.76 | 0.79 |
+| sequences | 0.99* | 0.82 |
+| number_theory | 0.76 | 0.91 |
+| means | 0.87 | 0.70 |
+
+*small test set (~45 rows). One model trained jointly on all four covers them all
+(shipped as `stoqos_evidence.json`, used by `score_evidence`).
+
+**Transfer fails across domains.** A model trained on one domain does not transfer
+to another and sometimes anti-transfers (e.g. means→sequences AUC 0.0,
+graphs→sequences 0.23). Generality comes only from **joint** multi-domain training,
+not transfer — see `benchmark()["transfer"]`. Small per-domain test sets make these
+numbers noisy run-to-run; treat them as ranges, not decimals.
 
 ## Honest limitations
 

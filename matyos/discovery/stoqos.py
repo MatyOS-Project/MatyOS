@@ -692,6 +692,145 @@ def score_evidence(lhs_values, rhs_values, model=None) -> "float | None":
 
 
 # --------------------------------------------------------------------------- #
+# Phase 6: multi-domain datasets, a leakage-free benchmark, and a joint model.
+# --------------------------------------------------------------------------- #
+def build_domain_dataset(domain, *, n_batteries: int = 30, seed: int = 17):
+    """Weak-evidence / strong-label dataset for any :class:`domains.Domain`.
+
+    A functional pair a<=b that holds on a small (weak) battery is a REALISTIC
+    candidate; its label is whether it also holds on the large (strong) battery.
+    Features are the domain-agnostic evidence features. Pair names are suffixed
+    with the domain so joint training keeps them distinct.
+    """
+    F = domain.functionals
+    names = list(F)
+    strong = domain.strong(seed + 1)
+    vsg = {a: [float(F[a](p)) for p in strong] for a in names}
+    rng = random.Random(seed)
+    X, y, pairs = [], [], []
+    for _ in range(n_batteries):
+        weak = domain.weak(rng)
+        vw = {a: [float(F[a](p)) for p in weak] for a in names}
+        for a in names:
+            for b in names:
+                if a == b:
+                    continue
+                va, vb = vw[a], vw[b]
+                if not all(x <= yv + 1e-9 for x, yv in zip(va, vb)):
+                    continue
+                if all(abs(x - yv) < 1e-9 for x, yv in zip(va, vb)):
+                    continue
+                sa, sb = vsg[a], vsg[b]
+                X.append(rich_features_from_values(va, vb))
+                y.append(1 if all(x <= yv + 1e-9 for x, yv in zip(sa, sb)) else 0)
+                pairs.append(f"{a} <= {b}::{domain.name}")
+    return X, y, pairs
+
+
+def _auc(scores, ys):
+    """Rank-based AUC (Mann-Whitney), tie-aware. NaN if one class is absent."""
+    n = len(scores)
+    order = sorted(range(n), key=lambda i: scores[i])
+    ranks = [0.0] * n
+    j = 0
+    while j < n:
+        k = j
+        while k + 1 < n and scores[order[k + 1]] == scores[order[j]]:
+            k += 1
+        for t in range(j, k + 1):
+            ranks[order[t]] = (j + k) / 2.0 + 1
+        j = k + 1
+    n1 = sum(ys)
+    n0 = n - n1
+    if not n1 or not n0:
+        return float("nan")
+    R = sum(ranks[i] for i in range(n) if ys[i] == 1)
+    return (R - n1 * (n1 + 1) / 2) / (n1 * n0)
+
+
+def _pair_disjoint(pairs, frac=0.25, seed=7):
+    """Split row indices so whole functional-pairs are held out (no pair-identity
+    leakage between train and test)."""
+    distinct = sorted(set(pairs))
+    rng = random.Random(seed)
+    rng.shuffle(distinct)
+    test = set(distinct[:max(1, int(frac * len(distinct)))])
+    tr = [i for i in range(len(pairs)) if pairs[i] not in test]
+    te = [i for i in range(len(pairs)) if pairs[i] in test]
+    return tr, te
+
+
+def benchmark(domains=None, seed: int = 17, n_batteries: int = 25) -> dict:
+    """Leakage-free multi-domain report. For each domain: a pair-disjoint AUC/Brier
+    (train on some functional pairs, test on UNSEEN ones). Plus a transfer matrix
+    (train on X, test on Y) and the joint model's per-domain held-out AUC. Every
+    number here is defensible and repeatable — this is the credibility harness."""
+    from matyos.discovery import domains as D
+    doms = domains or D.all_domains()
+    data = {}
+    for dom in doms:
+        X, y, pairs = build_domain_dataset(dom, n_batteries=n_batteries, seed=seed)
+        tr, te = _pair_disjoint(pairs, 0.25, seed=7)
+        data[dom.name] = (X, y, tr, te)
+    nets, per_domain = {}, {}
+    for name, (X, y, tr, te) in data.items():
+        net = StoqosNet().fit([X[i] for i in tr], [y[i] for i in tr],
+                              features=FEATURES_RICH, hidden=12, epochs=90,
+                              lr=0.12, seed=1)
+        nets[name] = net
+        sc = [net.predict_proba(X[i]) for i in te]
+        yy = [y[i] for i in te]
+        per_domain[name] = {"pair_disjoint_auc": round(_auc(sc, yy), 3),
+                            "brier": round(sum((sc[k] - yy[k]) ** 2
+                                               for k in range(len(te))) / len(te), 4),
+                            "test_rows": len(te), "pos": sum(yy)}
+    transfer = {a: {} for a in data}
+    for a in data:
+        for b, (Xb, yb, trb, teb) in data.items():
+            sc = [nets[a].predict_proba(Xb[i]) for i in teb]
+            transfer[a][b] = round(_auc(sc, [yb[i] for i in teb]), 3)
+    Xtr, ytr = [], []
+    for name, (X, y, tr, te) in data.items():
+        Xtr += [X[i] for i in tr]
+        ytr += [y[i] for i in tr]
+    jnet = StoqosNet().fit(Xtr, ytr, features=FEATURES_RICH, hidden=16, epochs=100,
+                           lr=0.12, seed=1)
+    joint = {name: round(_auc([jnet.predict_proba(X[i]) for i in te],
+                              [y[i] for i in te]), 3)
+             for name, (X, y, tr, te) in data.items()}
+    return {"per_domain": per_domain, "transfer": transfer, "joint": joint}
+
+
+def train_joint_default(seed: int = 17, n_batteries: int = 30, save: bool = True):
+    """Train ONE evidence model jointly on all domains; ship it as the default
+    evidence model. Returns (model, per-domain held-out AUC)."""
+    from matyos.discovery import domains as D
+    allX, allY, held = [], [], {}
+    for dom in D.all_domains():
+        X, y, pairs = build_domain_dataset(dom, n_batteries=n_batteries, seed=seed)
+        tr, te = _pair_disjoint(pairs, 0.2, seed=7)
+        allX += [X[i] for i in tr]
+        allY += [y[i] for i in tr]
+        held[dom.name] = ([X[i] for i in te], [y[i] for i in te])
+    net = StoqosNet().fit(allX, allY, features=FEATURES_RICH, hidden=16, epochs=110,
+                          lr=0.12, seed=1)
+    # calibrate on half of each domain's held-out; evaluate AUC on the other half
+    valX, valY = [], []
+    for Xte, yte in held.values():
+        valX += Xte[:len(Xte) // 2]
+        valY += yte[:len(yte) // 2]
+    if valX:
+        net.calibrate(valX, valY)
+    per_domain = {}
+    for name, (Xte, yte) in held.items():
+        ev, ey = Xte[len(Xte) // 2:], yte[len(Xte) // 2:]
+        per_domain[name] = round(_auc([net.predict_proba(f) for f in ev], ey), 3) if ev else None
+    if save:
+        net.save(_EVIDENCE_FILE)
+    return net, per_domain
+
+
+# --------------------------------------------------------------------------- #
 # scoring a claim (advisory REALISTIC grade)
 # --------------------------------------------------------------------------- #
 def realistic_score(statement: str, model=None,
