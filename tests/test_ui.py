@@ -63,10 +63,10 @@ def test_lab_endpoints():
 def test_stoqos_endpoints(tmp_path, monkeypatch):
     # keep the feedback corpus out of the real home dir
     monkeypatch.setenv("MATYOS_STOQOS_LOG", str(tmp_path / "corpus.jsonl"))
-    assert "Stoqos" in ui._STOQOS_PAGE and "three-valued logic" in ui._STOQOS_PAGE
+    assert "Doxa" in ui._STOQOS_PAGE and "REALISTIC" in ui._STOQOS_PAGE
     srv = _server()
     try:
-        assert b"three-valued logic" in _get("/stoqos")
+        assert b"Doxa" in _get("/stoqos")
         doms = json.loads(_get("/api/domains"))["domains"]
         assert "triangles" in doms and "graphs" in doms
         # single judge: a known theorem reads TRUE, a counterexample FALSE

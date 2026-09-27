@@ -113,9 +113,11 @@ def _lab_probe(a: str, b: str) -> dict:
 
 _STOQOS_PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stoqos — Judge a statement</title>
+<title>Doxa — Judge a statement</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <style>
 :root{--bg:#fafafa;--surface:#fff;--ink:#0a0a0a;--muted:#6a6a6a;--line:#e4e4e4;--soft:#f0f0f0;--radius:12px;
 --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
@@ -126,7 +128,10 @@ _STOQOS_PAGE = r"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
 font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;}
-.wrap{max-width:720px;margin:0 auto;padding:34px 16px 64px;}
+.stage{min-height:100vh;display:flex;justify-content:center;align-items:flex-start;padding:5vh 18px 48px;}
+.panel{width:100%;max-width:600px;background:var(--surface);border:1px solid var(--line);
+border-radius:18px;padding:30px 30px 22px;
+box-shadow:0 1px 2px rgba(0,0,0,.05),0 20px 55px rgba(0,0,0,.12);}
 .brandbar{display:flex;align-items:center;gap:14px;margin:0 0 20px;}
 .mark{width:54px;height:54px;border-radius:14px;background:#fff;border:1px solid var(--line);
 display:grid;place-items:center;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.05);}
@@ -136,11 +141,19 @@ display:grid;place-items:center;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.05);}
 .sub{color:var(--muted);margin:0 0 22px;font-size:14px;}
 .sub b{color:var(--ink);font-weight:600;font-family:var(--mono);font-size:13px;}
 code{font-family:var(--mono);font-size:.92em;}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:22px;
-box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,0,0,.05);}
+.card{background:none;border:0;border-radius:0;padding:0;box-shadow:none;margin-top:4px;}
 label{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;}
 .grow{flex:1 1 260px;}
+.build{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px;}
+.q{flex:1 1 200px;min-width:150px;}
+.le{font-family:var(--display);font-size:24px;color:var(--muted);flex:none;}
+#domain{max-width:280px;}
+.preview{margin-top:14px;padding:14px 16px;background:var(--bg);border:1px solid var(--line);
+border-radius:10px;text-align:center;font-size:22px;min-height:26px;}
+.preview .katex{color:var(--ink);}
+.rclaim-tex{font-size:26px;margin:2px 0 4px;}
+.rclaim-tex .katex{color:var(--ink);}
 input,select{width:100%;padding:11px 12px;font-size:15px;border:1px solid var(--line);
 border-radius:9px;background:var(--bg);color:var(--ink);font-family:var(--mono);}
 input:focus,select:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink);}
@@ -159,13 +172,14 @@ background:var(--bg);color:var(--muted);cursor:pointer;font-family:var(--mono);}
 border-left:4px solid var(--ink);display:none;background:var(--bg);}
 .result.show{display:block;}
 .claim{font-family:var(--mono);font-size:13px;color:var(--muted);}
+.claim .dom{font-family:var(--sans);font-size:12px;color:var(--muted);margin-top:2px;}
 .verdict{font-family:var(--display);font-size:30px;font-weight:600;letter-spacing:.01em;margin-top:8px;}
 .t-unknown.result{border-left-color:var(--muted);}
 .t-unknown .verdict{color:var(--muted);}
 .rmeta{margin-top:10px;font-size:14px;color:var(--muted);}
 .bar{height:9px;border-radius:999px;background:var(--soft);margin-top:14px;overflow:hidden;border:1px solid var(--line);}
 .bar>i{display:block;height:100%;background:var(--ink);}
-.legend{margin-top:26px;font-size:13px;color:var(--muted);}
+.legend{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);}
 .legend b{color:var(--ink);font-weight:600;font-family:var(--mono);}
 .legend div{margin-top:6px;padding-left:12px;border-left:2px solid var(--line);}
 .err{color:var(--ink);font-size:14px;margin-top:14px;display:none;font-weight:600;}
@@ -182,27 +196,28 @@ white-space:nowrap;border:1.5px solid var(--ink);}
 .tag.false{background:var(--surface);color:var(--ink);}
 .tag.realistic{background:var(--soft);color:var(--ink);border-color:var(--line);}
 .tag.unknown{background:var(--surface);color:var(--muted);border-style:dashed;border-color:var(--muted);}
-.foot{margin-top:28px;font-size:12px;color:var(--muted);}
+.foot{margin-top:16px;font-size:11.5px;color:var(--muted);}
 .foot a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);}
-</style></head><body><div class="wrap">
-<div class="brandbar"><span class="mark"><img src="/assets/stoqos.svg" alt="Stoqos"></span>
-  <div><h1>Stoqos</h1><p class="tag2">a calibrated judge for the REALISTIC level</p></div></div>
-<p class="sub">Type a bound <code>a &le; b</code>, pick its domain, and get the verdict in the
-three-valued logic: <b>TRUE / FALSE / REALISTIC</b>.</p>
+</style></head><body><div class="stage"><main class="panel">
+<div class="brandbar"><span class="mark"><img src="/assets/stoqos.svg" alt="Doxa"></span>
+  <div><h1>Doxa</h1><p class="tag2">a calibrated judge for the REALISTIC level</p></div></div>
+<p class="sub">Pick two quantities. Doxa tells you if <b>A &le; B</b> is
+<b>TRUE</b>, <b>FALSE</b>, or <b>REALISTIC</b> (looks right, but unproven).</p>
 <div class="card">
-  <div class="row">
-    <div class="grow"><label for="claim">Statement</label>
-      <input id="claim" placeholder="radius <= diameter" autocomplete="off" spellcheck="false"></div>
-    <div style="flex:0 0 200px"><label for="domain">Domain</label>
-      <select id="domain"></select></div>
-    <div><button id="go">Judge</button></div>
+  <label for="domain">Area of math</label>
+  <select id="domain"></select>
+  <label style="margin-top:16px">Is this always true?</label>
+  <div class="build">
+    <select id="lhs" class="q"></select>
+    <span class="le">&le;</span>
+    <select id="rhs" class="q"></select>
+    <button id="go">Judge</button>
   </div>
-  <div class="chips" id="chips"></div>
-  <p class="hint" id="hint">Use two names joined by <code>&lt;=</code> &mdash; the chips are the available quantities.</p>
+  <div class="preview" id="preview"></div>
   <p class="ex">Try:
-    <a data-c="radius <= diameter" data-d="graphs">radius &le; diameter</a>
-    <a data-c="diameter <= radius" data-d="graphs">diameter &le; radius</a>
-    <a data-c="tworadius <= circumradius" data-d="triangles">Euler 2r &le; R</a>
+    <a data-l="radius" data-r="diameter" data-d="graphs">radius &le; diameter</a>
+    <a data-l="diameter" data-r="radius" data-d="graphs">diameter &le; radius</a>
+    <a data-l="tworadius" data-r="circumradius" data-d="triangles">Euler: 2r &le; R</a>
   </p>
   <div class="err" id="err"></div>
   <div class="result" id="result">
@@ -223,39 +238,63 @@ girth <= diameter"></textarea>
 <div class="legend">
   <div><b>TRUE</b> &mdash; proven (a known theorem). Only the kernel asserts TRUE, never the score.</div>
   <div><b>FALSE</b> &mdash; a counterexample exists in the evidence.</div>
-  <div><b>REALISTIC</b> &mdash; holds on the evidence but unproven; carries Stoqos's calibrated probability.</div>
+  <div><b>REALISTIC</b> &mdash; holds on the evidence but unproven; carries Doxa's calibrated probability.</div>
   <div><b>UNKNOWN</b> &mdash; cannot be judged (out of domain or unparseable).</div>
 </div>
-<p class="foot">MatyOS {{VERSION}} &middot; Stoqos scores the middle; the kernel owns TRUE &middot;
+<p class="foot">MatyOS {{VERSION}} &middot; Doxa scores the middle; the kernel owns TRUE &middot;
 <a href="/">research console</a> &middot; <span id="corpus">0</span> submissions collected</p>
 <script>
 const $=s=>document.querySelector(s);
 let DOMS={};
 const LINE={true:"✓ TRUE",false:"✗ FALSE",realistic:"◐ REALISTIC",unknown:"? UNKNOWN"};
+// code name -> LaTeX (real math notation)
+const LT={
+ order:"n",size:"m",max_degree:"\\Delta",min_degree:"\\delta",avg_degree:"\\bar d",
+ triangles:"t_\\triangle",diameter:"\\operatorname{diam}",radius:"\\operatorname{rad}",
+ independence_number:"\\alpha",clique_number:"\\omega",chromatic_number:"\\chi",
+ vertex_cover_number:"\\tau",domination_number:"\\gamma",matching_number:"\\nu",
+ vertex_connectivity:"\\kappa",edge_connectivity:"\\lambda",degeneracy:"\\operatorname{deg}^{*}",
+ girth:"g",average_eccentricity:"\\bar\\varepsilon",average_distance:"\\bar d_G",
+ total_domination_number:"\\gamma_t",edge_cover_number:"\\rho",
+ perimeter:"P",semiperim:"s",area:"[\\triangle]",inradius:"r",circumradius:"R",
+ tworadius:"2r",longest:"c_{\\max}",shortest:"c_{\\min}",midside:"c_{\\mathrm{mid}}",height_long:"h_{\\max}",
+ vmin:"\\min",harmean:"H",geomean:"G",mean:"A",rms:"Q",vmax:"\\max",median:"\\tilde x",
+ twicemin:"2\\min",halfmax:"\\tfrac12\\max",vrange:"\\max-\\min",
+ n:"n",d:"d(n)",sigma:"\\sigma(n)",phi:"\\varphi(n)",omega:"\\omega(n)",bigomega:"\\Omega(n)",
+ isqrt:"\\lfloor\\sqrt n\\rfloor",twiceomega:"2\\omega(n)",halfsigma:"\\tfrac12\\sigma(n)",
+ val:"a_n",idx:"n",idx2:"n^2",prefmax:"\\max_{k\\le n}a_k",prefsum:"\\textstyle\\sum_{k\\le n}a_k",
+ prefmean:"\\bar a_n",double:"2a_n"};
+const lat=n=>LT[n]||("\\text{"+n.replace(/_/g," ")+"}");
+const lbl=n=>n.replace(/_/g," ");
+function tex(latex,el,big){try{katex.render(latex,el,{throwOnError:false,displayMode:!!big});}
+  catch(e){el.textContent=latex;}}
+function renderPreview(){
+  const l=$("#lhs").value,r=$("#rhs").value;
+  if(l&&r) tex(lat(l)+" \\;\\le\\; "+lat(r),$("#preview"));
+}
+function opts(sel,names,pick){
+  sel.innerHTML="";
+  names.forEach(n=>{const o=document.createElement("option");o.value=n;o.textContent=lbl(n);sel.appendChild(o);});
+  if(pick && names.includes(pick)) sel.value=pick;
+}
 async function loadDomains(){
   try{const r=await fetch("/api/domains");DOMS=(await r.json()).domains||{};}
   catch(e){DOMS={graphs:[]};}
-  const sel=$("#domain");sel.innerHTML="";
-  for(const name of Object.keys(DOMS)){
-    const o=document.createElement("option");o.value=name;o.textContent=name;sel.appendChild(o);}
-  sel.value=DOMS.graphs?"graphs":Object.keys(DOMS)[0];
-  renderChips();
+  opts($("#domain"),Object.keys(DOMS),"graphs");
+  if(!$("#domain").value) $("#domain").value=Object.keys(DOMS)[0];
+  fillQuantities();
 }
-function renderChips(){
-  const d=$("#domain").value,c=$("#chips");c.innerHTML="";
-  (DOMS[d]||[]).slice(0,24).forEach(name=>{
-    const b=document.createElement("span");b.className="chip";b.textContent=name;
-    b.onclick=()=>insertName(name);c.appendChild(b);});
-}
-function insertName(name){
-  const inp=$("#claim"),v=inp.value;
-  inp.value = v.includes("<=") ? v.replace(/\s*$/,"")+" "+name : (v?v+" <= "+name:name);
-  inp.focus();
+function fillQuantities(lpick,rpick){
+  const names=DOMS[$("#domain").value]||[];
+  opts($("#lhs"),names,lpick||names[0]);
+  opts($("#rhs"),names,rpick||names[1]||names[0]);
+  renderPreview();
 }
 async function judge(){
-  const claim=$("#claim").value.trim(),domain=$("#domain").value;
+  const domain=$("#domain").value;
+  const claim=$("#lhs").value+" <= "+$("#rhs").value;
   $("#err").style.display="none";$("#result").className="result";
-  if(!claim){showErr("enter a statement like:  radius <= diameter");return;}
+  if($("#lhs").value===$("#rhs").value){showErr("pick two different quantities");return;}
   $("#go").disabled=true;$("#go").textContent="Judging…";
   try{
     const r=await fetch("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},
@@ -270,7 +309,11 @@ function showErr(m){$("#err").textContent=m;$("#err").style.display="block";}
 function show(j){
   const t=j.truth;const res=$("#result");
   res.className="result show t-"+t;
-  $("#rclaim").textContent=j.claim+"   ·   "+j.domain;
+  const parts=j.claim.split(" <= ");
+  const rc=$("#rclaim"); rc.innerHTML='<div class="rclaim-tex"></div><div class="dom"></div>';
+  tex((parts[1]?lat(parts[0])+" \\;\\le\\; "+lat(parts[1]):"\\text{"+j.claim+"}"),
+      rc.querySelector(".rclaim-tex"),true);
+  rc.querySelector(".dom").textContent=j.domain;
   $("#rverdict").textContent=LINE[t]||t.toUpperCase();
   $("#rnote").textContent=j.note||"";
   const bar=$("#rbar");
@@ -303,13 +346,14 @@ async function judgeAll(){
 }
 function esc(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 $("#go").onclick=()=>{judge().then(refreshCorpus);};
-$("#claim").addEventListener("keydown",e=>{if(e.key==="Enter")$("#go").click();});
-$("#domain").addEventListener("change",renderChips);
+$("#domain").addEventListener("change",()=>fillQuantities());
+$("#lhs").addEventListener("change",renderPreview);
+$("#rhs").addEventListener("change",renderPreview);
 $("#bgo").onclick=judgeAll;
 document.querySelectorAll(".ex a").forEach(a=>a.onclick=()=>{
-  $("#claim").value=a.dataset.c;$("#domain").value=a.dataset.d;renderChips();$("#go").click();});
+  $("#domain").value=a.dataset.d;fillQuantities(a.dataset.l,a.dataset.r);$("#go").click();});
 loadDomains();refreshCorpus();
-</script></div></body></html>"""
+</script></main></div></body></html>"""
 
 
 # ---- the page ------------------------------------------------------------------
@@ -914,7 +958,7 @@ class _Handler(BaseHTTPRequestHandler):
             data = _asset(rel)
             ct = "image/svg+xml" if rel.endswith(".svg") else "image/png"
             return self._send(200 if data else 404, data or b"", ct)
-        if self.path == "/stoqos" or self.path.startswith("/stoqos?"):
+        if self.path in ("/stoqos", "/doxa") or self.path.startswith(("/stoqos?", "/doxa?")):
             import matyos
             return self._send(200, _STOQOS_PAGE.replace("{{VERSION}}", matyos.__version__),
                               "text/html; charset=utf-8")

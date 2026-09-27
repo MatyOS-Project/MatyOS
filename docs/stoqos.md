@@ -1,13 +1,18 @@
-# Stoqos — a calibrated model for the REALISTIC level
+# Doxa — a calibrated model for the REALISTIC level
+
+> **Doxa** is the product name of this model (Greek *δόξα*, "plausible belief" — the
+> classical counterpart to *episteme*, proven knowledge). In code it is still
+> `matyos.discovery.stoqos` (`StoqosNet`, `matyos realistic`); only the public name
+> changed.
 
 MatyOS uses a three-valued logic: **TRUE** (the kernel proved it), **FALSE** (a
 counterexample refuted it), and **REALISTIC** (held on the evidence, but unproven).
 TRUE and FALSE are decided by proof and by counterexample. Only REALISTIC is
-inherently uncertain — and **Stoqos estimates that uncertainty**: given a bound
+inherently uncertain — and **Doxa estimates that uncertainty**: given a bound
 that survived the evidence, it returns a *calibrated probability that the bound is
 actually true*.
 
-Stoqos is a **scorer, never a judge.** It grades the uncertain middle; it can never
+Doxa is a **scorer, never a judge.** It grades the uncertain middle; it can never
 promote a claim to TRUE (the kernel's job) or demote it to FALSE (a
 counterexample's job). A wrong or offline Stoqos wastes search effort; it can never
 make MatyOS assert a falsehood.
