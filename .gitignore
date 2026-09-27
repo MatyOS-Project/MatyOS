@@ -122,3 +122,4 @@ src/*.out
 # image.png
 # image-1.png
 # quick_build.batdist_pkg/
+dist_pkg/
