@@ -545,12 +545,19 @@ def graffiti_search(graphs=None, invariants=None) -> list[GraphConjecture]:
     return out
 
 
-def classified_search(graphs=None, invariants=None) -> list[dict]:
+def classified_search(graphs=None, invariants=None, score=False) -> list[dict]:
     """Graffiti search + the novelty filter: each inequality tagged known /
     derived / candidate (see ``matyos.discovery.known``).
 
     Returns dicts sorted so the ``candidate`` bounds — the only ones MatyOS's
     knowledge cannot explain — come first; those are what a human should look at.
+
+    With ``score=True`` the results are reranked by the Jev promise-scorer
+    (:mod:`matyos.discovery.jev`): each row gains a calibrated ``promise`` in
+    [0, 1] and a ``promise_backend``, and the candidate tier is ordered
+    most-promising-first. This only reorders the search — truth is still decided
+    only by the proof leg. Jev is used when ``MATYOS_JEV_API_KEY`` is set;
+    otherwise a transparent heuristic fallback runs.
     """
     from matyos.discovery import known
     rank = {"candidate": 0, "derived": 1, "known": 2}
@@ -560,6 +567,9 @@ def classified_search(graphs=None, invariants=None) -> list[dict]:
         out.append({"statement": c.text, "held_on": c.support, "tight_on": c.tight,
                     "novelty": cls["status"], "reason": cls["reason"]})
     out.sort(key=lambda d: (rank[d["novelty"]], -d["tight_on"]))
+    if score:
+        from matyos.discovery import jev
+        out = jev.rerank(out)
     return out
 
 
