@@ -117,11 +117,39 @@ def test_shipped_model_is_self_describing():
 
 def test_domains_have_both_classes():
     from matyos.discovery import domains as D
-    for dom in (D._sequence_domain(), D._number_theory_domain(), D._number_means_domain()):
+    for dom in (D._sequence_domain(), D._number_theory_domain(),
+                D._number_means_domain(), D._triangle_domain()):
         X, y, pairs = stoqos.build_domain_dataset(dom, n_batteries=10, seed=3)
         assert len(X) > 0 and set(y) <= {0, 1}
         assert 0 < sum(y) < len(y)              # genuine label variation
         assert len(set(pairs)) > 1
+
+
+def test_truth3_three_valued():
+    # the paper's logic: TRUE (proven) / FALSE / REALISTIC (held, unproven) / UNKNOWN
+    J = stoqos.Judgement
+    assert stoqos.truth3(J("realistic", 0.9, 0.9, True, "m", "")) == "true"    # known -> TRUE
+    assert stoqos.truth3(J("realistic", 0.9, 0.9, False, "m", "")) == "realistic"
+    assert stoqos.truth3(J("uncertain", 0.6, 0.6, False, "m", "")) == "realistic"  # still held
+    assert stoqos.truth3(J("false", None, 1.0, False, "m", "")) == "false"
+    assert stoqos.truth3(J("unknown", None, 0.0, False, "m", "")) == "unknown"
+    # end to end: a known theorem reads as TRUE, a counterexample as FALSE
+    assert stoqos.truth3(stoqos.judge("radius <= diameter")) == "true"
+    assert stoqos.truth3(stoqos.judge("diameter <= radius")) == "false"
+
+
+def test_judge_domain_triangles():
+    from matyos.discovery import domains as D
+    tri = D._triangle_domain()
+    # Euler's inequality 2r <= R holds on every triangle -> not FALSE, not UNKNOWN
+    euler = stoqos.judge_domain(tri, "tworadius <= circumradius")
+    assert euler.verdict in ("realistic", "uncertain")
+    # a bound with counterexamples on the strong battery -> FALSE
+    bad = stoqos.judge_domain(tri, "longest <= shortest")
+    assert bad.verdict == "false" and bad.value is None
+    # a functional that isn't in the domain -> UNKNOWN, never a crash
+    oo = stoqos.judge_domain(tri, "radius <= not_a_functional")
+    assert oo.verdict == "unknown" and oo.value is None
 
 
 def test_benchmark_structure():

@@ -21,7 +21,8 @@ no real implementation yet. Nothing here should be mistaken for working discover
 from matyos.discovery.objects import MathObject, Sequence, Formula, Series
 from matyos.discovery.engine import DiscoveryEngine, Candidate
 from matyos.discovery import jev, stoqos
-from matyos.discovery.stoqos import judge, realistic_score, score_evidence, Judgement
+from matyos.discovery.stoqos import (judge, judge_domain, truth3, realistic_score,
+                                     score_evidence, Judgement)
 
 __all__ = [
     "MathObject",
@@ -34,6 +35,8 @@ __all__ = [
     "jev",              # Jev-backed promise scorer for ranking candidates
     "stoqos",           # calibrated REALISTIC-level model (Stoqos)
     "judge",            # typed verdict for one claim (realistic/uncertain/false/unknown)
+    "judge_domain",     # same verdict for a bound in any Domain (e.g. triangles)
+    "truth3",           # collapse a Judgement to true/false/realistic/unknown
     "realistic_score",  # calibrated P(true) for a graph-inequality bound
     "score_evidence",   # domain-general REALISTIC score from evidence alone
     "Judgement",

@@ -969,3 +969,80 @@ def judge(claim: str, model=None, samples: int = 6, invariants=None) -> Judgemen
 def judge_batch(claims: list[str], model=None, samples: int = 6) -> list[Judgement]:
     model = model or StoqosNet.default_mlp() or Stoqos.default()
     return [judge(c, model=model, samples=samples) for c in claims]
+
+
+def truth3(j: "Judgement") -> str:
+    """Collapse a :class:`Judgement` to the three-valued REALISTIC logic:
+
+    * ``"true"``      — proven: the claim matches a known theorem (only the kernel
+      / known-facts database asserts TRUE, never the score),
+    * ``"false"``     — a counterexample exists in the evidence,
+    * ``"realistic"`` — holds on the evidence but is unproven (this is the middle
+      value from the paper; ``uncertain`` folds in here — it still *held*, Stoqos
+      just isn't confident enough to put a high number on it),
+    * ``"unknown"``   — cannot be judged (unparseable or out of domain).
+
+    This is the single verdict a user reads: the truth of a logical expression as
+    TRUE / FALSE / REALISTIC.
+    """
+    if j.verdict == "false":
+        return "false"
+    if j.verdict in ("realistic", "uncertain"):
+        return "true" if j.known else "realistic"
+    return "unknown"
+
+
+def judge_domain(domain, claim: str, model=None, samples: int = 6) -> Judgement:
+    """Judge a bound ``a <= b`` over any :class:`~matyos.discovery.domains.Domain`
+    (``a``, ``b`` are functionals of that domain), with the same four-valued
+    contract as :func:`judge`.
+
+    The domain's **strong battery** (the truth proxy) is the counterexample test:
+    a bound that fails there is FALSE. A bound that survives it is scored on weak
+    evidence samples by the domain-general evidence model -> REALISTIC (with a
+    calibrated value) or UNCERTAIN (abstains). TRUE is never returned; only the
+    kernel asserts TRUE. This is what lets ``matyos realistic --domain <name>``
+    judge real statements outside graphs (e.g. Euler's ``tworadius <= circumradius``).
+    """
+    model = model or evidence_model()
+    backend = type(model).__name__ if model else "none"
+    F = getattr(domain, "functionals", {})
+    if model is None or " <= " not in claim:
+        return Judgement("unknown", None, 0.0, False, backend,
+                         "unparseable claim or no evidence model available")
+    a, b = (s.strip() for s in claim.split(" <= "))
+    if a not in F or b not in F:
+        return Judgement("unknown", None, 0.0, False, backend,
+                         f"not both functionals of domain '{getattr(domain,'name','?')}' "
+                         "(out of domain)")
+    try:
+        pts = domain.strong(17)
+        sa = [float(F[a](p)) for p in pts]
+        sb = [float(F[b](p)) for p in pts]
+    except Exception as e:                        # never crash on odd input
+        return Judgement("unknown", None, 0.0, False, backend, f"evaluation error: {e}")
+    fails = sum(1 for x, y in zip(sa, sb) if x > y + 1e-9)
+    if fails:
+        return Judgement("false", None, 1.0, False, backend,
+                         f"counterexample found on {fails}/{len(pts)} strong points")
+    probs = []
+    rng = random.Random(0)
+    try:
+        for _ in range(max(1, samples)):
+            weak = domain.weak(rng)
+            wa = [float(F[a](p)) for p in weak]
+            wb = [float(F[b](p)) for p in weak]
+            s = score_evidence(wa, wb, model=model)
+            if s is not None:
+                probs.append(s)
+    except Exception as e:
+        return Judgement("unknown", None, 0.0, False, backend, f"evaluation error: {e}")
+    if not probs:
+        return Judgement("unknown", None, 0.0, False, backend, "no usable evidence samples")
+    val = sum(probs) / len(probs)
+    conf = max(0.0, min(1.0, 1.0 - 2.0 * _std(probs)))
+    if 2.0 * abs(val - 0.5) < _COMMIT_TAU:
+        return Judgement("uncertain", round(val, 4), round(conf, 3), False, backend,
+                         "too close to call — abstaining rather than guessing")
+    return Judgement("realistic", round(val, 4), round(conf, 3), False, backend,
+                     "held on the strong battery; unproven")

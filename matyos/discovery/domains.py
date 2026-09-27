@@ -177,7 +177,60 @@ def _number_means_domain() -> Domain:
     )
 
 
+# --------------------------------------------------------------------------- #
+# triangles — classic geometry inequalities over integer triangles
+# --------------------------------------------------------------------------- #
+def _triangle(rng):
+    # a valid (non-degenerate) integer triangle: the third side lies strictly
+    # inside (|a-b|, a+b), so area > 0 and the circumradius is finite.
+    for _ in range(50):
+        a = rng.randint(2, 20); b = rng.randint(2, 20)
+        lo, hi = abs(a - b) + 1, a + b - 1
+        if lo <= hi:
+            return (a, b, rng.randint(lo, hi))
+    return (3, 4, 5)
+
+
+def _tris(rng, n):
+    return [_triangle(rng) for _ in range(n)]
+
+
+def _area(p):
+    a, b, c = p; s = (a + b + c) / 2.0
+    return math.sqrt(max(s * (s - a) * (s - b) * (s - c), 0.0))
+
+
+def _triangle_domain() -> Domain:
+    # Real geometry inequalities. Euler's inequality (tworadius <= circumradius,
+    # i.e. 2r <= R) is an always-true bound; scale-dependent pairs (area vs
+    # perimeter, inradius vs shortest side) hold on small triangles yet fail on
+    # large ones -> genuine REALISTIC-but-false cases, so the domain has both
+    # classes, not just positives.
+    def r(p):   # inradius = area / semiperimeter
+        a, b, c = p; return _area(p) / ((a + b + c) / 2.0)
+    def R(p):   # circumradius = abc / (4 * area)
+        a, b, c = p; A = _area(p); return (a * b * c) / (4.0 * A) if A > 0 else 0.0
+    F = {
+        "perimeter": lambda p: float(sum(p)),
+        "semiperim": lambda p: sum(p) / 2.0,
+        "area": _area,
+        "inradius": r,
+        "circumradius": R,
+        "tworadius": lambda p: 2.0 * r(p),      # Euler: tworadius <= circumradius
+        "longest": lambda p: float(max(p)),
+        "shortest": lambda p: float(min(p)),
+        "midside": lambda p: float(sorted(p)[1]),
+        "height_long": lambda p: 2.0 * _area(p) / max(p),
+    }
+    return Domain(
+        name="triangles",
+        functionals=F,
+        weak=lambda rng: _tris(rng, 8),
+        strong=lambda seed: _tris(random.Random(seed), 300),
+    )
+
+
 def all_domains() -> list:
-    """The four domains Stoqos covers (graphs, sequences, number theory, means)."""
-    return [_graph_domain(), _sequence_domain(),
-            _number_theory_domain(), _number_means_domain()]
+    """The domains Stoqos covers: graphs, sequences, number theory, means, triangles."""
+    return [_graph_domain(), _sequence_domain(), _number_theory_domain(),
+            _number_means_domain(), _triangle_domain()]

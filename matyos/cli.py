@@ -25,6 +25,9 @@ Commands:
   info <file.matyos>    show a sealed archive's manifest (no re-checking)
   pack <dir> [out]      pack a project directory into a .matyos (no checking)
   unpack <file> [dir]   extract a .matyos archive
+  realistic <claim>     judge a bound "a <= b" with Stoqos (three-valued logic)
+                        [--domain <name>] judge in a domain (e.g. triangles)
+                        [--json] emit a machine-readable Judgement
   discover              run the v2 discovery-engine toy loop (experimental)
   version               print the MatyOS version
   help                  show this help
@@ -39,6 +42,7 @@ Examples:
   matyos check my_theory
   matyos pack my_theory
   matyos check my_theory.matyos
+  matyos realistic "radius <= diameter"
 """
 
 
@@ -121,6 +125,56 @@ def _check(path, as_json=False):
     if os.path.isdir(path) or path.endswith(".matyos"):
         return _run_project(path)
     return _run_file(path)
+
+
+# The verdict of the REALISTIC three-valued logic, in plain English. TRUE means
+# the kernel / known-facts database proved it (never the score alone); REALISTIC is
+# the paper's middle value (held on evidence, unproven); FALSE has a counterexample;
+# UNKNOWN is "cannot be judged", not a truth value.
+_TRUTH_LINE = {
+    "true":      "TRUE        proven — a known theorem (the kernel decides TRUE)",
+    "realistic": "REALISTIC   holds on all evidence, but unproven",
+    "false":     "FALSE       a counterexample exists in the evidence",
+    "unknown":   "UNKNOWN     cannot be judged (out of domain / unparseable)",
+}
+
+
+def _realistic(claim, as_json=False, domain=None):
+    """Run the Stoqos flow on one bound `a <= b` and print its honest verdict.
+
+    This is the diagram in `docs/stoqos.md` made runnable: kernel-style evidence
+    test -> FALSE / UNKNOWN, otherwise Stoqos scores -> REALISTIC / UNCERTAIN.
+    Stoqos only scores plausibility; the kernel decides real TRUE.
+
+    Without `domain`, `a` and `b` are graph invariants. With `--domain <name>`
+    they are functionals of that domain (e.g. `triangles`), so real statements
+    outside graphs become judgeable.
+    """
+    from matyos.discovery import stoqos
+    if domain:
+        from matyos.discovery import domains as D
+        doms = {d.name: d for d in D.all_domains()}
+        if domain not in doms:
+            print(f"matyos: unknown domain '{domain}'. Available: "
+                  f"{', '.join(sorted(doms))}", file=sys.stderr)
+            return 2
+        j = stoqos.judge_domain(doms[domain], claim)
+    else:
+        j = stoqos.judge(claim)
+    truth = stoqos.truth3(j)                 # true / false / realistic / unknown
+    if as_json:
+        import json
+        print(json.dumps({"claim": claim, "truth": truth, "verdict": j.verdict,
+                          "value": j.value, "confidence": j.confidence,
+                          "known": j.known, "backend": j.backend,
+                          "note": j.note}, indent=2))
+        return 0
+    print(f"claim:    {claim}")
+    print(f"verdict:  {_TRUTH_LINE.get(truth, truth)}")
+    if truth == "realistic" and j.value is not None:
+        print(f"value:    P(true) = {j.value:.2f}  (calibrated, confidence {j.confidence:.2f})")
+    print(f"note:     {j.note}")
+    return 0
 
 
 def main(argv=None):
@@ -216,6 +270,24 @@ def main(argv=None):
         dest = unpack(rest[0], rest[1] if len(rest) > 1 else None)
         print(f"Unpacked -> {dest}")
         return 0
+    if cmd == "realistic":
+        as_json = "--json" in rest
+        rest = [a for a in rest if a != "--json"]
+        domain = None
+        for i, a in enumerate(rest):
+            if a == "--domain" and i + 1 < len(rest):
+                domain = rest[i + 1]
+                rest = rest[:i] + rest[i + 2:]
+                break
+            if a.startswith("--domain="):
+                domain = a.split("=", 1)[1]
+                rest = rest[:i] + rest[i + 1:]
+                break
+        if not rest:
+            print('matyos: \'realistic\' needs a claim, e.g. '
+                  'matyos realistic "radius <= diameter"', file=sys.stderr)
+            return 2
+        return _realistic(" ".join(rest), as_json=as_json, domain=domain)
     if cmd == "discover":
         # Experimental v2 discovery engine. Runs the built-in toy loop for now.
         # `--json` emits structured results for the dashboard / tooling.
