@@ -92,6 +92,29 @@ def test_judge_typed_api():
     assert len(batch) == 2 and batch[0].verdict == "realistic"
 
 
+def test_model_robustness_never_crashes():
+    assert stoqos.judge("foo <= bar").verdict == "unknown"          # out of domain
+    m = stoqos.evidence_model()
+    assert stoqos.score_evidence([1, 2], [3], model=m) is None       # length mismatch
+    assert stoqos.score_evidence([], [], model=m) is None            # empty
+    assert set(stoqos.rich_features_from_values([], [])) == set(stoqos.FEATURES_RICH)
+    untrained = stoqos.StoqosNet()
+    assert untrained.predict_proba({k: 0.0 for k in stoqos.FEATURES_RICH}) == 0.5
+
+
+def test_meta_round_trip():
+    net = stoqos.StoqosNet()
+    net.meta = {"model": "stoqos", "domains": ["graphs"]}
+    r = stoqos.StoqosNet.from_dict(net.to_dict())
+    assert r.meta == {"model": "stoqos", "domains": ["graphs"]}
+
+
+def test_shipped_model_is_self_describing():
+    m = stoqos.evidence_model()
+    assert m is not None and m.meta.get("model") == "stoqos"
+    assert "heldout_auc_per_domain" in m.meta and "note" in m.meta
+
+
 def test_domains_have_both_classes():
     from matyos.discovery import domains as D
     for dom in (D._sequence_domain(), D._number_theory_domain(), D._number_means_domain()):

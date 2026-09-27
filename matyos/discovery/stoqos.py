@@ -80,6 +80,8 @@ def features_from_values(va: list[float], vb: list[float]) -> dict:
     Assumes the bound holds on this battery (va <= vb); that is how candidates are
     surfaced. Reads only these values — never whether it holds elsewhere.
     """
+    if not va or len(va) != len(vb):             # degenerate evidence -> neutral
+        return {k: 0.0 for k in FEATURES}
     margins = [y - x for x, y in zip(va, vb)]
     norm = [m / (abs(y) + 1.0) for m, y in zip(margins, vb)]
     tight = sum(1 for m in margins if abs(m) < 1e-9) / len(margins)
@@ -128,6 +130,8 @@ def _spearman(xs, ys):
 
 def rich_features_from_values(va: list[float], vb: list[float]) -> dict:
     """A larger evidence description for a bound; the MLP learns to combine these."""
+    if not va or len(va) != len(vb):             # degenerate evidence -> neutral
+        return {k: 0.0 for k in FEATURES_RICH}
     margins = [y - x for x, y in zip(va, vb)]
     norm = [m / (abs(y) + 1.0) for m, y in zip(margins, vb)]
     n = len(margins)
@@ -304,10 +308,13 @@ class StoqosNet:
     std_: list = field(default_factory=list)
     T: float = 1.0                            # temperature (calibration)
     features: list = field(default_factory=lambda: list(FEATURES_RICH))
+    meta: dict = field(default_factory=dict)   # self-describing provenance
     trained: bool = False
 
     def _std_vec(self, feats):
-        x = [float(feats[k]) for k in self.features]
+        if not self.mean_:                       # untrained model
+            return None
+        x = [float(feats.get(k, 0.0)) for k in self.features]   # missing key -> 0
         return [(x[k] - self.mean_[k]) / self.std_[k] for k in range(len(x))]
 
     def _forward(self, xs):
@@ -319,7 +326,10 @@ class StoqosNet:
         return pre, h, z
 
     def predict_logit(self, feats):
-        return self._forward(self._std_vec(feats))[2]
+        xs = self._std_vec(feats)
+        if xs is None:
+            return 0.0                           # untrained -> neutral (proba 0.5)
+        return self._forward(xs)[2]
 
     def predict_proba(self, feats):
         return _sigmoid(self.predict_logit(feats) / self.T)
@@ -395,14 +405,15 @@ class StoqosNet:
     def to_dict(self):
         return {"kind": "mlp", "features": self.features, "W1": self.W1,
                 "b1": self.b1, "W2": self.W2, "b2": self.b2, "mean": self.mean_,
-                "std": self.std_, "T": self.T, "trained": self.trained}
+                "std": self.std_, "T": self.T, "meta": self.meta,
+                "trained": self.trained}
 
     @classmethod
     def from_dict(cls, d):
         return cls(W1=d["W1"], b1=d["b1"], W2=d["W2"], b2=d["b2"], mean_=d["mean"],
                    std_=d["std"], T=d.get("T", 1.0),
                    features=d.get("features", list(FEATURES_RICH)),
-                   trained=d.get("trained", True))
+                   meta=d.get("meta", {}), trained=d.get("trained", True))
 
     def save(self, path=_MLP_FILE):
         with open(path, "w") as f:
@@ -683,7 +694,7 @@ def score_evidence(lhs_values, rhs_values, model=None) -> "float | None":
     any domain — graphs, sequences, anything — because it reads only evidence.
     Returns None if the bound fails on the evidence (then it is FALSE)."""
     model = model or evidence_model()
-    if model is None or not lhs_values:
+    if model is None or not lhs_values or len(lhs_values) != len(rhs_values):
         return None
     if not all(x <= y + 1e-9 for x, y in zip(lhs_values, rhs_values)):
         return None
@@ -824,10 +835,38 @@ def train_joint_default(seed: int = 17, n_batteries: int = 30, save: bool = True
     per_domain = {}
     for name, (Xte, yte) in held.items():
         ev, ey = Xte[len(Xte) // 2:], yte[len(Xte) // 2:]
-        per_domain[name] = round(_auc([net.predict_proba(f) for f in ev], ey), 3) if ev else None
+        a = _auc([net.predict_proba(f) for f in ev], ey) if ev else float("nan")
+        per_domain[name] = round(a, 3) if a == a else None    # nan (one-class) -> None
     if save:
         net.save(_EVIDENCE_FILE)
     return net, per_domain
+
+
+def train_release(seed: int = 17, save: bool = True):
+    """Rebuild the shipped joint model deterministically and stamp it with a
+    self-describing ``meta`` block (version, domains, calibration, measured AUC,
+    honesty note). Re-running this reproduces the shipped artifact."""
+    import datetime
+    from matyos import __version__
+    from matyos.discovery import domains as D
+    net, per = train_joint_default(seed=seed, save=False)
+    net.meta = {
+        "model": "stoqos",
+        "matyos_version": __version__,
+        "date": datetime.date.today().isoformat(),
+        "domains": [d.name for d in D.all_domains()],
+        "features": list(net.features),
+        "temperature": round(net.T, 3),
+        "abstain_commit_tau": _COMMIT_TAU,
+        "heldout_auc_per_domain": per,
+        "train_seed": seed,
+        "note": ("calibrated ranker for the REALISTIC level; ~0.8 AUC is an "
+                 "intrinsic ceiling (evidence cannot decide universal truth); "
+                 "not a truth oracle — the kernel decides TRUE"),
+    }
+    if save:
+        net.save(_EVIDENCE_FILE)
+    return net, net.meta
 
 
 # --------------------------------------------------------------------------- #
@@ -899,17 +938,24 @@ def judge(claim: str, model=None, samples: int = 6, invariants=None) -> Judgemen
                          "not both recognised graph invariants (out of domain)")
     known = meta_features(a, b)["known_rel"] == 1.0
     probs, fails = [], 0
-    for s in range(samples):
-        bat = weak_infer_battery(seed=s, size=14)
-        va = [float(inv[a](g)) for g in bat]
-        vb = [float(inv[b](g)) for g in bat]
-        if not all(x <= y + 1e-9 for x, y in zip(va, vb)):
-            fails += 1
-            continue
-        probs.append(model.predict_proba(features_v2(a, b, va, vb)))
+    try:
+        for s in range(max(1, samples)):
+            bat = weak_infer_battery(seed=s, size=14)
+            va = [float(inv[a](g)) for g in bat]
+            vb = [float(inv[b](g)) for g in bat]
+            if not all(x <= y + 1e-9 for x, y in zip(va, vb)):
+                fails += 1
+                continue
+            probs.append(model.predict_proba(features_v2(a, b, va, vb)))
+    except Exception as e:                       # never crash on odd input
+        return Judgement("unknown", None, 0.0, known, backend,
+                         f"evaluation error: {e}")
     if fails:
         return Judgement("false", None, 1.0, known, backend,
-                         f"counterexample found on {fails}/{samples} evidence samples")
+                         f"counterexample found on {fails}/{max(1, samples)} evidence samples")
+    if not probs:
+        return Judgement("unknown", None, 0.0, known, backend,
+                         "no usable evidence samples")
     val = sum(probs) / len(probs)
     conf = max(0.0, min(1.0, 1.0 - 2.0 * _std(probs)))   # samples agree -> confident
     commit = 2.0 * abs(val - 0.5)                         # how decisive (0..1)
