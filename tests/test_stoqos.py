@@ -118,7 +118,7 @@ def test_shipped_model_is_self_describing():
 def test_domains_have_both_classes():
     from matyos.discovery import domains as D
     for dom in (D._sequence_domain(), D._number_theory_domain(),
-                D._number_means_domain(), D._triangle_domain()):
+                D._number_means_domain(), D._triangle_domain(), D._primes_domain()):
         X, y, pairs = stoqos.build_domain_dataset(dom, n_batteries=10, seed=3)
         assert len(X) > 0 and set(y) <= {0, 1}
         assert 0 < sum(y) < len(y)              # genuine label variation

@@ -138,7 +138,7 @@ paper's three-valued logic a user reads — **true** (proven / known theorem),
 | 3 | Typed API (`judge`) with abstention | realistic/uncertain/false/unknown |
 | 4 | Selective prediction | accuracy rises 0.985→0.998 as it abstains |
 | 5 | Multi-domain (graphs + number sequences) | one model: graphs 0.886, sequences 0.853 AUC |
-| 6 | Five domains + leakage-free benchmark | one model over graphs / sequences / number-theory / means / triangles — see table |
+| 6 | Six domains + leakage-free benchmark | one model over graphs / sequences / number-theory / means / triangles / primes — see table |
 
 Training labels are **kernel-grounded**: a bound is labelled *true* when it holds on
 a hard verification battery and *false* when a counterexample is found. No human
@@ -146,12 +146,14 @@ opinion is injected.
 
 ## Multi-domain benchmark (leakage-free)
 
-Five domains, each with its own functionals over its own evidence points
+Six domains, each with its own functionals over its own evidence points
 (`matyos/discovery/domains.py`): **graphs** (invariants over graphs), **sequences**
 (functionals over sequence terms), **number_theory** (arithmetic functions over
-integers), **means** (the AM–GM family over positive vectors), and **triangles**
+integers), **means** (the AM–GM family over positive vectors), **triangles**
 (geometry inequalities over triangle side-triples: perimeter, area, inradius,
-circumradius, and Euler's `2r ≤ R`). Reproduce with `stoqos.benchmark()`.
+circumradius, and Euler's `2r ≤ R`), and **primes** (bounds over the nth prime:
+Bertrand's postulate `p_{n+1} ≤ 2 p_n`, prime gaps, the PNT estimate `n ln n`).
+Reproduce with `stoqos.benchmark()`.
 
 Every number is measured on a **pair-disjoint split** — whole functional pairs are
 held out, so the model is tested on bounds it has never seen (no pair-identity
@@ -159,14 +161,18 @@ leakage):
 
 | domain | pair-disjoint AUC | one joint model (AUC) |
 |---|---|---|
-| graphs | 0.84 | 0.81 |
-| sequences | 0.99* | 1.00* |
-| number_theory | 0.84 | 0.80 |
-| means | 0.89 | 0.92 |
-| triangles | 0.56 | 0.50 |
+| graphs | 0.84 | 0.90 |
+| sequences | 0.99* | 0.78* |
+| number_theory | 0.84 | 0.87 |
+| means | 0.89 | 0.89 |
+| triangles | 0.56 | 0.36 |
+| primes | n/a&dagger; | n/a&dagger; |
 
-*small test set. One model trained jointly on all five covers them all (shipped as
-`stoqos_evidence.json`, used by `score_evidence`).
+*small test set. &dagger;**primes**: nearly every sampled prime bound holds (the
+held-out slice is one-class), so a ranking AUC is undefined there — reliability
+comes from the exact counterexample test, like triangles. One model trained jointly
+on all six covers them all (shipped as `stoqos_evidence.json`, used by
+`score_evidence`).
 
 **Triangles is honestly the hard case.** The joint model ranks triangle bounds at
 chance (0.50 AUC): the evidence features don't separate true from false geometry

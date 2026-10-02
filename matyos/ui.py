@@ -218,6 +218,7 @@ white-space:nowrap;border:1.5px solid var(--ink);}
     <a data-l="radius" data-r="diameter" data-d="graphs">radius &le; diameter</a>
     <a data-l="diameter" data-r="radius" data-d="graphs">diameter &le; radius</a>
     <a data-l="tworadius" data-r="circumradius" data-d="triangles">Euler: 2r &le; R</a>
+    <a data-l="next_prime" data-r="twice_prime" data-d="primes">Bertrand: p&#8345;&#8330;&#8321; &le; 2p&#8345;</a>
   </p>
   <div class="err" id="err"></div>
   <div class="result" id="result">
@@ -263,7 +264,9 @@ const LT={
  n:"n",d:"d(n)",sigma:"\\sigma(n)",phi:"\\varphi(n)",omega:"\\omega(n)",bigomega:"\\Omega(n)",
  isqrt:"\\lfloor\\sqrt n\\rfloor",twiceomega:"2\\omega(n)",halfsigma:"\\tfrac12\\sigma(n)",
  val:"a_n",idx:"n",idx2:"n^2",prefmax:"\\max_{k\\le n}a_k",prefsum:"\\textstyle\\sum_{k\\le n}a_k",
- prefmean:"\\bar a_n",double:"2a_n"};
+ prefmean:"\\bar a_n",double:"2a_n",
+ prime:"p_n",next_prime:"p_{n+1}",twice_prime:"2p_n",gap:"g_n",nlogn:"n\\ln n",
+ half_prime:"\\tfrac12 p_n",isqrt_prime:"\\lfloor\\sqrt{p_n}\\rfloor"};
 const lat=n=>LT[n]||("\\text{"+n.replace(/_/g," ")+"}");
 const lbl=n=>n.replace(/_/g," ");
 function tex(latex,el,big){try{katex.render(latex,el,{throwOnError:false,displayMode:!!big});}

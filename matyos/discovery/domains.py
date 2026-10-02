@@ -230,7 +230,48 @@ def _triangle_domain() -> Domain:
     )
 
 
+# --------------------------------------------------------------------------- #
+# primes — bounds over the nth prime (Bertrand's postulate, prime gaps, PNT)
+# --------------------------------------------------------------------------- #
+def _primes_upto(limit):
+    sieve = [True] * (limit + 1)
+    sieve[0] = sieve[1] = False
+    for i in range(2, int(limit ** 0.5) + 1):
+        if sieve[i]:
+            for j in range(i * i, limit + 1, i):
+                sieve[j] = False
+    return [i for i in range(2, limit + 1) if sieve[i]]
+
+
+_PRIMES = _primes_upto(4000)          # ~550 primes; point n is a 0-based index
+
+
+def _primes_domain() -> Domain:
+    # A point is an index n into the prime list; functionals are bounds over p_n.
+    # Famous always-true bounds live here: Bertrand's postulate (p_{n+1} <= 2 p_n)
+    # and n <= p_n. Scale-crossing pairs (n*ln n vs p_n, p_n vs n^2) hold for some
+    # n yet fail for others, so the domain carries both classes.
+    P = _PRIMES
+    F = {
+        "idx": lambda n: float(n + 1),                      # n (the ordinal)
+        "prime": lambda n: float(P[n]),                     # p_n
+        "next_prime": lambda n: float(P[n + 1]),            # p_{n+1}
+        "twice_prime": lambda n: 2.0 * P[n],                # 2 p_n  (Bertrand)
+        "gap": lambda n: float(P[n + 1] - P[n]),            # prime gap g_n
+        "nlogn": lambda n: (n + 1) * math.log(n + 2),       # ~ p_n  (prime number thm)
+        "half_prime": lambda n: P[n] / 2.0,
+        "isqrt_prime": lambda n: float(math.isqrt(P[n])),
+    }
+    return Domain(
+        name="primes",
+        functionals=F,
+        weak=lambda rng: [rng.randint(1, 60) for _ in range(10)],
+        strong=lambda seed: list(range(1, 500)),
+    )
+
+
 def all_domains() -> list:
-    """The domains Stoqos covers: graphs, sequences, number theory, means, triangles."""
+    """The domains Stoqos covers: graphs, sequences, number theory, means,
+    triangles, primes."""
     return [_graph_domain(), _sequence_domain(), _number_theory_domain(),
-            _number_means_domain(), _triangle_domain()]
+            _number_means_domain(), _triangle_domain(), _primes_domain()]
