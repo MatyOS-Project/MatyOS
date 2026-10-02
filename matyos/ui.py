@@ -177,6 +177,10 @@ border-left:4px solid var(--ink);display:none;background:var(--bg);}
 .t-unknown.result{border-left-color:var(--muted);}
 .t-unknown .verdict{color:var(--muted);}
 .rmeta{margin-top:10px;font-size:14px;color:var(--muted);}
+.cert{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;
+background:var(--soft);font-family:var(--mono);font-size:12.5px;color:var(--ink);}
+.cert b{font-family:var(--sans);font-weight:600;letter-spacing:.04em;font-size:11px;
+text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;}
 .bar{height:9px;border-radius:999px;background:var(--soft);margin-top:14px;overflow:hidden;border:1px solid var(--line);}
 .bar>i{display:block;height:100%;background:var(--ink);}
 .legend{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);}
@@ -219,12 +223,14 @@ white-space:nowrap;border:1.5px solid var(--ink);}
     <a data-l="diameter" data-r="radius" data-d="graphs">diameter &le; radius</a>
     <a data-l="tworadius" data-r="circumradius" data-d="triangles">Euler: 2r &le; R</a>
     <a data-l="next_prime" data-r="twice_prime" data-d="primes">Bertrand: p&#8345;&#8330;&#8321; &le; 2p&#8345;</a>
+    <a data-l="geomean" data-r="mean" data-d="means">AM&ndash;GM: GM &le; AM</a>
   </p>
   <div class="err" id="err"></div>
   <div class="result" id="result">
     <div class="claim" id="rclaim"></div>
     <div class="verdict" id="rverdict"></div>
     <div class="rmeta" id="rnote"></div>
+    <div class="cert" id="rcert" style="display:none"></div>
     <div class="bar" id="rbar" style="display:none"><i id="rbari"></i></div>
   </div>
   <details class="batch"><summary>Judge many at once</summary>
@@ -237,7 +243,7 @@ girth <= diameter"></textarea>
   </details>
 </div>
 <div class="legend">
-  <div><b>TRUE</b> &mdash; proven (a known theorem). Only the kernel asserts TRUE, never the score.</div>
+  <div><b>TRUE</b> &mdash; proven, with a certificate or a known theorem. Only a proof asserts TRUE, never the score.</div>
   <div><b>FALSE</b> &mdash; a counterexample exists in the evidence.</div>
   <div><b>REALISTIC</b> &mdash; holds on the evidence but unproven; carries Doxa's calibrated probability.</div>
   <div><b>UNKNOWN</b> &mdash; cannot be judged (out of domain or unparseable).</div>
@@ -319,6 +325,9 @@ function show(j){
   rc.querySelector(".dom").textContent=j.domain;
   $("#rverdict").textContent=LINE[t]||t.toUpperCase();
   $("#rnote").textContent=j.note||"";
+  const cert=$("#rcert");
+  if(j.certificate){cert.style.display="block";cert.innerHTML='<b>proof</b>'+esc(j.certificate);}
+  else{cert.style.display="none";}
   const bar=$("#rbar");
   if(t==="realistic"&&typeof j.value==="number"){
     bar.style.display="block";$("#rbari").style.width=Math.round(j.value*100)+"%";
@@ -1023,7 +1032,8 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, json.dumps({
                     "claim": claim, "domain": domain, "truth": stoqos.truth3(j),
                     "verdict": j.verdict, "value": j.value,
-                    "confidence": j.confidence, "known": j.known, "note": j.note}))
+                    "confidence": j.confidence, "known": j.known, "note": j.note,
+                    "certificate": j.certificate}))
             if self.path == "/api/judge_batch":
                 from matyos.discovery import stoqos
                 p = self._body()

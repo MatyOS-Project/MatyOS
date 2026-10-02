@@ -20,7 +20,7 @@ no real implementation yet. Nothing here should be mistaken for working discover
 
 from matyos.discovery.objects import MathObject, Sequence, Formula, Series
 from matyos.discovery.engine import DiscoveryEngine, Candidate
-from matyos.discovery import jev, stoqos
+from matyos.discovery import jev, stoqos, sos
 from matyos.discovery.stoqos import (judge, judge_domain, truth3, realistic_score,
                                      score_evidence, Judgement)
 
@@ -34,6 +34,7 @@ __all__ = [
     # scorers for the REALISTIC level (see docs/stoqos.md)
     "jev",              # Jev-backed promise scorer for ranking candidates
     "stoqos",           # calibrated REALISTIC-level model (Stoqos)
+    "sos",              # sound certificate engine (proves means inequalities)
     "judge",            # typed verdict for one claim (realistic/uncertain/false/unknown)
     "judge_domain",     # same verdict for a bound in any Domain (e.g. triangles)
     "truth3",           # collapse a Judgement to true/false/realistic/unknown

@@ -916,12 +916,13 @@ class Judgement:
     kernel's job); it returns REALISTIC with a calibrated probability, FALSE when
     the evidence gives a counterexample, UNCERTAIN when it isn't decisive enough
     to commit (Phase-4 abstention), or UNKNOWN when it cannot judge at all."""
-    verdict: str                 # "realistic" | "uncertain" | "false" | "unknown"
+    verdict: str                 # "true" | "realistic" | "uncertain" | "false" | "unknown"
     value: "float | None"        # calibrated P(true) when realistic, else None
     confidence: float            # 0..1, from agreement across evidence samples
     known: bool                  # matches a theorem already in the known-facts DB
     backend: str                 # model that produced it
     note: str
+    certificate: "str | None" = None   # a proof, when the claim is PROVEN true
 
 
 def judge(claim: str, model=None, samples: int = 6, invariants=None) -> Judgement:
@@ -985,6 +986,8 @@ def truth3(j: "Judgement") -> str:
     This is the single verdict a user reads: the truth of a logical expression as
     TRUE / FALSE / REALISTIC.
     """
+    if j.verdict == "true":
+        return "true"
     if j.verdict == "false":
         return "false"
     if j.verdict in ("realistic", "uncertain"):
@@ -1085,6 +1088,17 @@ def judge_domain(domain, claim: str, model=None, samples: int = 6) -> Judgement:
     if fails:
         return Judgement("false", None, 1.0, False, backend,
                          f"counterexample found on {fails}/{len(pts)} strong points")
+    # It holds on the strong battery. Try to PROVE it with a certificate (means
+    # domain) — a certificate promotes REALISTIC -> TRUE. The engine is sound, so
+    # a certificate here is a proof, not a guess.
+    try:
+        from matyos.discovery import sos
+        cert = sos.certify(a, b)
+    except Exception:
+        cert = None
+    if cert:
+        return Judgement("true", 1.0, 1.0, True, "sos",
+                         "proven — no evidence needed", certificate=cert)
     probs = []
     rng = random.Random(0)
     try:

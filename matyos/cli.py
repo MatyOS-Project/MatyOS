@@ -133,7 +133,7 @@ def _check(path, as_json=False):
 # the paper's middle value (held on evidence, unproven); FALSE has a counterexample;
 # UNKNOWN is "cannot be judged", not a truth value.
 _TRUTH_LINE = {
-    "true":      "TRUE        proven — a known theorem (the kernel decides TRUE)",
+    "true":      "TRUE        proven (the kernel / a certificate decides TRUE)",
     "realistic": "REALISTIC   holds on all evidence, but unproven",
     "false":     "FALSE       a counterexample exists in the evidence",
     "unknown":   "UNKNOWN     cannot be judged (out of domain / unparseable)",
@@ -168,12 +168,14 @@ def _realistic(claim, as_json=False, domain=None):
         print(json.dumps({"claim": claim, "truth": truth, "verdict": j.verdict,
                           "value": j.value, "confidence": j.confidence,
                           "known": j.known, "backend": j.backend,
-                          "note": j.note}, indent=2))
+                          "note": j.note, "certificate": j.certificate}, indent=2))
         return 0
     print(f"claim:    {claim}")
     print(f"verdict:  {_TRUTH_LINE.get(truth, truth)}")
     if truth == "realistic" and j.value is not None:
         print(f"value:    P(true) = {j.value:.2f}  (calibrated, confidence {j.confidence:.2f})")
+    if j.certificate:
+        print(f"proof:    {j.certificate}")
     print(f"note:     {j.note}")
     return 0
 

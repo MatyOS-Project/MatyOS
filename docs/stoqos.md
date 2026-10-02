@@ -17,6 +17,29 @@ promote a claim to TRUE (the kernel's job) or demote it to FALSE (a
 counterexample's job). A wrong or offline Stoqos wastes search effort; it can never
 make MatyOS assert a falsehood.
 
+## Proving, not just scoring (the means domain)
+
+On the **means** domain, Doxa does more than score — it **proves**. The means
+functionals are exactly power means (`vmin = M_{-∞}, harmean = M_{-1}, geomean = M_0,
+mean = M_1, rms = M_2, vmax = M_{+∞}`), so a sound certificate engine
+(`matyos.discovery.sos`) settles every bound with the **power-mean inequality**,
+explicit **sum-of-squares** witnesses (AM–GM is `(√a−√b)² ≥ 0`), order statistics,
+and positivity. A certificate promotes a bound **REALISTIC → TRUE**:
+
+```python
+from matyos.discovery import stoqos, domains
+j = stoqos.judge_domain(domains._number_means_domain(), "geomean <= mean")
+j.verdict      # "true"
+j.certificate  # "power-mean inequality: M_{0} ≤ M_{1}  ·  SOS: AM–GM: (√a−√b)² ≥ 0"
+```
+
+The engine is **sound** — it certifies only genuine theorems (verified: zero false
+certificates on a large random battery) — and **complete** for this domain's
+functionals (it proves all of its true bounds). So on means, every statement is
+*decided*: TRUE with a proof, or FALSE with a counterexample — no REALISTIC middle
+left. The engine is means-specific by design (it exploits the power-mean structure);
+other domains have no such clean certificate and stay at the REALISTIC level.
+
 ## The flow
 
 A claim comes in at the top and leaves as exactly one of four honest verdicts.
